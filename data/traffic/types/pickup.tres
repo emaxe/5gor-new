@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="TrafficTypeData" format=3]
+
+[ext_resource type="Script" path="res://schema/traffic_type_data.gd" id="1_0q02m"]
+
+[resource]
+script = ExtResource("1_0q02m")
+id = &"pickup"
+silhouette = &"pickup"
+radius = 2.2
+length = 5.0
+width = 1.95
+weight = 4.0
+colors = PackedColorArray(0.3529412, 0.3529412, 0.3529412, 1, 0.627451, 0.1882353, 0.1882353, 1, 0.16470589, 0.16470589, 0.16470589, 1, 0.78431374, 0.78431374, 0.7529412, 1)

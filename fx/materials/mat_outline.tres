@@ -1,0 +1,11 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://fx/shaders/outline_hull.gdshader" id="1_shader"]
+
+[resource]
+resource_name = "mat_outline"
+render_priority = -1
+shader = ExtResource("1_shader")
+shader_parameter/outline_color = Color(0.04, 0.05, 0.07, 1)
+shader_parameter/thickness = 0.035
+shader_parameter/distance_scale = 1.0

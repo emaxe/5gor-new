@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TrafficTypeData" format=3]
+
+[ext_resource type="Script" path="res://schema/traffic_type_data.gd" id="1_d05ma"]
+
+[resource]
+script = ExtResource("1_d05ma")
+id = &"bus"
+silhouette = &"bus"
+radius = 2.9
+length = 8.5
+width = 2.35
+weight = 2.0
+colors = PackedColorArray(0.89411765, 0.89411765, 0.89411765, 1)
+force_color = true

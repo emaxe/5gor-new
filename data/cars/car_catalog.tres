@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CarCatalog" format=3]
+
+[ext_resource type="Script" path="res://schema/car_data.gd" id="1_2a741"]
+[ext_resource type="Resource" path="res://data/cars/taxi.tres" id="2_n44j6"]
+[ext_resource type="Resource" path="res://data/cars/classic.tres" id="3_yv2u4"]
+[ext_resource type="Resource" path="res://data/cars/comfort.tres" id="4_dpse7"]
+[ext_resource type="Resource" path="res://data/cars/minivan.tres" id="5_ub8b6"]
+[ext_resource type="Resource" path="res://data/cars/business.tres" id="6_csvi1"]
+[ext_resource type="Resource" path="res://data/cars/sport.tres" id="7_7vhk3"]
+[ext_resource type="Resource" path="res://data/cars/offroad.tres" id="8_10mel"]
+[ext_resource type="Script" path="res://schema/catalog/car_catalog.gd" id="9_d3f2s"]
+[ext_resource type="Resource" path="res://data/cars/tuning.tres" id="10_o7h2k"]
+
+[resource]
+script = ExtResource("9_d3f2s")
+items = Array[ExtResource("1_2a741")]([ExtResource("2_n44j6"), ExtResource("3_yv2u4"), ExtResource("4_dpse7"), ExtResource("5_ub8b6"), ExtResource("6_csvi1"), ExtResource("7_7vhk3"), ExtResource("8_10mel")])
+tuning = ExtResource("10_o7h2k")

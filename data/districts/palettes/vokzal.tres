@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="PaletteData" format=3]
+
+[ext_resource type="Script" path="res://schema/palette_data.gd" id="1_7cnyf"]
+
+[resource]
+script = ExtResource("1_7cnyf")
+id = &"vokzal"
+facades = PackedColorArray(0.78431374, 0.72156864, 0.59607846, 1, 0.72156864, 0.65882355, 0.53333336, 1, 0.84705883, 0.78431374, 0.65882355, 1, 0.65882355, 0.59607846, 0.47058824, 1, 0.7529412, 0.6901961, 0.5647059, 1)

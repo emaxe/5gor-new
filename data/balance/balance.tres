@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BalanceData" format=3]
+
+[ext_resource type="Resource" path="res://data/balance/ped.tres" id="1_w5234"]
+[ext_resource type="Script" path="res://schema/balance_data.gd" id="2_25x35"]
+[ext_resource type="Resource" path="res://data/balance/skid.tres" id="3_emmcq"]
+[ext_resource type="Resource" path="res://data/balance/style.tres" id="4_4j15c"]
+[ext_resource type="Resource" path="res://data/balance/wanted.tres" id="5_a8i2u"]
+
+[resource]
+script = ExtResource("2_25x35")
+wanted = ExtResource("5_a8i2u")
+ped = ExtResource("1_w5234")
+style = ExtResource("4_4j15c")
+skid = ExtResource("3_emmcq")

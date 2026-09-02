@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="DistrictData" format=3]
+
+[ext_resource type="Resource" path="res://data/districts/palettes/vokzal.tres" id="1_sy3om"]
+[ext_resource type="Script" path="res://schema/district_data.gd" id="2_k0kai"]
+
+[resource]
+script = ExtResource("2_k0kai")
+id = &"vokzal"
+display_name = "DISTRICT_VOKZAL_NAME"
+unlock_rating = 75
+weight = 9.0
+palette = ExtResource("1_sy3om")
+height_min = 9.0
+map_color = Color(0.5411765, 0.47843137, 0.37254903, 1)
+demand_morning = 1.6
+demand_evening = 1.1

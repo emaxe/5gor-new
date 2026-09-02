@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="PedArchetypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/ped_curse_musician.tres" id="1_pwm75"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_flee_default.tres" id="2_7617a"]
+[ext_resource type="Resource" path="res://data/quotes/ped_musician.tres" id="3_u0xgl"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_witness.tres" id="4_8i5wp"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_retaliate_default.tres" id="5_ao8hd"]
+[ext_resource type="Script" path="res://schema/ped_archetype_data.gd" id="6_w4kkw"]
+
+[resource]
+script = ExtResource("6_w4kkw")
+id = &"musician"
+speed_min = 1.5
+speed_max = 2.0
+cloth_colors = PackedColorArray()
+pants_colors = PackedColorArray()
+accessories = PackedStringArray("beret", "instrument")
+quotes_idle = ExtResource("3_u0xgl")
+quotes_curse = ExtResource("1_pwm75")
+quotes_panic = ExtResource("4_8i5wp")
+quotes_flee = ExtResource("2_7617a")
+quotes_retaliate = ExtResource("5_ao8hd")
+retaliate_chance = 0.15

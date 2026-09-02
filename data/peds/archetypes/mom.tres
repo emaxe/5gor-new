@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="PedArchetypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/ped_curse_mom.tres" id="1_qbvk0"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_flee_mom.tres" id="2_mrklh"]
+[ext_resource type="Resource" path="res://data/quotes/ped_mom.tres" id="3_bynv8"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_witness.tres" id="4_k6qrj"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_retaliate_mom.tres" id="5_8pepv"]
+[ext_resource type="Script" path="res://schema/ped_archetype_data.gd" id="6_cvr4f"]
+
+[resource]
+script = ExtResource("6_cvr4f")
+id = &"mom"
+speed_min = 1.6
+speed_max = 2.0
+cloth_colors = PackedColorArray()
+pants_colors = PackedColorArray()
+accessories = PackedStringArray("stroller")
+quotes_idle = ExtResource("3_bynv8")
+quotes_curse = ExtResource("1_qbvk0")
+quotes_panic = ExtResource("4_k6qrj")
+quotes_flee = ExtResource("2_mrklh")
+quotes_retaliate = ExtResource("5_8pepv")
+retaliate_chance = 0.35

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="RadioCatalog" format=3]
+
+[ext_resource type="Script" path="res://schema/radio_station_data.gd" id="1_x8xet"]
+[ext_resource type="Resource" path="res://data/audio/stations/pyatigorsk.tres" id="2_mpvk1"]
+[ext_resource type="Resource" path="res://data/audio/stations/synth.tres" id="3_mxk26"]
+[ext_resource type="Resource" path="res://data/audio/stations/kavkaz.tres" id="4_od055"]
+[ext_resource type="Resource" path="res://data/audio/stations/rock.tres" id="5_grjq1"]
+[ext_resource type="Resource" path="res://data/audio/stations/chanson.tres" id="6_keeuq"]
+[ext_resource type="Resource" path="res://data/audio/stations/chilled.tres" id="7_qdl15"]
+[ext_resource type="Script" path="res://schema/catalog/radio_catalog.gd" id="8_eaj4l"]
+[ext_resource type="Script" path="res://schema/sfx_recipe.gd" id="9_tfqbc"]
+
+[resource]
+script = ExtResource("8_eaj4l")
+items = Array[ExtResource("1_x8xet")]([ExtResource("2_mpvk1"), ExtResource("3_mxk26"), ExtResource("4_od055"), ExtResource("5_grjq1"), ExtResource("6_keeuq"), ExtResource("7_qdl15")])

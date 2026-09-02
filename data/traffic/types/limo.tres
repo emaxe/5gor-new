@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="TrafficTypeData" format=3]
+
+[ext_resource type="Script" path="res://schema/traffic_type_data.gd" id="1_jlpnm"]
+
+[resource]
+script = ExtResource("1_jlpnm")
+id = &"limo"
+radius = 2.2
+length = 6.2
+width = 1.95
+weight = 0.6
+colors = PackedColorArray(0.0627451, 0.0627451, 0.0627451, 1, 0.9411765, 0.9411765, 0.9411765, 1)

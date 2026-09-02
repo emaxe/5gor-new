@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="PedCatalog" format=3]
+
+[ext_resource type="Script" path="res://schema/ped_archetype_data.gd" id="1_snqsq"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/regular.tres" id="2_she4w"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/gopnik.tres" id="3_4310k"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/grandma.tres" id="4_cefde"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/runner.tres" id="5_xh6bo"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/student.tres" id="6_r3jrw"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/businessman.tres" id="7_s2unq"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/tourist.tres" id="8_ekeew"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/child.tres" id="9_y0vg8"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/elder.tres" id="10_fpu4y"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/mom.tres" id="11_p7eqi"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/worker.tres" id="12_gudbg"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/musician.tres" id="13_6bv3g"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/nurse.tres" id="14_x2135"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/dog.tres" id="15_s0jgr"]
+[ext_resource type="Resource" path="res://data/peds/archetypes/cat.tres" id="16_70t6g"]
+[ext_resource type="Resource" path="res://data/quotes/ped_curse.tres" id="17_hp02f"]
+[ext_resource type="Resource" path="res://data/quotes/ped_curse_redlight.tres" id="18_dv6yw"]
+[ext_resource type="Resource" path="res://data/quotes/ped_curse_sidewalk.tres" id="19_l152f"]
+[ext_resource type="Resource" path="res://data/quotes/ped_idle.tres" id="20_l57cf"]
+[ext_resource type="Resource" path="res://data/quotes/ped_shout.tres" id="21_obwv6"]
+[ext_resource type="Script" path="res://schema/catalog/ped_catalog.gd" id="22_ilgl5"]
+
+[resource]
+script = ExtResource("22_ilgl5")
+items = Array[ExtResource("1_snqsq")]([ExtResource("2_she4w"), ExtResource("3_4310k"), ExtResource("4_cefde"), ExtResource("5_xh6bo"), ExtResource("6_r3jrw"), ExtResource("7_s2unq"), ExtResource("8_ekeew"), ExtResource("9_y0vg8"), ExtResource("10_fpu4y"), ExtResource("11_p7eqi"), ExtResource("12_gudbg"), ExtResource("13_6bv3g"), ExtResource("14_x2135"), ExtResource("15_s0jgr"), ExtResource("16_70t6g")])
+quotes_idle = ExtResource("20_l57cf")
+quotes_curse = ExtResource("17_hp02f")
+quotes_curse_sidewalk = ExtResource("19_l152f")
+quotes_curse_redlight = ExtResource("18_dv6yw")
+quotes_shout = ExtResource("21_obwv6")
+skin_colors = PackedColorArray(0.9607843, 0.8156863, 0.6901961, 1, 0.84705883, 0.65882355, 0.47058824, 1, 0.5411765, 0.3529412, 0.22745098, 1, 0.78431374, 0.5647059, 0.3764706, 1, 0.65882355, 0.47058824, 0.3137255, 1, 0.6901961, 0.5019608, 0.34509805, 1, 0.41568628, 0.2901961, 0.1882353, 1, 1, 0.85882354, 0.6745098, 1, 0.9254902, 0.8156863, 0.72156864, 1, 0.6117647, 0.41960785, 0.27058825, 1, 0.32156864, 0.2, 0.1254902, 1)
+hair_colors = PackedColorArray(0.101960786, 0.101960786, 0.101960786, 1, 0.22745098, 0.16470589, 0.101960786, 1, 0.41568628, 0.2901961, 0.16470589, 1, 0.84705883, 0.78431374, 0.65882355, 1, 0.5411765, 0.16470589, 0.16470589, 1, 0.16470589, 0.16470589, 0.2901961, 1, 0.6, 0.33333334, 0.13333334, 1, 0.8627451, 0.8666667, 0.88235295, 1, 0.44313726, 0.5019608, 0.5764706, 1, 0.6901961, 0.53333336, 0.3529412, 1, 0.2901961, 0.2901961, 0.2901961, 1)
+shoe_colors = PackedColorArray(0.1254902, 0.1254902, 0.1254902, 1, 0.06666667, 0.06666667, 0.06666667, 1, 0.93333334, 0.93333334, 0.93333334, 1, 0.3529412, 0.22745098, 0.1254902, 1, 0.22745098, 0.22745098, 0.22745098, 1, 0.5411765, 0.2901961, 0.16470589, 1)
+cloth_colors = PackedColorArray(0.2509804, 0.3764706, 0.627451, 1, 0.627451, 0.2509804, 0.2509804, 1, 0.2509804, 0.5647059, 0.3764706, 1, 0.627451, 0.5019608, 0.2509804, 1, 0.3764706, 0.2509804, 0.5019608, 1, 0.53333336, 0.53333336, 0.53333336, 1, 0.7529412, 0.47058824, 0.1882353, 1, 0.1882353, 0.5647059, 0.627451, 1, 0.8784314, 0.33333334, 0.4, 1, 0.13333334, 0.6666667, 0.53333336, 1, 0.16862746, 0.29803923, 0.49411765, 1, 0.35686275, 0.42745098, 0.35686275, 1, 0.43137255, 0.14901961, 0.23529412, 1, 0.7607843, 0.6509804, 0.28627452, 1, 0.3019608, 0.3647059, 0.21176471, 1, 0.8235294, 0.7058824, 0.54901963, 1)
+pants_colors = PackedColorArray(0.16470589, 0.16470589, 0.22745098, 1, 0.22745098, 0.22745098, 0.2901961, 1, 0.2901961, 0.22745098, 0.16470589, 1, 0.3529412, 0.3529412, 0.3529412, 1, 0.101960786, 0.14117648, 0.1882353, 1, 0.8156863, 0.7529412, 0.6666667, 1, 0.11764706, 0.21568628, 0.6, 1, 0.17254902, 0.17254902, 0.32941177, 1, 0.21960784, 0.2509804, 0.1882353, 1, 0.28235295, 0.28235295, 0.28235295, 1)

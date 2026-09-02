@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="LandmarkData" format=3]
+
+[ext_resource type="Script" path="res://schema/landmark_data.gd" id="1_oln8m"]
+
+[resource]
+script = ExtResource("1_oln8m")
+id = &"narzan"
+display_name = "LANDMARK_NARZAN_NAME"
+description = "LANDMARK_NARZAN_DESC"
+position = Vector2(-32, -15)

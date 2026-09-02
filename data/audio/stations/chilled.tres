@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="RadioStationData" format=3]
+
+[ext_resource type="Script" path="res://schema/radio_station_data.gd" id="1_6ppgv"]
+
+[resource]
+script = ExtResource("1_6ppgv")
+id = &"chilled"
+display_name = "RADIO_CHILLED_NAME"
+genre = "RADIO_CHILLED_GENRE"
+frequency = "94.3 FM"
+bpm = 72.0
+color = Color(0.41568628, 0.5411765, 0.6901961, 1)
+root_hz = 65.41
+fifth_hz = 98.0
+scale_steps = PackedInt32Array(0, 2, 4, 7, 9)
+instruments = PackedStringArray("hat", "bass", "pad")
+drum_density = 0.2
+texture = 0.4

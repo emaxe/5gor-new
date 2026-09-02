@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="CarShapeData" format=3]
+
+[ext_resource type="Script" path="res://schema/car_shape_data.gd" id="1_mmipa"]
+
+[resource]
+script = ExtResource("1_mmipa")
+silhouette = &"premium"
+width = 1.95
+length = 4.6

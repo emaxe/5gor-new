@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="QuoteBank" format=3]
+
+[ext_resource type="Script" path="res://schema/quote_bank.gd" id="1_5ixkf"]
+
+[resource]
+script = ExtResource("1_5ixkf")
+id = &"driver_ped_reply_jwalk"
+lines = PackedStringArray("QUOTE_DRIVER_PED_REPLY_JWALK_01", "QUOTE_DRIVER_PED_REPLY_JWALK_02", "QUOTE_DRIVER_PED_REPLY_JWALK_03", "QUOTE_DRIVER_PED_REPLY_JWALK_04", "QUOTE_DRIVER_PED_REPLY_JWALK_05", "QUOTE_DRIVER_PED_REPLY_JWALK_06", "QUOTE_DRIVER_PED_REPLY_JWALK_07")

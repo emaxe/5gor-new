@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="TrafficTypeData" format=3]
+
+[ext_resource type="Script" path="res://schema/traffic_type_data.gd" id="1_8wme4"]
+
+[resource]
+script = ExtResource("1_8wme4")
+id = &"zhiguli"
+silhouette = &"retro"
+radius = 1.9
+length = 4.1
+width = 1.75
+weight = 9.0
+colors = PackedColorArray(0.84705883, 0.7529412, 0.53333336, 1, 0.41568628, 0.2901961, 0.41568628, 1, 0.65882355, 0.78431374, 0.84705883, 1, 0.7529412, 0.1882353, 0.1882353, 1, 0.9098039, 0.89411765, 0.8156863, 1)

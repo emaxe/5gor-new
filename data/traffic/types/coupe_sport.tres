@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TrafficTypeData" format=3]
+
+[ext_resource type="Script" path="res://schema/traffic_type_data.gd" id="1_bjfcp"]
+
+[resource]
+script = ExtResource("1_bjfcp")
+id = &"coupe_sport"
+silhouette = &"coupe"
+radius = 1.95
+length = 4.35
+width = 1.92
+weight = 3.0
+colors = PackedColorArray(0.9098039, 0.7529412, 0, 1, 0.078431375, 0.078431375, 0.078431375, 1, 0.9411765, 0.9411765, 0.9411765, 1, 0.7529412, 0.1254902, 0.1882353, 1)
+body_kit = &"sport"

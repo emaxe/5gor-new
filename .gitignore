@@ -1,0 +1,21 @@
+# Godot
+.godot/
+/android/
+export_presets.cfg
+*.translation
+
+# Экспортированные сборки
+/build/
+/export/
+
+# Кэш инструментов агентов
+.gdskills/
+
+# Дампы данных из JS-оригинала (генерируются tools/dump_data.mjs)
+/tools/dump/
+
+# macOS
+.DS_Store
+
+# Отчёты gdUnit4
+/reports/

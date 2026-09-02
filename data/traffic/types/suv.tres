@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="TrafficTypeData" format=3]
+
+[ext_resource type="Script" path="res://schema/traffic_type_data.gd" id="1_revrs"]
+
+[resource]
+script = ExtResource("1_revrs")
+id = &"suv"
+silhouette = &"suv"
+radius = 2.3
+length = 4.8
+width = 2.0
+weight = 10.0
+colors = PackedColorArray(0.22745098, 0.2901961, 0.22745098, 1, 0.3137255, 0.34509805, 0.3764706, 1, 0.5411765, 0.4392157, 0.3137255, 1, 0.16470589, 0.16470589, 0.16470589, 1)

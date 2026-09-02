@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_q6rj3"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_vurhc"]
+
+[sub_resource type="Resource" id="Resource_mcmjl"]
+script = ExtResource("1_q6rj3")
+stat = &"night_orders"
+value = 10.0
+
+[resource]
+script = ExtResource("2_vurhc")
+id = &"night_owl"
+display_name = "ACH_NIGHT_OWL_NAME"
+description = "ACH_NIGHT_OWL_DESC"
+toast = "ACH_NIGHT_OWL_TOAST"
+icon = &"night_owl"
+requirements = Array[ExtResource("1_q6rj3")]([SubResource("Resource_mcmjl")])
+track_stat = &"night_orders"
+track_target = 10.0

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="LandmarkData" format=3]
+
+[ext_resource type="Script" path="res://schema/landmark_data.gd" id="1_w0qqt"]
+
+[resource]
+script = ExtResource("1_w0qqt")
+id = &"gazebo"
+display_name = "LANDMARK_GAZEBO_NAME"
+description = "LANDMARK_GAZEBO_DESC"
+position = Vector2(12, -350)

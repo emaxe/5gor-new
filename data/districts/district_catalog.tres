@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="DistrictCatalog" format=3]
+
+[ext_resource type="Script" path="res://schema/district_data.gd" id="1_hofqn"]
+[ext_resource type="Resource" path="res://data/districts/center.tres" id="2_ka5ug"]
+[ext_resource type="Resource" path="res://data/districts/kurort.tres" id="3_hoj3l"]
+[ext_resource type="Resource" path="res://data/districts/prigorod.tres" id="4_6iglb"]
+[ext_resource type="Resource" path="res://data/districts/proval.tres" id="5_0mno4"]
+[ext_resource type="Resource" path="res://data/districts/rynok.tres" id="6_rtp4v"]
+[ext_resource type="Resource" path="res://data/districts/sanatorii.tres" id="7_er5tk"]
+[ext_resource type="Resource" path="res://data/districts/mashuk.tres" id="8_5buyc"]
+[ext_resource type="Resource" path="res://data/districts/vokzal.tres" id="9_oihff"]
+[ext_resource type="Script" path="res://schema/landmark_data.gd" id="10_vkko1"]
+[ext_resource type="Resource" path="res://data/landmarks/proval.tres" id="11_6lwmm"]
+[ext_resource type="Resource" path="res://data/landmarks/cvetnik.tres" id="12_fwx6j"]
+[ext_resource type="Resource" path="res://data/landmarks/grot.tres" id="13_xq7rw"]
+[ext_resource type="Resource" path="res://data/landmarks/narzan.tres" id="14_gyyum"]
+[ext_resource type="Resource" path="res://data/landmarks/rynok.tres" id="15_reh8y"]
+[ext_resource type="Resource" path="res://data/landmarks/vokzal.tres" id="16_ygobs"]
+[ext_resource type="Resource" path="res://data/landmarks/cable.tres" id="17_wquw8"]
+[ext_resource type="Resource" path="res://data/landmarks/gazebo.tres" id="18_gw2fg"]
+[ext_resource type="Resource" path="res://data/landmarks/tower.tres" id="19_mmk3f"]
+[ext_resource type="Script" path="res://schema/catalog/district_catalog.gd" id="20_3bhwt"]
+
+[resource]
+script = ExtResource("20_3bhwt")
+items = Array[ExtResource("1_hofqn")]([ExtResource("2_ka5ug"), ExtResource("3_hoj3l"), ExtResource("4_6iglb"), ExtResource("5_0mno4"), ExtResource("6_rtp4v"), ExtResource("7_er5tk"), ExtResource("8_5buyc"), ExtResource("9_oihff")])
+landmarks = Array[ExtResource("10_vkko1")]([ExtResource("11_6lwmm"), ExtResource("12_fwx6j"), ExtResource("13_xq7rw"), ExtResource("14_gyyum"), ExtResource("15_reh8y"), ExtResource("16_ygobs"), ExtResource("17_wquw8"), ExtResource("18_gw2fg"), ExtResource("19_mmk3f")])
+fuel_stations = PackedVector2Array(0, 128, -192, -64, 128, -192, 64, 192)

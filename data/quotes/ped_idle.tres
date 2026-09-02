@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="QuoteBank" format=3]
+
+[ext_resource type="Script" path="res://schema/quote_bank.gd" id="1_316ae"]
+
+[resource]
+script = ExtResource("1_316ae")
+id = &"ped_idle"
+lines = PackedStringArray("QUOTE_PED_IDLE_01", "QUOTE_PED_IDLE_02", "QUOTE_PED_IDLE_03", "QUOTE_PED_IDLE_04", "QUOTE_PED_IDLE_05", "QUOTE_PED_IDLE_06", "QUOTE_PED_IDLE_07", "QUOTE_PED_IDLE_08", "QUOTE_PED_IDLE_09", "QUOTE_PED_IDLE_10", "QUOTE_PED_IDLE_11", "QUOTE_PED_IDLE_12", "QUOTE_PED_IDLE_13", "QUOTE_PED_IDLE_14", "QUOTE_PED_IDLE_15", "QUOTE_PED_IDLE_16", "QUOTE_PED_IDLE_17", "QUOTE_PED_IDLE_18", "QUOTE_PED_IDLE_19", "QUOTE_PED_IDLE_20", "QUOTE_PED_IDLE_21", "QUOTE_PED_IDLE_22", "QUOTE_PED_IDLE_23", "QUOTE_PED_IDLE_24", "QUOTE_PED_IDLE_25", "QUOTE_PED_IDLE_26", "QUOTE_PED_IDLE_27", "QUOTE_PED_IDLE_28", "QUOTE_PED_IDLE_29")

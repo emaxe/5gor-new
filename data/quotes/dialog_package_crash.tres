@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="QuoteBank" format=3]
+
+[ext_resource type="Script" path="res://schema/quote_bank.gd" id="1_ynsws"]
+
+[resource]
+script = ExtResource("1_ynsws")
+id = &"dialog_package_crash"
+lines = PackedStringArray("QUOTE_DIALOG_PACKAGE_CRASH_01", "QUOTE_DIALOG_PACKAGE_CRASH_02", "QUOTE_DIALOG_PACKAGE_CRASH_03", "QUOTE_DIALOG_PACKAGE_CRASH_04", "QUOTE_DIALOG_PACKAGE_CRASH_05", "QUOTE_DIALOG_PACKAGE_CRASH_06", "QUOTE_DIALOG_PACKAGE_CRASH_07")

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="GfxPreset" format=3]
+
+[ext_resource type="Script" path="res://schema/gfx_preset.gd" id="1_qpn82"]
+
+[resource]
+script = ExtResource("1_qpn82")
+id = &"high"
+display_name = "GFX_PRESET_HIGH"
+shadows = &"high"
+shadow_atlas = 4096
+shadow_splits = 4
+shadow_max_distance = 150.0
+pixel_budget = 3200000
+msaa = 1
+draw_distance = 1400.0
+ssao = true
+volumetric_fog = true
+light_pool_size = 40

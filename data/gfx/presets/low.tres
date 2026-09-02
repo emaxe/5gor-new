@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="GfxPreset" format=3]
+
+[ext_resource type="Script" path="res://schema/gfx_preset.gd" id="1_cd8ic"]
+
+[resource]
+script = ExtResource("1_cd8ic")
+id = &"low"
+display_name = "GFX_PRESET_LOW"
+shadows = &"off"
+shadow_splits = 1
+shadow_max_distance = 60.0
+pixel_budget = 1600000
+draw_distance = 600.0
+traffic_density = 0.35
+ped_density = 0.3
+rain = false
+hero_outline = false
+light_pool_size = 12

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://world/landmarks/eagle.gd" id="1_eagle"]
+
+[node name="Eagle" type="Node3D"]
+script = ExtResource("1_eagle")

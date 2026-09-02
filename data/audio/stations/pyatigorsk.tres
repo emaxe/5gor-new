@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="RadioStationData" format=3]
+
+[ext_resource type="Script" path="res://schema/radio_station_data.gd" id="1_2r2b3"]
+
+[resource]
+script = ExtResource("1_2r2b3")
+id = &"pyatigorsk"
+display_name = "RADIO_PYATIGORSK_NAME"
+genre = "RADIO_PYATIGORSK_GENRE"
+frequency = "98.4 FM"
+bpm = 84.0
+color = Color(0.5411765, 0.7058824, 0.84705883, 1)
+scale_steps = PackedInt32Array(0, 3, 5, 7, 10)
+instruments = PackedStringArray("kick", "hat", "bass", "pad", "lead")
+drum_density = 0.45
+texture = 0.7

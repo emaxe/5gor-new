@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="RadioStationData" format=3]
+
+[ext_resource type="Script" path="res://schema/radio_station_data.gd" id="1_bethp"]
+
+[resource]
+script = ExtResource("1_bethp")
+id = &"chanson"
+display_name = "RADIO_CHANSON_NAME"
+genre = "RADIO_CHANSON_GENRE"
+frequency = "105.5 FM"
+bpm = 104.0
+color = Color(0.7529412, 0.627451, 0.3764706, 1)
+scale_steps = PackedInt32Array(0, 2, 3, 5, 7, 8, 10)
+instruments = PackedStringArray("kick", "bass", "lead", "pad")
+drum_density = 0.35

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" path="res://schema/upgrade_data.gd" id="1_fv5mj"]
+
+[resource]
+script = ExtResource("1_fv5mj")
+id = &"capacity"
+display_name = "UPGRADE_CAPACITY_NAME"
+description = "UPGRADE_CAPACITY_DESC"
+icon = &"capacity"
+max_level = 3
+base_cost = 900
+cost_mult = 1.8
+capacity_per_level = 1

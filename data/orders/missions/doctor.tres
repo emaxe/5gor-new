@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MissionData" format=3]
+
+[ext_resource type="Script" path="res://schema/mission_data.gd" id="1_5b21s"]
+
+[resource]
+script = ExtResource("1_5b21s")
+id = &"doctor"
+title = "MISSION_DOCTOR_TITLE"
+description = "MISSION_DOCTOR_DESC"
+icon = "+"
+color = Color(0.8509804, 0.2509804, 0.2509804, 1)
+required_rating = 25
+pay = 1200
+time_limit = 100.0
+pickup_district = &"vokzal"
+drops = PackedVector2Array(140, -80)
+drop_names = PackedStringArray("MISSION_DOCTOR_DROP_1")

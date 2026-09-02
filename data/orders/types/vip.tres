@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="OrderTypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/dialog_crash.tres" id="1_fnunl"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_vip_dropoff.tres" id="2_pwy7y"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_vip_pickup.tres" id="3_4fnfk"]
+[ext_resource type="Script" path="res://schema/order_type_data.gd" id="4_8vvpy"]
+
+[resource]
+script = ExtResource("4_8vvpy")
+id = &"vip"
+display_name = "ORDER_VIP_NAME"
+description = "ORDER_VIP_DESC"
+icon = "V"
+color = Color(0.83137256, 0.6862745, 0.21568628, 1)
+pay_mult = 1.5
+rating_reward = 7
+day_weight = 0.12
+night_weight = 0.12
+leaves_on_crash = true
+tip_mult = 1.5
+quotes_pickup = ExtResource("3_4fnfk")
+quotes_dropoff = ExtResource("2_pwy7y")
+quotes_crash = ExtResource("1_fnunl")

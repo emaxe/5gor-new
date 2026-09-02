@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="QuoteBank" format=3]
+
+[ext_resource type="Script" path="res://schema/quote_bank.gd" id="1_oxtxe"]
+
+[resource]
+script = ExtResource("1_oxtxe")
+id = &"dialog_urgent_pickup"
+lines = PackedStringArray("QUOTE_DIALOG_URGENT_PICKUP_01", "QUOTE_DIALOG_URGENT_PICKUP_02", "QUOTE_DIALOG_URGENT_PICKUP_03", "QUOTE_DIALOG_URGENT_PICKUP_04", "QUOTE_DIALOG_URGENT_PICKUP_05", "QUOTE_DIALOG_URGENT_PICKUP_06", "QUOTE_DIALOG_URGENT_PICKUP_07", "QUOTE_DIALOG_URGENT_PICKUP_08", "QUOTE_DIALOG_URGENT_PICKUP_09", "QUOTE_DIALOG_URGENT_PICKUP_10")

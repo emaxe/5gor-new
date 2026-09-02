@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MissionData" format=3]
+
+[ext_resource type="Script" path="res://schema/mission_data.gd" id="1_jjnad"]
+
+[resource]
+script = ExtResource("1_jjnad")
+id = &"night"
+title = "MISSION_NIGHT_TITLE"
+description = "MISSION_NIGHT_DESC"
+icon = "М"
+color = Color(0.41568628, 0.41568628, 0.78431374, 1)
+required_rating = 60
+pay = 1900
+time_limit = 130.0
+pickup_district = &"prigorod"
+drops = PackedVector2Array(0, -448)
+drop_names = PackedStringArray("MISSION_NIGHT_DROP_1")

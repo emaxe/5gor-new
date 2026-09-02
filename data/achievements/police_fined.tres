@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_1r577"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_ynxw6"]
+
+[sub_resource type="Resource" id="Resource_yfews"]
+script = ExtResource("1_1r577")
+stat = &"police_fines"
+value = 5.0
+
+[resource]
+script = ExtResource("2_ynxw6")
+id = &"police_fined"
+display_name = "ACH_POLICE_FINED_NAME"
+description = "ACH_POLICE_FINED_DESC"
+toast = "ACH_POLICE_FINED_TOAST"
+icon = &"police_fined"
+requirements = Array[ExtResource("1_1r577")]([SubResource("Resource_yfews")])
+track_stat = &"police_fines"
+track_target = 5.0

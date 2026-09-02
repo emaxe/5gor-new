@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_s83cm"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_uv5bg"]
+
+[sub_resource type="Resource" id="Resource_8ptq1"]
+script = ExtResource("1_s83cm")
+stat = &"total_drifts"
+value = 200.0
+
+[resource]
+script = ExtResource("2_uv5bg")
+id = &"drift_200"
+display_name = "ACH_DRIFT_200_NAME"
+description = "ACH_DRIFT_200_DESC"
+toast = "ACH_DRIFT_200_TOAST"
+icon = &"drift_200"
+requirements = Array[ExtResource("1_s83cm")]([SubResource("Resource_8ptq1")])
+track_stat = &"total_drifts"
+track_target = 200.0

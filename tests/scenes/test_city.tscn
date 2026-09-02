@@ -1,0 +1,36 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://tests/scenes/test_city.gd" id="1_city"]
+[ext_resource type="PackedScene" path="res://world/sky/sky_rig.tscn" id="2_sky"]
+[ext_resource type="Shader" path="res://fx/shaders/screen_post.gdshader" id="3_post"]
+
+[sub_resource type="ShaderMaterial" id="Post_1"]
+shader = ExtResource("3_post")
+shader_parameter/vignette_strength = 0.32
+shader_parameter/vignette_color = Color(0.02, 0.03, 0.05, 1)
+shader_parameter/damage_flash = 0.0
+shader_parameter/aberration = 0.0
+shader_parameter/posterize_levels = 0.0
+shader_parameter/saturation = 1.0
+
+[node name="TestCity" type="Node3D"]
+script = ExtResource("1_city")
+
+[node name="SkyRig" parent="." instance=ExtResource("2_sky")]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+fov = 62.0
+near = 0.5
+far = 1400.0
+
+[node name="PostLayer" type="CanvasLayer" parent="."]
+layer = 100
+
+[node name="Post" type="ColorRect" parent="PostLayer"]
+material = SubResource("Post_1")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

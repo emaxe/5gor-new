@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="TrafficTypeData" format=3]
+
+[ext_resource type="Script" path="res://schema/traffic_type_data.gd" id="1_a18q4"]
+
+[resource]
+script = ExtResource("1_a18q4")
+id = &"hatch"
+silhouette = &"hatch"
+radius = 1.9
+length = 4.0
+width = 1.85
+weight = 12.0
+colors = PackedColorArray(0.8156863, 0.8156863, 0.8156863, 1, 0.22745098, 0.3529412, 0.627451, 1, 0.7529412, 0.1882353, 0.1882353, 1, 0.16470589, 0.16470589, 0.16470589, 1, 0.8784314, 0.7529412, 0.2509804, 1)

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" path="res://schema/upgrade_data.gd" id="1_ortcl"]
+
+[resource]
+script = ExtResource("1_ortcl")
+id = &"engine"
+display_name = "UPGRADE_ENGINE_NAME"
+description = "UPGRADE_ENGINE_DESC"
+icon = &"engine"
+max_speed_per_level = 3.2
+accel_per_level = 1.6

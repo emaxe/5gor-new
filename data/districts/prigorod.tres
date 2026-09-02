@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="DistrictData" format=3]
+
+[ext_resource type="Resource" path="res://data/districts/palettes/prigorod.tres" id="1_6vusf"]
+[ext_resource type="Script" path="res://schema/district_data.gd" id="2_qsgna"]
+
+[resource]
+script = ExtResource("2_qsgna")
+id = &"prigorod"
+display_name = "DISTRICT_PRIGOROD_NAME"
+weight = 16.0
+palette = ExtResource("1_6vusf")
+height_max = 17.0
+map_color = Color(0.49019608, 0.5411765, 0.6, 1)
+demand_morning = 1.4
+demand_evening = 0.9
+demand_night = 0.8

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="LandmarkData" format=3]
+
+[ext_resource type="Script" path="res://schema/landmark_data.gd" id="1_e0kru"]
+
+[resource]
+script = ExtResource("1_e0kru")
+id = &"tower"
+display_name = "LANDMARK_TOWER_NAME"
+description = "LANDMARK_TOWER_DESC"
+position = Vector2(0, -448)

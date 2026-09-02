@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CarData" format=3]
+
+[ext_resource type="Script" path="res://schema/car_data.gd" id="1_nda51"]
+[ext_resource type="Resource" path="res://data/cars/shapes/classic.tres" id="2_bvje8"]
+
+[resource]
+script = ExtResource("1_nda51")
+id = &"classic"
+display_name = "CAR_CLASSIC_NAME"
+description = "CAR_CLASSIC_DESC"
+price = 3500
+unlock_rating = 10
+max_speed = 32.0
+accel = 11.0
+brake = 22.0
+grip = 0.9
+armor = 0.85
+tank = 85.0
+steer = 2.0
+shape = ExtResource("2_bvje8")
+body_color = Color(0.7529412, 0.22352941, 0.16862746, 1)

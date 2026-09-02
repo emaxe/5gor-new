@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="WeatherData" format=3]
+
+[ext_resource type="Script" path="res://schema/weather_data.gd" id="1_578hg"]
+
+[resource]
+script = ExtResource("1_578hg")
+id = &"clear"
+display_name = "WEATHER_CLEAR_NAME"
+icon = &"sun"
+spawn_weight = 55.0

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" path="res://schema/upgrade_data.gd" id="1_04t6s"]
+
+[resource]
+script = ExtResource("1_04t6s")
+id = &"suspension"
+display_name = "UPGRADE_SUSPENSION_NAME"
+description = "UPGRADE_SUSPENSION_DESC"
+icon = &"suspension"
+base_cost = 500
+grip_per_level = 0.05
+steer_per_level = 0.18

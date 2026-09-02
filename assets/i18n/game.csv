@@ -1,0 +1,1018 @@
+keys,ru
+ACH_BRAWLER_DESC,Нападите на 50 прохожих за все время
+ACH_BRAWLER_NAME,Дерущийся таксист
+ACH_BRAWLER_TOAST,Гроза пешеходов проспекта Кирова
+ACH_CLEAN_SHIFT_DESC,Смена без аварий и сбитых пешеходов
+ACH_CLEAN_SHIFT_NAME,Идеальная смена
+ACH_CLEAN_SHIFT_TOAST,Ни единой царапинки за всю смену
+ACH_DRIFT_200_DESC,Совершите 200 заносов за все время
+ACH_DRIFT_200_NAME,Дрифт-легенда
+ACH_DRIFT_200_TOAST,"Резина плавится, рейтинг растёт"
+ACH_DRIFT_50_DESC,Совершите 50 заносов за все время
+ACH_DRIFT_50_NAME,Король заносов
+ACH_DRIFT_50_TOAST,Пятигорский серпантин — твоя трасса
+ACH_EARN_100K_DESC,Заработайте 100 000 ₽ за все время
+ACH_EARN_100K_NAME,Магнат такси
+ACH_EARN_100K_TOAST,Настоящий магнат такси на КМВ
+ACH_EARN_10K_DESC,Заработайте 10 000 ₽ за все время
+ACH_EARN_10K_NAME,Первая тыща
+ACH_EARN_10K_TOAST,Десятка в кармане — на шашлык хватит
+ACH_EARN_50K_DESC,Заработайте 50 000 ₽ за все время
+ACH_EARN_50K_NAME,Состоятельный водитель
+ACH_EARN_50K_TOAST,Кошелёк трещит от курортных купюр
+ACH_ESCAPE_10_DESC,Скройтесь от полиции 10 раз
+ACH_ESCAPE_10_NAME,Король побега
+ACH_ESCAPE_10_TOAST,Десять раз — и ни одной решётки
+ACH_ESCAPE_1_DESC,Скройтесь от полиции 1 раз
+ACH_ESCAPE_1_NAME,Лихой прохвост
+ACH_ESCAPE_1_TOAST,От полиции ушёл — значит не пойман
+ACH_ESCAPE_3_DESC,Скройтесь от полиции на 3+ уровне розыска
+ACH_ESCAPE_3_NAME,Неуловимый
+ACH_ESCAPE_3_TOAST,Ушёл от хвоста на трёх звёздах!
+ACH_ESCAPE_5_DESC,Скройтесь от полиции на максимальном 5-м уровне розыска
+ACH_ESCAPE_5_NAME,Легенда побега
+ACH_ESCAPE_5_TOAST,Пять звёзд позади — абсолютный уход!
+ACH_FIRST_ORDER_DESC,Выполните первый заказ
+ACH_FIRST_ORDER_NAME,Первый заработок
+ACH_FIRST_ORDER_TOAST,Первая копейка — и та в кассу
+ACH_HOT_HEAD_DESC,Нападите на 10 прохожих за смену
+ACH_HOT_HEAD_NAME,Горячая голова
+ACH_HOT_HEAD_TOAST,Кулаки — вторая профессия таксиста
+ACH_KM_500_DESC,Проедьте 500 км за все время
+ACH_KM_500_NAME,Путешественник
+ACH_KM_500_TOAST,Пятьсот километров по серпантинам
+ACH_MAX_RATING_DESC,Достигните максимального рейтинга
+ACH_MAX_RATING_NAME,Звезда Пятигорска
+ACH_MAX_RATING_TOAST,Пятигорск ваш! Что дальше — Машук
+ACH_MAX_SPEED_DESC,Разгонитесь до 150 км/ч
+ACH_MAX_SPEED_NAME,Шумахер
+ACH_MAX_SPEED_TOAST,Шумахер нервно курит на обочине
+ACH_MISSIONS_5_DESC,Выполните 5 уникальных миссий
+ACH_MISSIONS_5_NAME,Герой города
+ACH_MISSIONS_5_TOAST,Пять особых поручений выполнены
+ACH_NEAR_MISS_200_DESC,Совершите 200 опасных сближений
+ACH_NEAR_MISS_200_NAME,Призрак дорог
+ACH_NEAR_MISS_200_TOAST,Ты невидимка на пятигорских трассах
+ACH_NEAR_MISS_50_DESC,Совершите 50 опасных сближений
+ACH_NEAR_MISS_50_NAME,Скользкий тип
+ACH_NEAR_MISS_50_TOAST,Прошёл в миллиметре — и не поцарапал
+ACH_NIGHT_OWL_DESC,Выполните 10 ночных заказов
+ACH_NIGHT_OWL_NAME,Ночная сова
+ACH_NIGHT_OWL_TOAST,Ночной хозяин спящего курорта
+ACH_ORDERS_100_DESC,Выполните 100 заказов
+ACH_ORDERS_100_NAME,Ветеран дорог
+ACH_ORDERS_100_TOAST,Сотня за плечами — асфальт дрожит
+ACH_ORDERS_250_DESC,Выполните 250 заказов
+ACH_ORDERS_250_NAME,Легенда Пятигорска
+ACH_ORDERS_250_TOAST,Живая легенда пятигорских дорог
+ACH_ORDERS_50_DESC,Выполните 50 заказов
+ACH_ORDERS_50_NAME,Опытный таксист
+ACH_ORDERS_50_TOAST,"Полсотни клиентов, ни одного провала"
+ACH_PERFECT_STOP_100_DESC,Совершите 100 идеальных остановок
+ACH_PERFECT_STOP_100_NAME,Джентльмен дорог
+ACH_PERFECT_STOP_100_TOAST,Плавнее не бывает — чаевые сами в карман
+ACH_PERFECT_STOP_30_DESC,Совершите 30 идеальных остановок
+ACH_PERFECT_STOP_30_NAME,Мастер торможения
+ACH_PERFECT_STOP_30_TOAST,"Пассажир и не заметил, что мы ехали"
+ACH_POLICE_FINED_DESC,Получите 5 штрафов от полиции
+ACH_POLICE_FINED_NAME,Враг народа
+ACH_POLICE_FINED_TOAST,"С ГИБДД лучше дружить, а не дружиться"
+ACH_STREAK_10_DESC,Достигните серии из 10 сближений подряд
+ACH_STREAK_10_NAME,Невидимка трасс
+ACH_STREAK_10_TOAST,Десять призрачных проходов подряд
+ACH_STREAK_5_DESC,Достигните серии из 5 сближений подряд
+ACH_STREAK_5_NAME,Серийный сближатель
+ACH_STREAK_5_TOAST,Пять раз в миллиметре — и ни царапины
+ACH_TIPS_5K_DESC,Заработайте 5 000 ₽ чаевых
+ACH_TIPS_5K_NAME,Любимец клиентов
+ACH_TIPS_5K_TOAST,Курортники не скупятся на чай
+CAR_BUSINESS_DESC,Чёрный премиум-седан для VIP-клиентов и быстрой езды
+CAR_BUSINESS_NAME,«Бизнес»
+CAR_CLASSIC_DESC,Отечественная классика с душой Пятигорска. Проста и душевна!
+CAR_CLASSIC_NAME,«Классика» (2107)
+CAR_COMFORT_DESC,Удобный и резвый седан повышенной комфортности
+CAR_COMFORT_NAME,«Комфорт»
+CAR_MINIVAN_DESC,"Вместительный бусик для групп, экскурсий и семейных вылазок"
+CAR_MINIVAN_NAME,«Микроавтобус»
+CAR_OFFROAD_DESC,Мощный внедорожник — не боится бездорожья и любых пассажиров
+CAR_OFFROAD_NAME,«Внедорожник»
+CAR_SPORT_DESC,Быстрое двухдверное купе для лихой езды по серпантину
+CAR_SPORT_NAME,«Спорт-купе»
+CAR_TAXI_DESC,Надежный жёлтый седан для повседневных поездок
+CAR_TAXI_NAME,«Пятёрочка»
+DISTRICT_CENTER_NAME,Центр
+DISTRICT_KURORT_NAME,Курортный
+DISTRICT_MASHUK_NAME,Машук
+DISTRICT_PRIGOROD_NAME,Привокзальный
+DISTRICT_PROVAL_NAME,Провал
+DISTRICT_RYNOK_NAME,Рынок «Лира»
+DISTRICT_SANATORII_NAME,Санатории
+DISTRICT_VOKZAL_NAME,Вокзал
+GFX_PRESET_HIGH,Высокое
+GFX_PRESET_LOW,Низкое
+GFX_PRESET_MEDIUM,Среднее
+LANDMARK_CABLE_DESC,Подъёмник на Машук
+LANDMARK_CABLE_NAME,Канатная дорога
+LANDMARK_CVETNIK_DESC,Парк с фонтаном и гротом
+LANDMARK_CVETNIK_NAME,Цветник
+LANDMARK_GAZEBO_DESC,Беседка на склоне Машука
+LANDMARK_GAZEBO_NAME,Эолова арфа
+LANDMARK_GROT_DESC,Каменный грот в парке
+LANDMARK_GROT_NAME,Грот Лермонтова
+LANDMARK_NARZAN_DESC,Купол галереи с нарзаном
+LANDMARK_NARZAN_NAME,Нарзанные ванны
+LANDMARK_PROVAL_DESC,Голубое озеро в кратере
+LANDMARK_PROVAL_NAME,Озеро Провал
+LANDMARK_RYNOK_DESC,Главный рынок города
+LANDMARK_RYNOK_NAME,Рынок «Лира»
+LANDMARK_TOWER_DESC,Вершина Машука
+LANDMARK_TOWER_NAME,Смотровая башня
+LANDMARK_VOKZAL_DESC,Вокзал с часами на башне
+LANDMARK_VOKZAL_NAME,Ж/д вокзал
+MISSION_DOCTOR_DESC,Доктор Соколова опаздывает на обход. Домчите до санатория!
+MISSION_DOCTOR_DROP_1,Санаторий «Лесной»
+MISSION_DOCTOR_TITLE,Врач в санаторий
+MISSION_GRANDMA_DESC,Бабушка Зинаида просит отвезти её на рынок «Лира». Она щедрая!
+MISSION_GRANDMA_DROP_1,Рынок «Лира»
+MISSION_GRANDMA_TITLE,Бабушка на рынок
+MISSION_NIGHT_DESC,Клиент хочет встретить рассвет на Машуке. Ночью платят вдвойне!
+MISSION_NIGHT_DROP_1,Смотровая башня
+MISSION_NIGHT_TITLE,Ночной рейс на Машук
+MISSION_RACE_DESC,Конкурент вызвался наперегонки до вокзала. Успеешь — премия!
+MISSION_RACE_DROP_1,Ж/д вокзал
+MISSION_RACE_TITLE,Гонка с бомбилой
+MISSION_TOUR_DESC,"Туристы хотят увидеть Провал, Эолову арфу и смотровую башню."
+MISSION_TOUR_DROP_1,Озеро Провал
+MISSION_TOUR_DROP_2,Эолова арфа
+MISSION_TOUR_DROP_3,Смотровая башня
+MISSION_TOUR_TITLE,Экскурсия по Пятигорску
+MOOD_0_LABEL,В ярости
+MOOD_1_LABEL,Нервничает
+MOOD_2_LABEL,Нормально
+MOOD_3_LABEL,Доволен
+MOOD_4_LABEL,В восторге
+NAME_PASSENGER_01,Арсен
+NAME_PASSENGER_02,Магомед
+NAME_PASSENGER_03,Заур
+NAME_PASSENGER_04,Зинаида Степановна
+NAME_PASSENGER_05,Асхат
+NAME_PASSENGER_06,Алёна
+NAME_PASSENGER_07,Давид
+NAME_PASSENGER_08,София
+NAME_PASSENGER_09,Мурат
+NAME_PASSENGER_10,Доктор Соколова
+NAME_PASSENGER_11,Карен
+NAME_PASSENGER_12,Тамара
+NAME_PASSENGER_13,Ислам
+NAME_PASSENGER_14,Виктория
+NAME_PASSENGER_15,Артур
+NAME_PASSENGER_16,Ольга
+NAME_PASSENGER_17,Шамиль
+NAME_PASSENGER_18,Сергей
+NAME_PASSENGER_19,Батыр
+NAME_PASSENGER_20,Руслан
+NAME_PASSENGER_21,Аида
+NAME_PASSENGER_22,Таймураз
+NAME_PASSENGER_23,Светлана Павловна
+NAME_PASSENGER_24,Гагик
+NAME_PASSENGER_25,Анжела
+NAME_PASSENGER_26,Валерий Семёнович
+NAME_PASSENGER_27,Аслан
+NAME_PASSENGER_28,Марина
+NAME_PASSENGER_29,Георгий
+NAME_PASSENGER_30,Эльвира
+NAME_PASSENGER_31,Амиран
+NAME_PASSENGER_32,Ярослав
+ORDER_DRUNK_DESC,Может передумать по пути...
+ORDER_DRUNK_NAME,Весёлый пассажир
+ORDER_GROUP_DESC,Несколько остановок
+ORDER_GROUP_NAME,Коллективная
+ORDER_NORMAL_DESC,Обычная поездка по городу
+ORDER_NORMAL_NAME,Обычная поездка
+ORDER_PACKAGE_DESC,Хрупкий груз — без резких движений
+ORDER_PACKAGE_NAME,Посылка
+ORDER_RACE_DESC,Обгони конкурента у вокзала!
+ORDER_RACE_NAME,Гонка с таксистом
+ORDER_TOUR_DESC,Покажите клиенту достопримечательности
+ORDER_TOUR_NAME,Экскурсия
+ORDER_URGENT_DESC,Срочно! Пассажир торопится
+ORDER_URGENT_NAME,Срочный заказ
+ORDER_VIP_DESC,"Аккуратная езда, без аварий"
+ORDER_VIP_NAME,VIP-клиент
+QUOTE_DAYNOTE_CRASHES_01,"Ох, стойку пробило... Завтра надо водить аккуратнее."
+QUOTE_DAYNOTE_CRASHES_02,"Бампер помят, подвеска гремит... Завтра на СТО первым делом."
+QUOTE_DAYNOTE_CRASHES_03,"Ну и денёк, сплошные ямы да столбы... Машину жалко."
+QUOTE_DAYNOTE_CRASHES_04,Слишком много аварий за смену... Надо успокоиться и беречь Ладу.
+QUOTE_DAYNOTE_GENERAL_01,"Смена закончена. Пора на отдых, завтра снова в путь."
+QUOTE_DAYNOTE_GENERAL_02,Неплохой рабочий день. Пятигорск никогда не спит.
+QUOTE_DAYNOTE_GENERAL_03,Город затихает. Пора и мне заглушить мотор.
+QUOTE_DAYNOTE_GOOD_01,День удался! Пятигорск знает своего водителя!
+QUOTE_DAYNOTE_GOOD_02,"Отличная смена! И карман полон, и машина цела."
+QUOTE_DAYNOTE_GOOD_03,"Вот это продуктивный день! Весь город объездил, клиенты довольны."
+QUOTE_DAYNOTE_GOOD_04,"Шикарная смена! Нарзанная галерея, Провал, вокзал — везде успел!"
+QUOTE_DAYNOTE_GOOD_05,"Заработал от души. Машина не подвела, город благодарит!"
+QUOTE_DAYNOTE_LOW_EARNED_01,Копейка к копейке... Завтра наверстаю.
+QUOTE_DAYNOTE_LOW_EARNED_02,"Слабая смена вышла... Ничего, завтра с утра на вокзале встану."
+QUOTE_DAYNOTE_LOW_EARNED_03,Заказов маловато... Зато бензин сэкономил.
+QUOTE_DAYNOTE_LOW_EARNED_04,Не густо сегодня. Завтра пораньше выеду на линию.
+QUOTE_DIALOG_CRASH_01,"Ой-бай! Шеф, ты права в лотерею выиграл?!"
+QUOTE_DIALOG_CRASH_02,"Аккуратнее, дорогой! Печень к капоту прилипла!"
+QUOTE_DIALOG_CRASH_03,"Ээ, брат, тормоза проверь!"
+QUOTE_DIALOG_CRASH_04,"Осторожнее, мы же не в аттракционе!"
+QUOTE_DIALOG_CRASH_05,Мама мия! Капот подмяли! Ты куда смотришь?!
+QUOTE_DIALOG_CRASH_06,"Вай, дорогой! Ты столб с деревом перепутал?!"
+QUOTE_DIALOG_CRASH_07,Твою ж... У меня чуть челюсть не отвалилась от такого удара!
+QUOTE_DIALOG_CRASH_08,"Э, шеф, ты на капот бампер натянул! Смотри куда едешь!"
+QUOTE_DIALOG_CRASH_09,"Мамой клянусь, у меня остеохондроз прошел от встряски!"
+QUOTE_DIALOG_CRASH_10,"Эй, джигит! У тебя что, руль отстегнулся?!"
+QUOTE_DIALOG_DOCTOR_DROPOFF_01,"Спасибо, успели к началу приёма! Крепкого вам здоровья!"
+QUOTE_DIALOG_DOCTOR_DROPOFF_02,"Благодарю за оперативность, выручили!"
+QUOTE_DIALOG_DOCTOR_DROPOFF_03,Отлично! Здоровья вам и вашим близким!
+QUOTE_DIALOG_DOCTOR_DROPOFF_04,Спасибо за оперативность! Профессионально доставили. Всего доброго!
+QUOTE_DIALOG_DOCTOR_DROPOFF_05,Благодарю! Успела ровно к началу консилиума. Удачи на дорогах!
+QUOTE_DIALOG_DOCTOR_DROPOFF_06,Отлично доехали! Берегите себя и соблюдайте питьевой режим нарзана!
+QUOTE_DIALOG_DOCTOR_DROPOFF_07,Большое спасибо! Будьте здоровы и не болейте!
+QUOTE_DIALOG_DOCTOR_PICKUP_01,"Быстрее, молодой человек! В санатории пациенты ждут обхода!"
+QUOTE_DIALOG_DOCTOR_PICKUP_02,Доктор Соколова спешит! Домчите до санатория!
+QUOTE_DIALOG_DOCTOR_PICKUP_03,"Здравствуйте! Опаздываю на консилиум, выручайте!"
+QUOTE_DIALOG_DOCTOR_PICKUP_04,Здравствуйте! Врач-терапевт Соколова. Срочный вызов в санаторий «Родник»!
+QUOTE_DIALOG_DOCTOR_PICKUP_05,"Командир, поехали скорее! У пациента в физиотерапии консультация!"
+QUOTE_DIALOG_DOCTOR_PICKUP_06,"Добрый день! Пожалуйста, кратчайшим путём до курортной больницы."
+QUOTE_DIALOG_DOCTOR_PICKUP_07,"Здравствуйте! Опаздываю на обход в кардиологию, домчите оперативно!"
+QUOTE_DIALOG_DRUNK_DETOUR_01,"Слушай, брат... передумал! Поехали на Верхний рынок, там кент ждёт!"
+QUOTE_DIALOG_DRUNK_DETOUR_02,"Ой, стой! Заедем на заправку за минералкой!"
+QUOTE_DIALOG_DRUNK_DETOUR_03,"Слушай, давай на Провал сначала заскочим!"
+QUOTE_DIALOG_DRUNK_DETOUR_04,"Не-не-не, давай в хинкальную сначала! Я проголодался!"
+QUOTE_DIALOG_DRUNK_DETOUR_05,"Э, стой, шеф! Давай сперва за чебуреками на проспект заскочим!"
+QUOTE_DIALOG_DRUNK_DETOUR_06,"Слышь, брат... меняем маршрут! Погнали к кенту в Кисловодск!"
+QUOTE_DIALOG_DRUNK_DETOUR_07,"Ой, погоди! Давай у магазина притормозим, минералочки холодненькой возьмем!"
+QUOTE_DIALOG_DRUNK_DETOUR_08,"Брат, давай на смотровую заскочим на пять минуток, на огни посмотрим!"
+QUOTE_DIALOG_DRUNK_DROPOFF_01,"Ооо, приехали! Братуха, ты лучший таксист на КМВ!"
+QUOTE_DIALOG_DRUNK_DROPOFF_02,Держи всё что есть в кармане! Ты настоящий брат!
+QUOTE_DIALOG_DRUNK_DROPOFF_03,"От души гульнули! Эй, держи чаевые!"
+QUOTE_DIALOG_DRUNK_DROPOFF_04,"Уважаю, брат! В следующий раз только с тобой поеду!"
+QUOTE_DIALOG_DRUNK_DROPOFF_05,"Вай, доехали! Братуха, ты не таксист, ты настоящий друг!"
+QUOTE_DIALOG_DRUNK_DROPOFF_06,"Держи косарь! Сдачи не надо, гуляем на все!"
+QUOTE_DIALOG_DRUNK_DROPOFF_07,"От души, брат! Дай я тебя обниму за такую поездку!"
+QUOTE_DIALOG_DRUNK_DROPOFF_08,"Красавчик! Настоящий джигит, уважение тебе от всей души!"
+QUOTE_DIALOG_DRUNK_PICKUP_01,"Эээ, бродяга! Музыку погромче сделай! Лезгинка есть?!"
+QUOTE_DIALOG_DRUNK_PICKUP_02,"Командир, подкинь до Цветника... или в чебуречную?!"
+QUOTE_DIALOG_DRUNK_PICKUP_03,"Ооо, эй, такси! Погнали гулять по Пятигорску!"
+QUOTE_DIALOG_DRUNK_PICKUP_04,"Вах, брат мой! Мы с кентами гуляем, поехали прокатишь!"
+QUOTE_DIALOG_DRUNK_PICKUP_05,"Эй, таксист! Наливай нарзан, погнали на Машук!"
+QUOTE_DIALOG_DRUNK_PICKUP_06,"Эээ, командир! Поехали в хинкальную, нальем по одной за знакомство!"
+QUOTE_DIALOG_DRUNK_PICKUP_07,"Вай, такси-макси! Врубай душевную песню, едем на Машук!"
+QUOTE_DIALOG_DRUNK_PICKUP_08,"Салам, дорогой! Я сегодня гуляю, подбрось до ближайшего бара!"
+QUOTE_DIALOG_DRUNK_PICKUP_09,"Ооо, братуха! Мы с пацанами так посидели! Вези меня домой... или на Провал?!"
+QUOTE_DIALOG_DRUNK_PICKUP_10,"Слышь, таксист! А у тебя в машине лезгинка играет?! Погнали танцевать!"
+QUOTE_DIALOG_FAST_01,"Вах, вах! Потише, мы же не на истребителе!"
+QUOTE_DIALOG_FAST_02,Вот это полёт! Держусь обеими руками!
+QUOTE_DIALOG_FAST_03,"Газ прижми немного, на взлёт идем!"
+QUOTE_DIALOG_FAST_04,Эй-эй-эй! Я же не в ралли участвую!
+QUOTE_DIALOG_FAST_05,"Вай-вай-вай! Потише, дорогой, у меня кепка слетает!"
+QUOTE_DIALOG_FAST_06,"Слышь, шеф, мы же не в ралли «Дакар» участвуем!"
+QUOTE_DIALOG_FAST_07,"Эй, полегче на педальку! Стрелка спидометра загнулась!"
+QUOTE_DIALOG_FAST_08,"Твою ж! Кажется, мы только что преодолели звуковой барьер!"
+QUOTE_DIALOG_FAST_09,"Потише, милок! А то душенька в пятки уходит!"
+QUOTE_DIALOG_GRANDMA_DROPOFF_01,"Спасибо, сыночек! Держи вот свежий пирожок и чаевые!"
+QUOTE_DIALOG_GRANDMA_DROPOFF_02,"Дай бог тебе здоровья, довёз аккуратно!"
+QUOTE_DIALOG_GRANDMA_DROPOFF_03,"Ой, храни тебя Господь, сынок! Держи сдачи не надо!"
+QUOTE_DIALOG_GRANDMA_DROPOFF_04,"Спасибо, сыночек золотой! Вот тебе яблочко с огорода и чаевые!"
+QUOTE_DIALOG_GRANDMA_DROPOFF_05,"Храни тебя Господь, милок! Довёз ровненько, как по маслу!"
+QUOTE_DIALOG_GRANDMA_DROPOFF_06,"Спасибо, родненький! Сдачи не надо, на бензин себе оставь!"
+QUOTE_DIALOG_GRANDMA_DROPOFF_07,"Дай бог тебе невесту хорошую, сынок! Спасибо за заботу!"
+QUOTE_DIALOG_GRANDMA_PICKUP_01,"Ой, сынок, спасибо что остановился! Вези бабушку на рынок «Лира»!"
+QUOTE_DIALOG_GRANDMA_PICKUP_02,"Здравствуй, милок! Довези до рынка, пирожков закуплю!"
+QUOTE_DIALOG_GRANDMA_PICKUP_03,"Ой, спасибо, добрый человек! Только на кочках не тряси!"
+QUOTE_DIALOG_GRANDMA_PICKUP_04,"Ой, сыночек, милый! Довези бабушку до Верхнего рынка, ноженьки болят!"
+QUOTE_DIALOG_GRANDMA_PICKUP_05,"Здравствуй, родной! До поликлиники доедем потихонечку?"
+QUOTE_DIALOG_GRANDMA_PICKUP_06,"Ой, спасибочки, милок! Поехали ладненько, не спеши только!"
+QUOTE_DIALOG_GRANDMA_PICKUP_07,"Здоровья тебе, сынок! До санатория подбросишь бабулю?"
+QUOTE_DIALOG_GROUP_DROPOFF_01,От души от всей компании! Удачи на дорогах!
+QUOTE_DIALOG_GROUP_DROPOFF_02,"Спасибо, шеф! Разом за всех расплатился!"
+QUOTE_DIALOG_GROUP_DROPOFF_03,"Все доехали, отлично!"
+QUOTE_DIALOG_GROUP_DROPOFF_04,Вся компания довольна! Удачи на сменах!
+QUOTE_DIALOG_GROUP_DROPOFF_05,"Спасибо от всех нас! Поездка супер, всем понравилась!"
+QUOTE_DIALOG_GROUP_DROPOFF_06,От души от всей нашей компании! Держи с запасом!
+QUOTE_DIALOG_GROUP_DROPOFF_07,"Спасибо, шеф! Все в сборе, никого по дороге не потерял!"
+QUOTE_DIALOG_GROUP_DROPOFF_08,"Красавчик, довез всю гурьбу в целости!"
+QUOTE_DIALOG_GROUP_PICKUP_01,"Салам! Нас тут компания, поместимся? Погнали!"
+QUOTE_DIALOG_GROUP_PICKUP_02,"Привет! Вези нас сначала на вокзал, потом к Цветнику!"
+QUOTE_DIALOG_GROUP_PICKUP_03,Здорово! Поехали всей гурьбой на рынок!
+QUOTE_DIALOG_GROUP_PICKUP_04,Салам алейкум! До санатория всю нашу семью докатите?
+QUOTE_DIALOG_GROUP_PICKUP_05,"Салам алейкум! Нас четверо с баулами с рынка «Лира», влезим?"
+QUOTE_DIALOG_GROUP_PICKUP_06,"Привет, шеф! Всю нашу родню до Провала докатишь?"
+QUOTE_DIALOG_GROUP_PICKUP_07,"Здорово! Нас тут группа туристов, вези к Эоловой арфе!"
+QUOTE_DIALOG_GROUP_PICKUP_08,"Салам! Впятером на заднем сиденье поместимся, или два рейса делать?"
+QUOTE_DIALOG_NIGHT_DROPOFF_01,Какой вид на огни города! Вот твоя двойная оплата!
+QUOTE_DIALOG_NIGHT_DROPOFF_02,Рассвет прекрасен! Спасибо за отличный рейс!
+QUOTE_DIALOG_NIGHT_DROPOFF_03,Ночной Пятигорск с высоты — это что-то! Спасибо!
+QUOTE_DIALOG_NIGHT_DROPOFF_04,Спасибо за ночную романтику... Город у подножия гор волшебен!
+QUOTE_DIALOG_NIGHT_DROPOFF_05,"Отличный ночной рейс, шеф! Держи ночной тариф с чаевыми!"
+QUOTE_DIALOG_NIGHT_DROPOFF_06,Душевно прокатались! Спасибо за тихую музыку и ровный ход.
+QUOTE_DIALOG_NIGHT_DROPOFF_07,Красота! Ночной Пятигорск завораживает. Удачи на ночной смене!
+QUOTE_DIALOG_NIGHT_PICKUP_01,"Ночной Пятигорск прекрасен... Подними на Машук, встретим рассвет!"
+QUOTE_DIALOG_NIGHT_PICKUP_02,"Ночной рейс, шеф! Вези к смотровой площадке!"
+QUOTE_DIALOG_NIGHT_PICKUP_03,"Салам, ночью без пробок красота, давай на вершину!"
+QUOTE_DIALOG_NIGHT_PICKUP_04,"Ночной Пятигорск так тих... Поехали к Эоловой арфе, посмотрим на огни."
+QUOTE_DIALOG_NIGHT_PICKUP_05,"Салам, шеф! Ночные дороги КМВ — это особая атмосфера, погнали кататься."
+QUOTE_DIALOG_NIGHT_PICKUP_06,"Добрый вечер. Подними на смотровую Машука, хочется тишины и звезд."
+QUOTE_DIALOG_NIGHT_PICKUP_07,"Ночь, прохлада, нарзанный бриз... Вези меня сквозь спящий город!"
+QUOTE_DIALOG_NORMAL_DROPOFF_01,"Спасибо, брат! Сдачи не надо, на нарзан оставь!"
+QUOTE_DIALOG_NORMAL_DROPOFF_02,"От души, шеф! Отличная поездка."
+QUOTE_DIALOG_NORMAL_DROPOFF_03,"Красавчик, довёз в лучшем виде!"
+QUOTE_DIALOG_NORMAL_DROPOFF_04,"Вот твоя оплата. Удачи на дорогах, командир!"
+QUOTE_DIALOG_NORMAL_DROPOFF_05,"Отличный сервис, 5 звёзд в Яндекс Такси!"
+QUOTE_DIALOG_NORMAL_DROPOFF_06,Спасибо за приятную беседу! Удачи!
+QUOTE_DIALOG_NORMAL_DROPOFF_07,"От души! Держи пятихатку, сдачи не надо!"
+QUOTE_DIALOG_NORMAL_DROPOFF_08,"От души, брат! Держи чаевые, отдохни на славу!"
+QUOTE_DIALOG_NORMAL_DROPOFF_09,"Спасибо, командир! Отличная поездка, ровно по ПДД!"
+QUOTE_DIALOG_NORMAL_DROPOFF_10,Спасибо огромнейшее! Удачи на дорогах Пятигорска!
+QUOTE_DIALOG_NORMAL_DROPOFF_11,"Вай, отлично доехали! Сдачи не надо, братуха!"
+QUOTE_DIALOG_NORMAL_DROPOFF_12,"Красавчик, шеф! Пять звёзд и лучший отзыв твой!"
+QUOTE_DIALOG_NORMAL_DROPOFF_13,"Спасибо за комфорт, дорогой! Здоровья тебе и машине!"
+QUOTE_DIALOG_NORMAL_DROPOFF_14,"Вот спасибо! Держи пятихатку, ты лучший водитель!"
+QUOTE_DIALOG_NORMAL_PICKUP_01,"Привет, братуха! Поехали с ветерком!"
+QUOTE_DIALOG_NORMAL_PICKUP_02,"Здорово, командир! На Брод спешу, доедем быстро?"
+QUOTE_DIALOG_NORMAL_PICKUP_03,Салам алейкум! Правый ряд свободно едет?
+QUOTE_DIALOG_NORMAL_PICKUP_04,"Здравствуйте! Поехали, только аккуратно!"
+QUOTE_DIALOG_NORMAL_PICKUP_05,"Привет! Ну что, погнали по Пятигорску?"
+QUOTE_DIALOG_NORMAL_PICKUP_06,"Салам, брат! Подбрось до Цветника за сотку!"
+QUOTE_DIALOG_NORMAL_PICKUP_07,"Добрый день! Подскажите, через проспект Кирова быстро доедем?"
+QUOTE_DIALOG_NORMAL_PICKUP_08,"Салам! Яндекс показывает пробки, знаешь объезд?"
+QUOTE_DIALOG_NORMAL_PICKUP_09,"О, вовремя приехал! Погнали, а то дождь начинается."
+QUOTE_DIALOG_NORMAL_PICKUP_10,"Приветствую! Подбрось до галереи нарзанов, пожалуйста!"
+QUOTE_DIALOG_NORMAL_PICKUP_11,"Салам, брат! На проспект Кирова доедем без заторов?"
+QUOTE_DIALOG_NORMAL_PICKUP_12,"Здравствуйте, командир! Давайте через Верхний рынок, так короче!"
+QUOTE_DIALOG_NORMAL_PICKUP_13,"Салам алейкум! Ну что, поехали, дорогой!"
+QUOTE_DIALOG_NORMAL_PICKUP_14,"Здорово, шеф! Выручай, до Цветника быстренько подкати!"
+QUOTE_DIALOG_NORMAL_PICKUP_15,"Добрый день! Подскажите, успеем до закрытия нарзанной галереи?"
+QUOTE_DIALOG_NORMAL_PICKUP_16,"Салам, брат! Как погода на Машуке сегодня, не знаешь?"
+QUOTE_DIALOG_OFFROAD_01,"Шеф, это такси или внедорожник?!"
+QUOTE_DIALOG_OFFROAD_02,"Эй, мы же кусты сносим!"
+QUOTE_DIALOG_OFFROAD_03,"Осторожней на кочках, спина отвалится!"
+QUOTE_DIALOG_OFFROAD_04,"Куда по газону поехал, э?!"
+QUOTE_DIALOG_OFFROAD_05,"Вай, шеф! Мы что, по тропам Бештау едем?!"
+QUOTE_DIALOG_OFFROAD_06,"Эй-эй-эй! Это же газон санатория, нас же оштрафуют!"
+QUOTE_DIALOG_OFFROAD_07,"Осторожнее! Тут же ямы после дождя, подвеску оставишь!"
+QUOTE_DIALOG_OFFROAD_08,"Ты куда свернул, командир?! Тут даже ишак не пройдет!"
+QUOTE_DIALOG_OFFROAD_09,"Слышь, у меня нарзан в желудке превратился в шампанское!"
+QUOTE_DIALOG_PACKAGE_CRASH_01,Ой-ё! Хрупкий груз там в багажнике! Осторожнее!
+QUOTE_DIALOG_PACKAGE_CRASH_02,"Эй, там же коробка летает по салону!"
+QUOTE_DIALOG_PACKAGE_CRASH_03,"Аккуратнее вези, побьёшь коробку — вычту из оплаты!"
+QUOTE_DIALOG_PACKAGE_CRASH_04,Эй-эй-эй! Там же стеклянные бутылки с минералкой бьются!
+QUOTE_DIALOG_PACKAGE_CRASH_05,Твою ж! Посылка по всему салону летает!
+QUOTE_DIALOG_PACKAGE_CRASH_06,"Осторожней, шеф! Если сувениры разбьются — из твоего кармана вычту!"
+QUOTE_DIALOG_PACKAGE_CRASH_07,"Вай, полегче! На кочках груз убьёшь!"
+QUOTE_DIALOG_PACKAGE_DROPOFF_01,"Спасибо, шеф! Посылку принял, всё в целости и сохранности!"
+QUOTE_DIALOG_PACKAGE_DROPOFF_02,"Отлично! Доставка на высоте, всё в порядке!"
+QUOTE_DIALOG_PACKAGE_DROPOFF_03,"Благодарю, коробка цела, расплачиваюсь!"
+QUOTE_DIALOG_PACKAGE_DROPOFF_04,"Спасибо, брат! Груз дошёл в идеале, ни одна бутылочка не разбилась!"
+QUOTE_DIALOG_PACKAGE_DROPOFF_05,"Отлично! Всё цело и невредимо, держи за оперативность!"
+QUOTE_DIALOG_PACKAGE_DROPOFF_06,"Благодарю, заказчик уже забрал коробку, всё супер!"
+QUOTE_DIALOG_PACKAGE_DROPOFF_07,"Красава! Посылка на месте, держи оплату!"
+QUOTE_DIALOG_PACKAGE_PICKUP_01,"Салам, шеф! Вот посылка, отвези аккуратно на адрес!"
+QUOTE_DIALOG_PACKAGE_PICKUP_02,"Привет! Передай этот хрупкий короб, там стеклянные бутылки с нарзаном!"
+QUOTE_DIALOG_PACKAGE_PICKUP_03,"Добрый день! Вот документы и коробка, доставишь в целости?"
+QUOTE_DIALOG_PACKAGE_PICKUP_04,"Здравствуйте! Посылка опечатана, вези ровно!"
+QUOTE_DIALOG_PACKAGE_PICKUP_05,"Салам, шеф! В коробке сувениры из дуба и нарзан, вези осторожно!"
+QUOTE_DIALOG_PACKAGE_PICKUP_06,"Привет! Вот сверток с пирогами, доставь на Верхний рынок горячим!"
+QUOTE_DIALOG_PACKAGE_PICKUP_07,"Добрый день! Вот коробка с лекарствами для санатория, передай лично в руки!"
+QUOTE_DIALOG_PACKAGE_PICKUP_08,"Здравствуйте! Осторожно с коробкой, там хрупкий фарфор из Кисловодска!"
+QUOTE_DIALOG_RACE_DROPOFF_01,"Ахаха, умыли его! Настоящий Шумахер Пятигорска!"
+QUOTE_DIALOG_RACE_DROPOFF_02,Вот это гонка! Держи заслуженную награду!
+QUOTE_DIALOG_RACE_DROPOFF_03,Оставили его далеко позади! Красава!
+QUOTE_DIALOG_RACE_DROPOFF_04,Ахаха! Оставили его глотать пыль у подножия Машука!
+QUOTE_DIALOG_RACE_DROPOFF_05,"Вот это драйв! Настоящий стритрейсер, держи премию!"
+QUOTE_DIALOG_RACE_DROPOFF_06,Умыли его! Он аж поворотник от стыда выключил!
+QUOTE_DIALOG_RACE_DROPOFF_07,"Красава! Вот это обгон, уважение!"
+QUOTE_DIALOG_RACE_PICKUP_01,"Вон тот на белой «семерке» думает, что он быстрее?! Обгони его!"
+QUOTE_DIALOG_RACE_PICKUP_02,"Газ в пол, брат! Проучи этого бомбилу!"
+QUOTE_DIALOG_RACE_PICKUP_03,"Жми, жми! Вокзал ждёт победителя!"
+QUOTE_DIALOG_RACE_PICKUP_04,"Покажи этой Приоре, кто тут хозяин дорог!"
+QUOTE_DIALOG_RACE_PICKUP_05,"Слышь, вон та «семерка» с громким глушителем нас подрезала! Нагони её!"
+QUOTE_DIALOG_RACE_PICKUP_06,"Газ в полик, братуха! Докажи, что жёлтое такси быстрее всех в Пятигорске!"
+QUOTE_DIALOG_RACE_PICKUP_07,"Покажи этому бомбиле на старой Волге, как ездят настоящие профи!"
+QUOTE_DIALOG_RACE_PICKUP_08,"Жми, жми! На перекрёстке надо быть первыми!"
+QUOTE_DIALOG_TOUR_DROPOFF_01,"Какая красота! Пятигорск просто сказка, спасибо!"
+QUOTE_DIALOG_TOUR_DROPOFF_02,Незабываемая экскурсия! Спасибо за поездку!
+QUOTE_DIALOG_TOUR_DROPOFF_03,Мы в восторге от Пятигорска! Огромное спасибо!
+QUOTE_DIALOG_TOUR_DROPOFF_04,"Вай, какие виды! Пятигорск покорил наши сердца, спасибо вам!"
+QUOTE_DIALOG_TOUR_DROPOFF_05,Замечательный рассказ и поездка! Обязательно вернемся!
+QUOTE_DIALOG_TOUR_DROPOFF_06,Огромное спасибо! Панорамы гор просто невероятные!
+QUOTE_DIALOG_TOUR_DROPOFF_07,Спасибо за тёплый кавказский прием! Держи отличные чаевые!
+QUOTE_DIALOG_TOUR_PICKUP_01,"Здравствуйте! Мы приехали из Москвы, покажите нам Провал и Эолову арфу!"
+QUOTE_DIALOG_TOUR_PICKUP_02,Добрый день! Хотим увидеть вершину Машука и грот Лермонтова!
+QUOTE_DIALOG_TOUR_PICKUP_03,Привет! Вези нас по самым красивым местам города!
+QUOTE_DIALOG_TOUR_PICKUP_04,Здравствуйте! Будет здорово по пути услышать истории о Пятигорске!
+QUOTE_DIALOG_TOUR_PICKUP_05,"Здравствуйте! Мы впервые на КМВ, расскажите про озеро Тамбукан по пути!"
+QUOTE_DIALOG_TOUR_PICKUP_06,Добрый день! Провезите нас мимо Цветника и поднимите к Лермонтовскому гроту!
+QUOTE_DIALOG_TOUR_PICKUP_07,"Привет! Местные говорят, у вас самые красивые виды на Бештау — покажете?"
+QUOTE_DIALOG_TOUR_PICKUP_08,"Здравствуйте! Везите нас туда, где самый вкусный шашлык и нарзан!"
+QUOTE_DIALOG_URGENT_DROPOFF_01,Успели! Настоящий джигит! Держи сдачу и премию!
+QUOTE_DIALOG_URGENT_DROPOFF_02,"Красавец, выручил! Успехов тебе!"
+QUOTE_DIALOG_URGENT_DROPOFF_03,"Красавчик! Вот это скорость, уважение!"
+QUOTE_DIALOG_URGENT_DROPOFF_04,"Вовремя! Ты просто спаситель, держи чаевые!"
+QUOTE_DIALOG_URGENT_DROPOFF_05,"Фух, успели секунда в секунду! Ты просто тигр! Держи премию!"
+QUOTE_DIALOG_URGENT_DROPOFF_06,"Красавец! Вот это пилотаж, выручил на миллион!"
+QUOTE_DIALOG_URGENT_DROPOFF_07,"Долетели! От души, брат, за такую скорость не жалко чаевых!"
+QUOTE_DIALOG_URGENT_DROPOFF_08,"Успели! Спасибо огромное, брат, держи с запасом!"
+QUOTE_DIALOG_URGENT_PICKUP_01,"Шеф, на вокзал опаздываю! Успеем — с меня премия!"
+QUOTE_DIALOG_URGENT_PICKUP_02,"Быстрее, братуха, поезд ждать не будет!"
+QUOTE_DIALOG_URGENT_PICKUP_03,"Жми на газ, дорогой! Засекай время!"
+QUOTE_DIALOG_URGENT_PICKUP_04,"Умоляю, быстрее! Встреча через 5 минут на Бештаугорском!"
+QUOTE_DIALOG_URGENT_PICKUP_05,"Брат, в аэропорт Минеральные Воды успеешь подбросить?!"
+QUOTE_DIALOG_URGENT_PICKUP_06,"Шеф, на санаторный автобус опаздываю, умоляю, жми!"
+QUOTE_DIALOG_URGENT_PICKUP_07,"Брат, в Ессентуки на поезд! Долетишь — с меня двойной счёт!"
+QUOTE_DIALOG_URGENT_PICKUP_08,"Срочно, командир! Встреча у Эоловой арфы, через 3 минуты надо быть!"
+QUOTE_DIALOG_URGENT_PICKUP_09,"Быстрей, дорогой! Анализы в поликлинику везу, время горит!"
+QUOTE_DIALOG_URGENT_PICKUP_10,"Вася, жми педаль в пол, на автовокзал секунды остаются!"
+QUOTE_DIALOG_VIP_DROPOFF_01,Благодарю за комфорт. Высокий уровень сервиса!
+QUOTE_DIALOG_VIP_DROPOFF_02,"Замечательно доехали, оставлю щедрые чаевые."
+QUOTE_DIALOG_VIP_DROPOFF_03,Спасибо. Очень приятный автомобиль и вождение.
+QUOTE_DIALOG_VIP_DROPOFF_04,"Прекрасная поездка, сохраню ваш номер!"
+QUOTE_DIALOG_VIP_DROPOFF_05,Благодарю за безупречное вождение. Примите щедрые чаевые.
+QUOTE_DIALOG_VIP_DROPOFF_06,Отличная поездка. Очень интеллигентный стиль управления.
+QUOTE_DIALOG_VIP_DROPOFF_07,"Спасибо. Машина чистая, ход плавный. Поставлю наивысшую оценку."
+QUOTE_DIALOG_VIP_DROPOFF_08,Благодарю. Приятно иметь дело с профессионалом.
+QUOTE_DIALOG_VIP_PICKUP_01,"Добрый день. Пожалуйста, аккуратно и без резких манёвров."
+QUOTE_DIALOG_VIP_PICKUP_02,Здравствуйте. Классическую музыку включить можете?
+QUOTE_DIALOG_VIP_PICKUP_03,"Приветствую. Надеюсь, подвеска у вас мягкая?"
+QUOTE_DIALOG_VIP_PICKUP_04,"Добрый вечер. Довезите до ресторана, без спешки."
+QUOTE_DIALOG_VIP_PICKUP_05,Здравствуйте. Кондиционер работает нормально?
+QUOTE_DIALOG_VIP_PICKUP_06,"Добрый день. Пожалуйста, потише с радио и без резких разгонов."
+QUOTE_DIALOG_VIP_PICKUP_07,Здравствуйте. Направляемся к санаторию «Империал». Поездка должна быть плавной.
+QUOTE_DIALOG_VIP_PICKUP_08,"Приветствую. Поедем не спеша, наслаждаясь видами Пятигорска."
+QUOTE_DIALOG_VIP_PICKUP_09,"Добрый вечер. Пожалуйста, держите дистанцию и избегайте ям."
+QUOTE_DISPATCH_FOG_01,"Шеф, на Машуке туман и ливень. Держи дистанцию, тормоза на серпантине скользкие!"
+QUOTE_DISPATCH_FOG_02,"С гор туман спустился, Пятигорск как в молоке. Включи фары и не гони!"
+QUOTE_DISPATCH_FOG_03,"Внимательнее на серпантине к Провалу, из-за тумана ничего не видать!"
+QUOTE_DISPATCH_GENERAL_01,"Салам, шеф! Машина чистая, бензин есть. Начни с центра, курортники не любят ждать!"
+QUOTE_DISPATCH_GENERAL_02,Зинаида с рынка опять просила проверенного водителя. Будь наготове!
+QUOTE_DISPATCH_GENERAL_03,"Утро доброе! На Кирова уже людно, заказы сыплются. Удачной смены!"
+QUOTE_DISPATCH_GENERAL_04,"Шеф, сегодня большой наплыв в санатории. Держи руку на пульсе!"
+QUOTE_DISPATCH_GENERAL_05,"Салам алейкум! Работы много, город проснулся. Погнали!"
+QUOTE_DISPATCH_GENERAL_06,"Шеф, курортный сезон в разгаре! Води аккуратно, чаевые будут щедрыми."
+QUOTE_DISPATCH_GENERAL_07,Рация на связи. Помни: довольный клиент — залог высокого рейтинга!
+QUOTE_DISPATCH_NIGHT_01,Ночная смена — тарифы ×2. Включи фары и не зевай!
+QUOTE_DISPATCH_NIGHT_02,Ночной Пятигорск оживает! Следи за дорогой и полуночниками.
+QUOTE_DISPATCH_RAIN_01,"Шеф, на Машуке ливень! Держи дистанцию, тормоза на серпантине скользкие!"
+QUOTE_DISPATCH_RAIN_02,Дождь по всему Пятигорску зарядил. Курортники зонты забыли — заказов будет море!
+QUOTE_DISPATCH_RAIN_03,"Осторожнее на мокром асфальте, шеф! На серпантине не лихачь!"
+QUOTE_DRIFT_01,"Вах, мамой клянусь, тормози! Мой нарзан прольется!"
+QUOTE_DRIFT_02,"Красавчик, как на Приоре валишь!"
+QUOTE_DRIFT_03,"Слышь, ты где так водить учился, на серпантине Машука?!"
+QUOTE_DRIFT_04,"А-а-а! Мама мия, я же только в санаторий приехал!"
+QUOTE_DRIFT_05,"Ого, вот это вираж! За такой дрифт и чаевые не жалко!"
+QUOTE_DRIFT_06,"Эээ! Жизнь одна, шеф, полегче на поворотах!"
+QUOTE_DRIFT_07,Вот это боком дал! В Форсаж-11 тебя надо!
+QUOTE_DRIFT_08,"Вах, братуха, меня аж к двери прижало! Кайф!"
+QUOTE_DRIFT_09,"Слышь, шеф, сбавь! У меня шапка на заднее сиденье улетела!"
+QUOTE_DRIFT_10,"Мамой клянусь, вот это угол заноса! Ты в дрифте чемпион КМВ?!"
+QUOTE_DRIFT_11,"А-а-а! Шеф, полегче! Нарзан из бутылки фонтаном пошёл!"
+QUOTE_DRIFT_12,"Вай! Я ж забыл, что на такси сел, а не на американские горки!"
+QUOTE_DRIFT_13,"Ого, вот это джигит! Бабушка бы за сердце схватилась!"
+QUOTE_DRIFT_14,Твою ж... У меня аж хинкали в животе перевернулись!
+QUOTE_DRIFT_15,"Шеф, если не перевернемся — с меня полтинник сверху!"
+QUOTE_DRIFT_16,Красава! Так резво даже маршрутчики на Галерее не закладывают!
+QUOTE_DRIVER_HIT_PED_01,Ослеп что ли под колёса прыгать?!
+QUOTE_DRIVER_HIT_PED_02,"Куда выскочил, осел?!"
+QUOTE_DRIVER_HIT_PED_03,Сумасшедший! Чуть насмерть не сбил!
+QUOTE_DRIVER_HIT_PED_04,"Вай, за что-о-о?! Под колеса сам бросился!"
+QUOTE_DRIVER_HIT_PED_05,Ты с ума сшел?! На капот мне прыгнул!
+QUOTE_DRIVER_HIT_PED_06,"Твою ж дивизию! Живой хоть, сайгак?!"
+QUOTE_DRIVER_HIT_PED_07,"Эй, разуй глаза! Я же тормозил как мог!"
+QUOTE_DRIVER_HIT_PED_08,"Мамой клянусь, он сам под машину выскочил!"
+QUOTE_DRIVER_HIT_PED_09,"Вай, я же не нарочно! Смотри по сторонам!"
+QUOTE_DRIVER_HIT_PED_10,"Ты куда смотрел, тут же машина едет!"
+QUOTE_DRIVER_HIT_PED_11,"Эй, живой?! Я чуть инфаркт не получил!"
+QUOTE_DRIVER_HIT_PED_12,"Слышь, наушники вынь, тут дорога!"
+QUOTE_DRIVER_PED_01,Куда под колёса лезешь?!
+QUOTE_DRIVER_PED_02,Шевелись на зебре!
+QUOTE_DRIVER_PED_03,Зелёный не вечный!
+QUOTE_DRIVER_PED_04,"Давай быстрей, сайгак!"
+QUOTE_DRIVER_PED_05,"Смотри по сторонам, пешеход!"
+QUOTE_DRIVER_PED_06,"Эй, сайгак, ноги в руки и бегом!"
+QUOTE_DRIVER_PED_07,"Шевели поршнями, зелёный кончается!"
+QUOTE_DRIVER_PED_08,"Твою ж... Оглянись, тут машина едет!"
+QUOTE_DRIVER_PED_09,"Эй, курортник, на Машуке зебр нет, а тут есть!"
+QUOTE_DRIVER_PED_10,"Слышь, ушей натянул, сигнала не слышишь?!"
+QUOTE_DRIVER_PED_JWALK_01,"Куда прешь вне зебры, жить надоело?!"
+QUOTE_DRIVER_PED_JWALK_02,"Тут зебры нет, а ты прёшь!"
+QUOTE_DRIVER_PED_JWALK_03,"Эй, нарушитель, на переходе иди!"
+QUOTE_DRIVER_PED_JWALK_04,"Вне зебры переходишь, джигит?!"
+QUOTE_DRIVER_PED_JWALK_05,"Слышь, тут не зебра, а ты прёшь под колёса!"
+QUOTE_DRIVER_PED_JWALK_06,"Куда внаглую через дорогу, светофор для тебя не писан?!"
+QUOTE_DRIVER_PED_REPLY_01,На зебре я главный!
+QUOTE_DRIVER_PED_REPLY_02,"Подождёшь, не трамвай!"
+QUOTE_DRIVER_PED_REPLY_03,"Красный горит, куда сигналишь?!"
+QUOTE_DRIVER_PED_REPLY_04,"Не дрова везёшь, подождёшь!"
+QUOTE_DRIVER_PED_REPLY_05,Сам пешком иди!
+QUOTE_DRIVER_PED_REPLY_06,"Сигналит он еще, баран на педалях!"
+QUOTE_DRIVER_PED_REPLY_07,"Потише газуй, у меня нарзан прольется!"
+QUOTE_DRIVER_PED_REPLY_08,Права в Ессентуках купил и умничает!
+QUOTE_DRIVER_PED_REPLY_09,"Слышь, пешеход всегда прав, запомни!"
+QUOTE_DRIVER_PED_REPLY_10,"Пешком походи, остынь, джигит!"
+QUOTE_DRIVER_PED_REPLY_11,"Эй, колымага, тормоза сначала почини!"
+QUOTE_DRIVER_PED_REPLY_JWALK_01,"А мне всё равно, тут все так ходят!"
+QUOTE_DRIVER_PED_REPLY_JWALK_02,"Ты не ГАИ, чтобы меня учить!"
+QUOTE_DRIVER_PED_REPLY_JWALK_03,"Спешу я, понял?! Не до твоих зебр!"
+QUOTE_DRIVER_PED_REPLY_JWALK_04,"Вот ещё, буду я на тебя смотреть!"
+QUOTE_DRIVER_PED_REPLY_JWALK_05,"Сам нарушаешь, а меня учишь!"
+QUOTE_DRIVER_PED_REPLY_JWALK_06,"Тормози заранее, я тут хозяин!"
+QUOTE_DRIVER_PED_REPLY_JWALK_07,"Вай, иди своей дорогой, джигит!"
+QUOTE_DRIVER_RAM_01,"Куда прёшь, дрова везёшь?!"
+QUOTE_DRIVER_RAM_02,"Смотри куда рулишь, шумахер!"
+QUOTE_DRIVER_RAM_03,Права за салом купил?!
+QUOTE_DRIVER_RAM_04,Эй! Машину помнёшь!
+QUOTE_DRIVER_RAM_05,Ты у меня щас за ремонт заплатишь!
+QUOTE_DRIVER_RAM_06,"Тормоза проверь, ведро!"
+QUOTE_DRIVER_RAM_07,"Ослеп что ли, осел?!"
+QUOTE_DRIVER_RAM_08,"Вай, Приору мою помял, шакал!"
+QUOTE_DRIVER_RAM_09,"Ты где так подрезать учился, а?!"
+QUOTE_DRIVER_RAM_10,"Слышь, бампер мне выпрямлять за свой счет будешь!"
+QUOTE_DRIVER_RAM_11,Твою ж... Совсем страх потерял на дороге?!
+QUOTE_DRIVER_RAM_12,"Эй, чучело на желтом такси, стой говорю!"
+QUOTE_DRIVER_RAM_13,"Мамой клянусь, щас вылезу и фары тебе разобью!"
+QUOTE_DRIVER_RAM_14,"Куда ты лезешь, видишь едет машина?!"
+QUOTE_DRIVER_RAM_15,"Вай-бай, новый крыло помял, гад!"
+QUOTE_DRIVER_RAM_16,Ты на такси или на танке?!
+QUOTE_DRIVER_RAM_17,"Слышь, у меня тут пассажиры, а ты в багажник лезешь!"
+QUOTE_DRIVER_RAM_18,"Вай, зачем так близко, я же не маршрутка!"
+QUOTE_DRIVER_RAM_19,"Ты в зеркала вообще смотришь, джигит?!"
+QUOTE_DRIVER_RAM_20,"Эй, жёлтое такси, ты на подъёме тормозить умеешь?!"
+QUOTE_DRIVER_SHOUT_01,"Эй! Бампер мне поцарапал, баран!"
+QUOTE_DRIVER_SHOUT_02,"Ты че творишь, а?! Разуй глаза!"
+QUOTE_DRIVER_SHOUT_03,"Слышь, за ремонт моей Лады кто платить будет?!"
+QUOTE_DRIVER_SHOUT_04,"Вай, мой Приора! Стой, куды поехал?!"
+QUOTE_DRIVER_SHOUT_05,"Ты где поворотники забыл, э?!"
+QUOTE_DRIVER_SHOUT_06,"Куда летишь, на проспект Кирова?!"
+QUOTE_DRIVER_SHOUT_07,Сигналит он еще! Сама культура!
+QUOTE_DRIVER_SHOUT_08,"Джигит хренов, рулить научись!"
+QUOTE_DRIVER_SHOUT_09,"Слышь, на красное идешь, совсем страх потерял?!"
+QUOTE_DRIVER_SHOUT_10,"Уступи дорогу, я на Верхний рынок спешу!"
+QUOTE_DRIVER_SHOUT_11,Куда вклиниваешься без поворотника?!
+QUOTE_DRIVER_SHOUT_12,"Ты кому подрезаешь, э?! Из машины вылези!"
+QUOTE_DRIVER_SHOUT_13,"Вай, держите меня семеро, этот таксист с ума сшел!"
+QUOTE_DRIVER_SHOUT_14,Опять желтое такси мешается на подьеме!
+QUOTE_DRIVER_SHOUT_15,"Слышь, ты на красную волну специально напросился?!"
+QUOTE_DRIVER_SHOUT_16,"Вай, джигит, зеркало мне не снеси!"
+QUOTE_DRIVER_SHOUT_17,"Эй, ты на Верхний рынок или на таран идешь?!"
+QUOTE_DRIVER_SHOUT_18,"Куда ты втискиваешься, тут маршрутка еле проходит!"
+QUOTE_DRIVER_SHOUT_19,Твою ж дивизию! Кто так по кольцу едет?!
+QUOTE_DRIVER_SHOUT_20,"Ты где так подрезать научился, на серпантине?!"
+QUOTE_DRIVER_SHOUT_21,"Э, шеф, у тебя фары светом или свечками горят?!"
+QUOTE_DRIVER_SHOUT_22,"Вай, Приора у него... Рулить научись сначала!"
+QUOTE_DRIVER_SHOUT_23,"Сигналит он! У тебя чё, клаксон заклинило?!"
+QUOTE_DRIVER_SHOUT_24,"Куда прешь по встречке, вася?!"
+QUOTE_DRIVER_SHOUT_25,"Слышь, давай вылезем, перетрем за твоё вождение!"
+QUOTE_DRIVER_SHOUT_26,"Мамой клянусь, этот таксист в GTA переиграл!"
+QUOTE_DRIVER_SHOUT_27,"Уступи дорогу, я курортников на вокзал везу!"
+QUOTE_DRIVER_SHOUT_28,"Эй, баран, поворотник выключи, ты три километра с ним едешь!"
+QUOTE_DRIVER_SHOUT_29,"Вай-вай-вай, кузов поцарапал, гад!"
+QUOTE_DRIVER_SHOUT_30,Ты бы ещё на Машук задним ходом поехал!
+QUOTE_DRIVER_SHOUT_31,"Тормоза зажми, олень, сзади рефрижератор идет!"
+QUOTE_PED_ANIMAL_CAT_01,Мяу!
+QUOTE_PED_ANIMAL_CAT_02,Мурр-мяу!
+QUOTE_PED_ANIMAL_CAT_03,Фр-р-р!
+QUOTE_PED_ANIMAL_CAT_04,Мяу-мяу...
+QUOTE_PED_ANIMAL_CAT_05,Мяу-у-у!
+QUOTE_PED_ANIMAL_CAT_06,Фррр-мяу!
+QUOTE_PED_ANIMAL_DOG_01,Гав-гав!
+QUOTE_PED_ANIMAL_DOG_02,Тяв!
+QUOTE_PED_ANIMAL_DOG_03,Вуф!
+QUOTE_PED_ANIMAL_DOG_04,"Р-р-р, гав!"
+QUOTE_PED_ANIMAL_DOG_05,Гав-гав-гав!
+QUOTE_PED_ANIMAL_DOG_06,Тяв-тяв!
+QUOTE_PED_BUSINESSMAN_01,У меня переговоры!
+QUOTE_PED_BUSINESSMAN_02,Время — деньги!
+QUOTE_PED_BUSINESSMAN_03,Созвон через пять минут...
+QUOTE_PED_BUSINESSMAN_04,"Акции проверяю, секунду..."
+QUOTE_PED_BUSINESSMAN_05,Надо сделку закрыть до вечера...
+QUOTE_PED_BUSINESSMAN_06,"Вай, пробки срывают все встречи!"
+QUOTE_PED_BUSINESSMAN_07,"Контракт горит, надо поторопиться..."
+QUOTE_PED_CHILD_01,"Мама, смотри машинка!"
+QUOTE_PED_CHILD_02,Хочу мороженое!
+QUOTE_PED_CHILD_03,А это что за птица?
+QUOTE_PED_CHILD_04,"Смотри, какой голубь смешной!"
+QUOTE_PED_CHILD_05,А мы на карусели пойдём?
+QUOTE_PED_CHILD_06,"Мам, купи шарик!"
+QUOTE_PED_CHILD_07,"Ура, мы гуляем в парке!"
+QUOTE_PED_CURSE_01,"Куда прёшь, дрова везёшь?!"
+QUOTE_PED_CURSE_02,Права за салом купил?!
+QUOTE_PED_CURSE_03,"Смотри куда рулишь, шумахер!"
+QUOTE_PED_CURSE_04,"Ослеп что ли, осел?!"
+QUOTE_PED_CURSE_05,"Тормоза проверь, ведро!"
+QUOTE_PED_CURSE_06,Ты у меня щас пешком пойдёшь!
+QUOTE_PED_CURSE_07,Урод на колёсах!
+QUOTE_PED_CURSE_08,Чуть ноги не оторвал!
+QUOTE_PED_CURSE_09,"Эй, джигит, тротуар с трассой перепутал?!"
+QUOTE_PED_CURSE_10,Твою ж... Чуть на капот меня не посадил!
+QUOTE_PED_CURSE_11,"Ты где рулить учился, в горном ауле?!"
+QUOTE_PED_CURSE_12,"Смотри куда прешь, колымага жёлтая!"
+QUOTE_PED_CURSE_13,"Эй, шумахер недоделанный, тормози!"
+QUOTE_PED_CURSE_14,"Чуть шашлык из рук не выбил, шакал!"
+QUOTE_PED_CURSE_15,Ноги оборвать за такое вождение!
+QUOTE_PED_CURSE_16,"Вай, чуть сандали не слетели!"
+QUOTE_PED_CURSE_17,Ты на пешехода или на кегли охотишься?!
+QUOTE_PED_CURSE_18,"Слышь, тут люди ходят, а не кегли стоят!"
+QUOTE_PED_CURSE_19,"Эй, гонщик, до Бештау пешком дойдёшь с такой ездой!"
+QUOTE_PED_CURSE_20,"Мамой клянусь, чуть на капот не посадил!"
+QUOTE_PED_CURSE_BUSINESSMAN_01,"Вы что, по пешеходам ездите?!"
+QUOTE_PED_CURSE_BUSINESSMAN_02,У меня костюм дороже твоей машины!
+QUOTE_PED_CURSE_BUSINESSMAN_03,Я в суд на тебя подам!
+QUOTE_PED_CURSE_BUSINESSMAN_04,Ты мне встречу чуть не сорвал!
+QUOTE_PED_CURSE_BUSINESSMAN_05,"Куда прёшь, баран на колёсах?!"
+QUOTE_PED_CURSE_BUSINESSMAN_06,Мой адвокат с тобой свяжется!
+QUOTE_PED_CURSE_BUSINESSMAN_07,"Ты хоть знаешь, сколько стоит моё время?!"
+QUOTE_PED_CURSE_CHILD_01,"Ой, дядя плохой!"
+QUOTE_PED_CURSE_CHILD_02,"Мама, меня чуть не задавили!"
+QUOTE_PED_CURSE_CHILD_03,"Дядя, ты почему такой злой?!"
+QUOTE_PED_CURSE_CHILD_04,"Ой, машинка на меня едет!"
+QUOTE_PED_CURSE_CHILD_05,"Мама, спаси, он не умеет рулить!"
+QUOTE_PED_CURSE_CHILD_06,"Дядя на бибике, не дави меня!"
+QUOTE_PED_CURSE_CHILD_07,"Ай, я маме всё расскажу!"
+QUOTE_PED_CURSE_ELDER_01,"Ох ты ж, чуть деда не сбил, шалопай!"
+QUOTE_PED_CURSE_ELDER_02,"В мои годы так не гоняли, бессовестный!"
+QUOTE_PED_CURSE_ELDER_03,"Ты куда прёшь, я тут хожу!"
+QUOTE_PED_CURSE_ELDER_04,"Эх, молодёжь, совсем страх потеряли!"
+QUOTE_PED_CURSE_ELDER_05,"Чуть трость не выронил, окаянный!"
+QUOTE_PED_CURSE_ELDER_06,"Слышь, сынок, я тут пешком, а не по асфальту!"
+QUOTE_PED_CURSE_ELDER_07,"Ох, сердце чуть не выскочило, хулиган!"
+QUOTE_PED_CURSE_GOPNIK_01,"Куда прёшь, олень?!"
+QUOTE_PED_CURSE_GOPNIK_02,"Ты чё, рамсы попутал?!"
+QUOTE_PED_CURSE_GOPNIK_03,"Слышь, ты кого подрезал?!"
+QUOTE_PED_CURSE_GOPNIK_04,"Ща фары разобью, джигит!"
+QUOTE_PED_CURSE_GOPNIK_05,"Ты чё, страх потерял?!"
+QUOTE_PED_CURSE_GOPNIK_06,"Эй, вылезай из ведра, поговорим!"
+QUOTE_PED_CURSE_GOPNIK_07,"Слышь, колымага, ща без бампера останешься!"
+QUOTE_PED_CURSE_GRANDMA_01,Ироды! Чуть бабку не сбили!
+QUOTE_PED_CURSE_GRANDMA_02,"Куда летишь, окаянный?!"
+QUOTE_PED_CURSE_GRANDMA_03,"Тьфу на тебя, душегуб окаянный!"
+QUOTE_PED_CURSE_GRANDMA_04,"В полицию на тебя заявлю, бандит!"
+QUOTE_PED_CURSE_GRANDMA_05,"Чтоб тебе пусто было, лихач!"
+QUOTE_PED_CURSE_GRANDMA_06,"Совсем стариков не уважают, ирод!"
+QUOTE_PED_CURSE_GRANDMA_07,"Ослеп, что ли, старую не видишь?!"
+QUOTE_PED_CURSE_MOM_01,"Ой, чуть ребёнка не задавил!"
+QUOTE_PED_CURSE_MOM_02,"Ты что творишь, тут коляска!"
+QUOTE_PED_CURSE_MOM_03,"Осторожнее, у меня малыш!"
+QUOTE_PED_CURSE_MOM_04,"Куда прёшь, я с ребёнком!"
+QUOTE_PED_CURSE_MOM_05,"Ой, напугал до смерти, бессовестный!"
+QUOTE_PED_CURSE_MOM_06,"Тут же дети гуляют, куда ты гонишь!"
+QUOTE_PED_CURSE_MUSICIAN_01,"Эй, чуть аккордеон не раздавил!"
+QUOTE_PED_CURSE_MUSICIAN_02,"Ты что, музыку не уважаешь?!"
+QUOTE_PED_CURSE_MUSICIAN_03,"Чуть инструмент не сломал, варвар!"
+QUOTE_PED_CURSE_MUSICIAN_04,"Эй, шумахер, тут артист идёт!"
+QUOTE_PED_CURSE_MUSICIAN_05,"Куда прёшь, я тут мелодию сочиняю!"
+QUOTE_PED_CURSE_MUSICIAN_06,"Чуть ноты не рассыпал, бессовестный!"
+QUOTE_PED_CURSE_NURSE_01,"Ой, чуть не сбил, я же на смену!"
+QUOTE_PED_CURSE_NURSE_02,"Ты что творишь, тут медсестра!"
+QUOTE_PED_CURSE_NURSE_03,"Осторожнее, у меня пациенты!"
+QUOTE_PED_CURSE_NURSE_04,"Куда прёшь, я спешу в больницу!"
+QUOTE_PED_CURSE_NURSE_05,"Ой, напугал, бессовестный!"
+QUOTE_PED_CURSE_NURSE_06,"Тут же люди, куда ты гонишь!"
+QUOTE_PED_CURSE_REDLIGHT_01,"Вай, мамой клянусь, на красный пролетел!"
+QUOTE_PED_CURSE_REDLIGHT_02,"Красный горит, а он прёт! Совсем страх потерял!"
+QUOTE_PED_CURSE_REDLIGHT_03,"Ты на красный-то смотри, джигит!"
+QUOTE_PED_CURSE_REDLIGHT_04,"Светофор для тебя не указ, да?!"
+QUOTE_PED_CURSE_REDLIGHT_05,"Вай, красный же горит! Куда прёшь?!"
+QUOTE_PED_CURSE_RUNNER_01,Мешаешь пробежке!
+QUOTE_PED_CURSE_RUNNER_02,"Куда несёшься, тут беговая дорожка?!"
+QUOTE_PED_CURSE_RUNNER_03,Сбил мне весь темп!
+QUOTE_PED_CURSE_RUNNER_04,"Смотри под колёса, бегунов не видишь?!"
+QUOTE_PED_CURSE_RUNNER_05,Чуть кроссовки не отдавил!
+QUOTE_PED_CURSE_RUNNER_06,"Эй, притормози, я на рекорд иду!"
+QUOTE_PED_CURSE_RUNNER_07,"Глаза разуй, тут люди тренируются!"
+QUOTE_PED_CURSE_SIDEWALK_01,"Эй, это тротуар, а не дорога!"
+QUOTE_PED_CURSE_SIDEWALK_02,"Куда на тротуар заехал, джигит?!"
+QUOTE_PED_CURSE_SIDEWALK_03,"Тут люди гуляют, а ты прёшь по газону!"
+QUOTE_PED_CURSE_SIDEWALK_04,"Слышь, тротуар для пешеходов, а не для твоей колымаги!"
+QUOTE_PED_CURSE_SIDEWALK_05,"Вай, на тротуар заехал, совсем страх потерял!"
+QUOTE_PED_CURSE_SIDEWALK_06,"Тут санаторий, а не автодром!"
+QUOTE_PED_CURSE_SIDEWALK_07,"Эй, на газон не заезжай, тут курортники отдыхают!"
+QUOTE_PED_CURSE_STUDENT_01,"Осторожнее, я конспект нёс!"
+QUOTE_PED_CURSE_STUDENT_02,"Ты что творишь, у меня зачёт сегодня?!"
+QUOTE_PED_CURSE_STUDENT_03,Чуть зачётку не растоптал!
+QUOTE_PED_CURSE_STUDENT_04,"Куда летишь, я на пару опаздываю?!"
+QUOTE_PED_CURSE_STUDENT_05,"Водить научись, двоечник!"
+QUOTE_PED_CURSE_STUDENT_06,"Смотри куда едешь, права купил?!"
+QUOTE_PED_CURSE_STUDENT_07,"Эй, шумахер, стипендию мою оплатишь?!"
+QUOTE_PED_CURSE_TOURIST_01,"Осторожно, турист!"
+QUOTE_PED_CURSE_TOURIST_02,Это что за курортный сервис такой?!
+QUOTE_PED_CURSE_TOURIST_03,Чуть фотоаппарат не разбил!
+QUOTE_PED_CURSE_TOURIST_04,Беспредел на курорте!
+QUOTE_PED_CURSE_TOURIST_05,"Вы куда гоните, тут отдыхающие!"
+QUOTE_PED_CURSE_TOURIST_06,"Полиция, меня чуть не сбили!"
+QUOTE_PED_CURSE_TOURIST_07,Я жалобу в министерство туризма напишу!
+QUOTE_PED_CURSE_WORKER_01,"Эй, чуть инструмент не раздавил!"
+QUOTE_PED_CURSE_WORKER_02,"Ты куда прёшь, я тут работаю!"
+QUOTE_PED_CURSE_WORKER_03,"Слышь, шумахер, тут люди ходят!"
+QUOTE_PED_CURSE_WORKER_04,"Чуть каску не сбил, джигит!"
+QUOTE_PED_CURSE_WORKER_05,"Эй, тормози, я тут не на трассе!"
+QUOTE_PED_CURSE_WORKER_06,"Куда гонишь, тут же рабочие!"
+QUOTE_PED_ELDER_01,"Эх, в мои годы тут трамвай ходил..."
+QUOTE_PED_ELDER_02,"Молодёжь нынче не та, совсем не та!"
+QUOTE_PED_ELDER_03,На Машук в мои годы пешком поднимался!
+QUOTE_PED_ELDER_04,Вот раньше нарзан бесплатно наливали...
+QUOTE_PED_ELDER_05,"Эх, здоровье уже не то, а курорт — вечный!"
+QUOTE_PED_ELDER_06,"Помню, тут ещё до войны санаторий был!"
+QUOTE_PED_ELDER_07,"Внуки вон в телефоне сидят, а я гуляю!"
+QUOTE_PED_ELDER_08,"Слышь, сынок, не гони так, жизнь одна!"
+QUOTE_PED_ELDER_09,"В Пятигорске я всю жизнь прожил, всё знаю!"
+QUOTE_PED_ELDER_10,"Эх, сейчас бы в шахматы с дедом на лавочке..."
+QUOTE_PED_GOPNIK_01,"Слышь, че встал-то?"
+QUOTE_PED_GOPNIK_02,Закурить не найдётся?
+QUOTE_PED_GOPNIK_03,Пятёрочку на бутер...
+QUOTE_PED_GOPNIK_04,"Чё, братан, по-быстрому?"
+QUOTE_PED_GOPNIK_05,На районе всё спокойно.
+QUOTE_PED_GOPNIK_06,"Слышь, мелочи не звякнет?"
+QUOTE_PED_GOPNIK_07,С пацанами на лавочке сидим...
+QUOTE_PED_GRANDMA_01,"Ох, спина моя..."
+QUOTE_PED_GRANDMA_02,Молодёжь нынче гоняет...
+QUOTE_PED_GRANDMA_03,Дай дорогу бабушке!
+QUOTE_PED_GRANDMA_04,В поликлинику бы без очереди попасть...
+QUOTE_PED_GRANDMA_05,Опять цены на рынке подняли...
+QUOTE_PED_GRANDMA_06,Травки от давления надо купить...
+QUOTE_PED_GRANDMA_07,"Эх, внучатам бы пирожков напечь..."
+QUOTE_PED_IDLE_01,Пятигорск сегодня прекрасен!
+QUOTE_PED_IDLE_02,"Эх, успеть бы на 1-ю маршрутку..."
+QUOTE_PED_IDLE_03,Опять на Галерее пробка...
+QUOTE_PED_IDLE_04,На Машуке сегодня туман красивый
+QUOTE_PED_IDLE_05,"Вай, какой воздух на КМВ!"
+QUOTE_PED_IDLE_06,Надо зайти нарзана попить...
+QUOTE_PED_IDLE_07,Где здесь ближайшая аптека?
+QUOTE_PED_IDLE_08,Такси в городе стали быстрее...
+QUOTE_PED_IDLE_09,В Цветнике опять розы цветут!
+QUOTE_PED_IDLE_10,Пятигорский курорт — лучший в мире!
+QUOTE_PED_IDLE_11,На Провале Остап Бендер стоял!
+QUOTE_PED_IDLE_12,"Эх, сейчас бы чебурек горячий да с нарзанчиком..."
+QUOTE_PED_IDLE_13,На проспекте Кирова сегодня красота!
+QUOTE_PED_IDLE_14,"В Ессентуках вода солонее, а в Пятигорске — лучше!"
+QUOTE_PED_IDLE_15,Опять на Верхнем рынке пробка из Приор...
+QUOTE_PED_IDLE_16,"Курортники приехали, в Цветнике места не найдешь!"
+QUOTE_PED_IDLE_17,Какая панорама на Бештау открывается!
+QUOTE_PED_IDLE_18,Шашлычком со стороны Бештаугорского пахнет...
+QUOTE_PED_IDLE_19,Эолова арфа сегодня так красиво поёт на ветру!
+QUOTE_PED_IDLE_20,Вот бы на подъемнике на Машук подняться...
+QUOTE_PED_IDLE_21,В Пятигорске воздух — хоть в банки закатывай!
+QUOTE_PED_IDLE_22,"Эх, сейчас бы на Горячую гору сходить..."
+QUOTE_PED_IDLE_23,"Говорят, на Бештау сегодня облака как вата!"
+QUOTE_PED_IDLE_24,Надо бы на рынок за свежими пирожками...
+QUOTE_PED_IDLE_25,"Вай, как хорошо, что я не водитель в этой пробке!"
+QUOTE_PED_IDLE_26,"Слышал, на Провале опять очередь из туристов!"
+QUOTE_PED_IDLE_27,Курортный сезон — самое время для нарзана!
+QUOTE_PED_IDLE_28,"Эх, вечером бы на смотровую, на закат..."
+QUOTE_PED_IDLE_29,В Пятигорске даже дождь — это атмосфера!
+QUOTE_PED_KICK_01,На нах! Ездить научись!
+QUOTE_PED_KICK_02,"Получи, ведро с болтами!"
+QUOTE_PED_KICK_03,Вот тебе за подрез!
+QUOTE_PED_KICK_04,Ещё раз подрежешь — колесо откручу!
+QUOTE_PED_KICK_05,"Вот тебе по дверям, чтобы поворотники включал!"
+QUOTE_PED_KICK_06,"На нах! Будешь знать, как подрезать пешеходов!"
+QUOTE_PED_KICK_07,"Получи в бампер, джигит комнатный!"
+QUOTE_PED_KICK_08,Ещё раз так проедешь — зеркало оторву!
+QUOTE_PED_KICK_09,Вот тебе мятина на память от Пятигорска!
+QUOTE_PED_KICK_10,"На нах! Будешь знать, как по тротуару гонять!"
+QUOTE_PED_KICK_11,"Получи за то, что чуть не задавил!"
+QUOTE_PED_KICK_12,"Вот тебе, чтобы на красный не летал!"
+QUOTE_PED_KICK_13,Ещё раз так проедешь — весь бампер разберу!
+QUOTE_PED_MOM_01,"Тише, малыш, сейчас домой пойдём..."
+QUOTE_PED_MOM_02,"Ой, какой воздух, хорошо ребёнку!"
+QUOTE_PED_MOM_03,"Надо бы в парк, на солнышко..."
+QUOTE_PED_MOM_04,"Спи, моя хорошая, спи..."
+QUOTE_PED_MOM_05,Вот бы коляску по ровной дорожке...
+QUOTE_PED_MOM_06,"В Цветнике так красиво, пойдём гулять!"
+QUOTE_PED_MOM_07,"Осторожно, тут машины ездят!"
+QUOTE_PED_MOM_08,"Малыш, смотри, какая птичка!"
+QUOTE_PED_MOM_09,Надо молока купить и домой...
+QUOTE_PED_MOM_10,"Эх, выспаться бы хоть разок..."
+QUOTE_PED_MUSICIAN_01,"Эх, сейчас бы заиграть на закате..."
+QUOTE_PED_MUSICIAN_02,Музыка — это жизнь!
+QUOTE_PED_MUSICIAN_03,Вот бы кто-нибудь в шляпу монетку кинул...
+QUOTE_PED_MUSICIAN_04,"Эх, аккордеон мой старый, верный друг..."
+QUOTE_PED_MUSICIAN_05,В Пятигорске так вдохновенно играется!
+QUOTE_PED_MUSICIAN_06,"Слышь, мелодия сама в голове крутится..."
+QUOTE_PED_MUSICIAN_07,"Эх, сейчас бы на смотровой сыграть..."
+QUOTE_PED_MUSICIAN_08,"Музыка лечит душу, точно говорю!"
+QUOTE_PED_MUSICIAN_09,Вот бы в филармонию позвали...
+QUOTE_PED_MUSICIAN_10,"Эх, народ сегодня щедрый, дай бог!"
+QUOTE_PED_NURSE_01,"Эх, смена в санатории была долгая..."
+QUOTE_PED_NURSE_02,Надо бы давление проверить...
+QUOTE_PED_NURSE_03,Вот бы отпуск на море...
+QUOTE_PED_NURSE_04,Пациенты сегодня капризные...
+QUOTE_PED_NURSE_05,"Эх, устала, но работа важная!"
+QUOTE_PED_NURSE_06,Надо бы в аптеку за витаминами...
+QUOTE_PED_NURSE_07,В Пятигорске лечиться — одно удовольствие!
+QUOTE_PED_NURSE_08,"Слышь, здоровье — главное!"
+QUOTE_PED_NURSE_09,"Эх, сейчас бы чайку с ромашкой..."
+QUOTE_PED_NURSE_10,Надо бы на процедуры успеть...
+QUOTE_PED_PUNCH_FLEE_BUSINESS_01,Я тебя засужу! Хулиганство!
+QUOTE_PED_PUNCH_FLEE_BUSINESS_02,"Ты знаешь, кто я такой?! Охрана, полиция!"
+QUOTE_PED_PUNCH_FLEE_BUSINESS_03,"Нападение! В суд подам, за решётку сядешь!"
+QUOTE_PED_PUNCH_FLEE_BUSINESS_04,Ты за это ответишь по закону! Ухожу!
+QUOTE_PED_PUNCH_FLEE_DEFAULT_01,"Ай, больно! Ухожу, псих!"
+QUOTE_PED_PUNCH_FLEE_DEFAULT_02,Хулиган! Не свяжусь с неадекватом!
+QUOTE_PED_PUNCH_FLEE_DEFAULT_03,"Помогите, хулиганы среди бела дня!"
+QUOTE_PED_PUNCH_FLEE_DEFAULT_04,Милиция! Нападение!
+QUOTE_PED_PUNCH_FLEE_DEFAULT_05,Ты с ума сошёл?! Караул!
+QUOTE_PED_PUNCH_FLEE_DEFAULT_06,Ааах! Бьют средь бела дня!
+QUOTE_PED_PUNCH_FLEE_ELDER_01,Полиция! Хулиганы среди бела дня!
+QUOTE_PED_PUNCH_FLEE_ELDER_02,"Милиция, спасите! Бьют деда!"
+QUOTE_PED_PUNCH_FLEE_ELDER_03,"Ироды, средь бела дня нападают!"
+QUOTE_PED_PUNCH_FLEE_ELDER_04,Хулиган! Полицию зовите!
+QUOTE_PED_PUNCH_FLEE_ELDER_05,"Ох, за что старика-то?! Не свяжусь!"
+QUOTE_PED_PUNCH_FLEE_ELDER_06,"Ай, больно! Ухожу от греха подальше!"
+QUOTE_PED_PUNCH_FLEE_GOPNIK_01,"Ты чё, псих?! Я ща пацанов с района подтяну!"
+QUOTE_PED_PUNCH_FLEE_GOPNIK_02,"Ща пацанов позову, тебе хана!"
+QUOTE_PED_PUNCH_FLEE_GOPNIK_03,"Погоди у меня, я с толпой вернусь!"
+QUOTE_PED_PUNCH_FLEE_GOPNIK_04,"Ненормальный какой-то! Ухожу, но мы ещё увидимся!"
+QUOTE_PED_PUNCH_FLEE_MOM_01,Караул! Бандиты на улице!
+QUOTE_PED_PUNCH_FLEE_MOM_02,"Что вы творите, тут ребёнок?! Помогите!"
+QUOTE_PED_PUNCH_FLEE_MOM_03,Помогите! Хулиганы нападают!
+QUOTE_PED_PUNCH_FLEE_MOM_04,"Ухожу, не трогай ребёнка, псих!"
+QUOTE_PED_PUNCH_FLEE_TOURIST_01,Какой кошмар! Нападение на туриста!
+QUOTE_PED_PUNCH_FLEE_TOURIST_02,"Помогите, полиция! Беспредел на курорте!"
+QUOTE_PED_PUNCH_FLEE_TOURIST_03,Никакого курортного сервиса! Спасите!
+QUOTE_PED_PUNCH_FLEE_TOURIST_04,"Спасите, маньяк в парке! Бежим!"
+QUOTE_PED_PUNCH_FLEE_WORKER_01,"Слышь, ошалел совсем?! Ментов вызову!"
+QUOTE_PED_PUNCH_FLEE_WORKER_02,"Ты чё творишь, псих?! Не свяжусь!"
+QUOTE_PED_PUNCH_FLEE_WORKER_03,"Совсем с катушек съехал, психопат!"
+QUOTE_PED_PUNCH_FLEE_WORKER_04,"Кулаками машет, ненормальный! Ухожу!"
+QUOTE_PED_PUNCH_RETALIATE_BUSINESS_01,"Ты на кого полез, быдло?! На!"
+QUOTE_PED_PUNCH_RETALIATE_BUSINESS_02,Руки убрал! Вот тебе за костюм!
+QUOTE_PED_PUNCH_RETALIATE_BUSINESS_03,"Ты зачем полез, неадекват?! Получи!"
+QUOTE_PED_PUNCH_RETALIATE_BUSINESS_04,Ща сам в нокаут улетишь!
+QUOTE_PED_PUNCH_RETALIATE_DEFAULT_01,Получи в ответ!
+QUOTE_PED_PUNCH_RETALIATE_DEFAULT_02,Ща сам ляжешь!
+QUOTE_PED_PUNCH_RETALIATE_DEFAULT_03,Ты зачем полез?! На!
+QUOTE_PED_PUNCH_RETALIATE_DEFAULT_04,"Держи сдачу, хулиган!"
+QUOTE_PED_PUNCH_RETALIATE_DEFAULT_05,Кулаками махать вздумал?! На нах!
+QUOTE_PED_PUNCH_RETALIATE_DEFAULT_06,А вот это обратно лови!
+QUOTE_PED_PUNCH_RETALIATE_ELDER_01,"Ишь ты, на деда полез?! Вот тебе тростью!"
+QUOTE_PED_PUNCH_RETALIATE_ELDER_02,"Я ещё крепкий, хулиган! Получи!"
+QUOTE_PED_PUNCH_RETALIATE_ELDER_03,"Вот тебе за старика, негодяй!"
+QUOTE_PED_PUNCH_RETALIATE_ELDER_04,У нас в молодости таких учили! На!
+QUOTE_PED_PUNCH_RETALIATE_GOPNIK_01,"Ты кого тронул, вася?! На нах!"
+QUOTE_PED_PUNCH_RETALIATE_GOPNIK_02,"Ты чё, попутал, джигит?! Ща сам ляжешь!"
+QUOTE_PED_PUNCH_RETALIATE_GOPNIK_03,Ты на кого руку поднял?! Получи в ответ!
+QUOTE_PED_PUNCH_RETALIATE_GOPNIK_04,"Слышь, ты щас сам ляжешь! Держи!"
+QUOTE_PED_PUNCH_RETALIATE_GOPNIK_05,"Получи сдачу, самый смелый?!"
+QUOTE_PED_PUNCH_RETALIATE_MOM_01,"Ты кого тронул, урод?! Получи!"
+QUOTE_PED_PUNCH_RETALIATE_MOM_02,Не смей подходить! На нах!
+QUOTE_PED_PUNCH_RETALIATE_MOM_03,"Вот тебе, скотина, чтоб не лез!"
+QUOTE_PED_PUNCH_RETALIATE_TOURIST_01,Это тебе не санаторий! Получи!
+QUOTE_PED_PUNCH_RETALIATE_TOURIST_02,На курорте драться вздумал?! На нах!
+QUOTE_PED_PUNCH_RETALIATE_TOURIST_03,Я за себя постою! Держи сдачу!
+QUOTE_PED_PUNCH_RETALIATE_WORKER_01,Ща как дам в ответ! Получи!
+QUOTE_PED_PUNCH_RETALIATE_WORKER_02,"Ты чё творишь, кулаками машешь?! На нах!"
+QUOTE_PED_PUNCH_RETALIATE_WORKER_03,"Слышь, ошалел?! Получи сдачу!"
+QUOTE_PED_PUNCH_RETALIATE_WORKER_04,"У меня рука тяжёлая, держи ответочку!"
+QUOTE_PED_PUNCH_WITNESS_01,Драка! Бежим!
+QUOTE_PED_PUNCH_WITNESS_02,"Караул, псих на улице!"
+QUOTE_PED_PUNCH_WITNESS_03,Спасите! Бьют людей!
+QUOTE_PED_PUNCH_WITNESS_04,"Милиция, помогите!"
+QUOTE_PED_PUNCH_WITNESS_05,"Бежим, тут неадекват!"
+QUOTE_PED_RUNNER_01,Ноги — моё всё!
+QUOTE_PED_RUNNER_02,Опоздаю на электричку!
+QUOTE_PED_RUNNER_03,Ещё круг и домой...
+QUOTE_PED_RUNNER_04,Главное — темп держать!
+QUOTE_PED_RUNNER_05,Утренняя пробежка — заряд на день!
+QUOTE_PED_RUNNER_06,"Дыхание ровное, пульс в норме..."
+QUOTE_PED_RUNNER_07,Вокруг Машука бы пробежаться...
+QUOTE_PED_SHOUT_01,"Э, вася, куда прешь, права в Ессентуках купил?!"
+QUOTE_PED_SHOUT_02,"Слышь, тут пешеходный переход вообще-то!"
+QUOTE_PED_SHOUT_03,Осторожней! У меня нарзан прольется!
+QUOTE_PED_SHOUT_04,"Эй, Шумахер, разуй глаза!"
+QUOTE_PED_SHOUT_05,"Вася, тормоза придумали для кого?!"
+QUOTE_PED_SHOUT_06,"Вах, за что-о-о?!"
+QUOTE_PED_SHOUT_07,Понакупали прав на Машуке!
+QUOTE_PED_SHOUT_08,"Смотри куда рулишь, олень!"
+QUOTE_PED_SHOUT_09,Тут люди на курорте отдых проводят!
+QUOTE_PED_SHOUT_10,Чуть не сбил! Полиция-а-а!
+QUOTE_PED_SHOUT_11,"Э, джигит, на тротуар не заезжай!"
+QUOTE_PED_SHOUT_12,"Слышь, фары включи, ночь на дворе!"
+QUOTE_PED_SHOUT_13,Ничего себе полетел! На Бештау спешишь?!
+QUOTE_PED_SHOUT_14,"Куда ты прешь, тут же люди с санатория идут!"
+QUOTE_PED_SHOUT_15,"Осторожно, шашлык из рук уронил!"
+QUOTE_PED_SHOUT_16,"Вот это гонщик, мамой клянусь!"
+QUOTE_PED_SHOUT_17,"Эй, шеф, ты на Приоре или на самолёте?!"
+QUOTE_PED_SHOUT_18,"Мамой клянусь, чуть сандали не слетели!"
+QUOTE_PED_SHOUT_19,"Слышь, на зебре люди идут, а не кегли!"
+QUOTE_PED_SHOUT_20,"Вай, мааа! Куда так лететь, за чебуреками?!"
+QUOTE_PED_SHOUT_21,Ты б ещё на Провал заехал на своей калымаге!
+QUOTE_PED_SHOUT_22,"Где тебя водить учили, в Лермонтове?!"
+QUOTE_PED_SHOUT_23,"Елки-палки, чудом отпрыгнуть успел!"
+QUOTE_PED_SHOUT_24,"Э, дорогой, поворотники для кого придумали?!"
+QUOTE_PED_SHOUT_25,"Смотри, шашлычника чуть не переехал!"
+QUOTE_PED_SHOUT_26,Твою ж... На курорте даже дорогу спокойно не перейти!
+QUOTE_PED_SHOUT_27,"Ты что, на Цветнике права получал?!"
+QUOTE_PED_SHOUT_28,"Потише рули, у меня минералка в пакете закипела!"
+QUOTE_PED_SHOUT_29,"Куда прешь, джигит недоделанный?!"
+QUOTE_PED_SHOUT_30,"Вай, полиция! Этот таксист с ума сошёл!"
+QUOTE_PED_SHOUT_31,"Слышь, тормози! Мы тут нарзан пьём, а не в ралли играем!"
+QUOTE_PED_SHOUT_32,"Баран на педалях, разуй глаза!"
+QUOTE_PED_SHOUT_33,У меня от твоих виражей кепка с головы слетела!
+QUOTE_PED_SHOUT_34,"Эй, гонщик, до Бештау пешком дойдёшь с такой ездой!"
+QUOTE_PED_STUDENT_01,Сессия скоро...
+QUOTE_PED_STUDENT_02,"На пары бегу, препод злой..."
+QUOTE_PED_STUDENT_03,Курить и учиться — оба вредно...
+QUOTE_PED_STUDENT_04,Где бы конспект по матану достать?
+QUOTE_PED_STUDENT_05,Стипуху бы поскорее выплатили...
+QUOTE_PED_STUDENT_06,Опять в общаге до утра сидели...
+QUOTE_PED_STUDENT_07,Только бы зачёт автоматом поставили...
+QUOTE_PED_TOURIST_01,А где тут нарзан?
+QUOTE_PED_TOURIST_02,Как пройти к Провалу?
+QUOTE_PED_TOURIST_03,Красивый у вас Пятигорск!
+QUOTE_PED_TOURIST_04,Надо сфотографироваться у орла!
+QUOTE_PED_TOURIST_05,Воздух здесь невероятный!
+QUOTE_PED_TOURIST_06,А где тут дача Эльзы?
+QUOTE_PED_TOURIST_07,"Вай, какой вид на Бештау открывается!"
+QUOTE_PED_WORKER_01,"Эх, смена тяжёлая была..."
+QUOTE_PED_WORKER_02,"Надо бы в столовую, перекусить..."
+QUOTE_PED_WORKER_03,"Слышь, асфальт тут опять кладут..."
+QUOTE_PED_WORKER_04,"Работа — не волк, в лес не убежит!"
+QUOTE_PED_WORKER_05,"Эх, сейчас бы холодненького..."
+QUOTE_PED_WORKER_06,Надо инструмент в порядок привести...
+QUOTE_PED_WORKER_07,Смена кончилась — можно и отдохнуть!
+QUOTE_PED_WORKER_08,Вот бы премию дали в этом месяце...
+QUOTE_PED_WORKER_09,"Эх, спина болит после работы..."
+QUOTE_PED_WORKER_10,Надо бы на рынок за продуктами...
+QUOTE_WEATHER_CLEAR_01,Какая ясная погода! Машук и Бештау как на ладони видно!
+QUOTE_WEATHER_CLEAR_02,"Солнышко пригревает, настоящий курортный денёк!"
+QUOTE_WEATHER_CLEAR_03,"Красота на улице, благодать! Окошко приоткроем с ветерком?"
+QUOTE_WEATHER_CLEAR_04,"В такую ясную погоду грех пешком не гулять, но на такси быстрее!"
+QUOTE_WEATHER_CLEAR_05,"Жара начинается! Кондиционер в норме, шеф?"
+QUOTE_WEATHER_CLEAR_06,"Небо чистое, ни облачка над Пятигорском. Отличный день для поездки!"
+QUOTE_WEATHER_CLEAR_07,Солнце шпарит! Довези до тенечка у нарзанной галереи!
+QUOTE_WEATHER_FOG_01,"Ого, какой туман с Машука спустился! Ничего не видно, аккуратнее!"
+QUOTE_WEATHER_FOG_02,"Пятигорск как в молоке! Едем по приборам, шеф?"
+QUOTE_WEATHER_FOG_03,"В пяти метрах ничего не видать... Фары включил, командир?"
+QUOTE_WEATHER_FOG_04,Вот это туманище наполз с гор! Главное в чей-то бампер не приехать.
+QUOTE_WEATHER_FOG_05,"Мистическая атмосфера сегодня в городе, прямо как в романах Лермонтова!"
+QUOTE_WEATHER_FOG_06,"Осторожнее на серпантине, в таком тумане обочину легко потерять!"
+QUOTE_WEATHER_FOG_07,"Густой туман какой... Ты дорогу наизусть знаешь, надеюсь?"
+QUOTE_WEATHER_RAIN_01,"Хорошо, что вовремя такси поймал, а то ливень как из ведра!"
+QUOTE_WEATHER_RAIN_02,"Ох и зарядил дождь! Хорошо, что зонт взял!"
+QUOTE_WEATHER_RAIN_03,"Ну и погодка разгулялась! Вся обувь промокла, включай печку, шеф!"
+QUOTE_WEATHER_RAIN_04,"Асфальт мокрый, скользит небось? Аккуратнее на поворотах, дорогой!"
+QUOTE_WEATHER_RAIN_05,"С гор тучи надуло, сейчас весь Цветник затопит. Погнали скорее!"
+QUOTE_WEATHER_RAIN_06,"Дождик курортникам не помеха, но на машине всё ж суше!"
+QUOTE_WEATHER_RAIN_07,Дворники успевают справляться? Ничего не видно в такую сырость!
+RADIO_CHANSON_GENRE,Душевный Блатняк
+RADIO_CHANSON_NAME,Кавказ Шансон
+RADIO_CHILLED_GENRE,Эмбиент Дезерт
+RADIO_CHILLED_NAME,Ночной Курорт
+RADIO_KAVKAZ_GENRE,Динамичный Этно-бит
+RADIO_KAVKAZ_NAME,Кавказ Beat
+RADIO_PYATIGORSK_GENRE,Лоу-фай Чилл
+RADIO_PYATIGORSK_NAME,Пятигорск FM
+RADIO_ROCK_GENRE,Драйвовый Рок
+RADIO_ROCK_NAME,Бештау Rock & Drive
+RADIO_SYNTH_GENRE,Ретровейв / Синт
+RADIO_SYNTH_NAME,Машук Synth 80s
+REVIEW_1_01,"Это не такси, а экстрим!"
+REVIEW_1_02,"Ужас, чуть не разбились!"
+REVIEW_1_03,Пешком быстрее и безопаснее!
+REVIEW_2_01,"Укачало всего, на горках подлетали"
+REVIEW_2_02,"Грязюка в салоне, чаевых не дам"
+REVIEW_3_01,Бывало и лучше...
+REVIEW_3_02,"Резковато едешь, брат"
+REVIEW_3_03,Машина как из-под трактора
+REVIEW_4_01,"Норм поездка, но газку сбрасывай на поворотах"
+REVIEW_4_02,"Хорошо, только помыл бы машину"
+REVIEW_4_03,"Почти идеально, мелочи"
+REVIEW_5_01,Долетели как на крыльях!
+REVIEW_5_02,"Идеально, лучший водитель Пятигорска!"
+REVIEW_5_03,"Чистая машина, вежливый водитель — 5 звёзд!"
+REVIEW_5_04,"Такое впечатление, что летели!"
+TUNING_COLOR_БЕЛЫЙ,Белый
+TUNING_COLOR_ЗЕЛЁНЫЙ,Зелёный
+TUNING_COLOR_КРАСНЫЙ,Красный
+TUNING_COLOR_ОРАНЖЕВЫЙ,Оранжевый
+TUNING_COLOR_СИНИЙ,Синий
+TUNING_COLOR_ТАКСИ_ЖЁЛТЫЙ,Такси жёлтый
+TUNING_COLOR_ЧЁРНЫЙ,Чёрный
+TUNING_DECAL_CHECKER,Шашечки
+TUNING_DECAL_NONE,Нет
+TUNING_DECAL_RACING,Гоночная
+TUNING_DECAL_STRIPE,Полоса
+TUNING_KIT_SPORT,Спорт
+TUNING_KIT_STOCK,Стандарт
+TUNING_RIM_CHROME,Хром
+TUNING_RIM_DISC,Стандарт
+TUNING_RIM_SPOKE,Спицы
+UPGRADE_ARMOR_DESC,Бронированный как сейф банка на Кирова — тарань смело
+UPGRADE_ARMOR_NAME,Прочность
+UPGRADE_BRAKES_DESC,Керамика Brembo — встаёт как вкопанная перед любой внезапной коровой
+UPGRADE_BRAKES_NAME,Тормоза
+UPGRADE_CAPACITY_DESC,"Весь двор помещается — бабушки, коляски и горы курортных чемоданов"
+UPGRADE_CAPACITY_NAME,Вместимость
+UPGRADE_ENGINE_DESC,"Чип-тюнинг от мастеров с Бештаугорского — турбина свистит, Приоры плачут"
+UPGRADE_ENGINE_NAME,Двигатель
+UPGRADE_SUSPENSION_DESC,Горная подвеска — шпильки серпантина Машука проходим без крена
+UPGRADE_SUSPENSION_NAME,Подвеска
+UPGRADE_TANK_DESC,Бак размером с нарзанную цистерну — до Минвод без остановки
+UPGRADE_TANK_NAME,Бак
+WEATHER_CLEAR_NAME,Ясно
+WEATHER_FOG_NAME,Туман
+WEATHER_RAIN_NAME,Дождь

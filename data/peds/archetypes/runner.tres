@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PedArchetypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/ped_curse_runner.tres" id="1_4f54v"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_flee_default.tres" id="2_10nl1"]
+[ext_resource type="Resource" path="res://data/quotes/ped_runner.tres" id="3_itlyu"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_witness.tres" id="4_0dhql"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_retaliate_default.tres" id="5_tf6th"]
+[ext_resource type="Script" path="res://schema/ped_archetype_data.gd" id="6_ujj7j"]
+
+[resource]
+script = ExtResource("6_ujj7j")
+id = &"runner"
+speed_min = 4.0
+speed_max = 5.0
+scale_y_min = 1.0
+scale_y_max = 1.12
+scale_xz_min = 0.88
+scale_xz_max = 0.96
+cloth_colors = PackedColorArray(0.93333334, 0.2, 0.13333334, 1, 0.13333334, 0.93333334, 0.26666668, 1, 0.93333334, 0.8, 0, 1, 0, 0.8, 0.93333334, 1, 1, 0.13333334, 0.6666667, 1)
+pants_colors = PackedColorArray(0.06666667, 0.06666667, 0.06666667, 1, 0.13333334, 0.13333334, 0.2, 1)
+accessories = PackedStringArray()
+quotes_idle = ExtResource("3_itlyu")
+quotes_curse = ExtResource("1_4f54v")
+quotes_panic = ExtResource("4_0dhql")
+quotes_flee = ExtResource("2_10nl1")
+quotes_retaliate = ExtResource("5_tf6th")
+retaliate_chance = 0.1

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="RadioStationData" format=3]
+
+[ext_resource type="Script" path="res://schema/radio_station_data.gd" id="1_hciyw"]
+
+[resource]
+script = ExtResource("1_hciyw")
+id = &"kavkaz"
+display_name = "RADIO_KAVKAZ_NAME"
+genre = "RADIO_KAVKAZ_GENRE"
+frequency = "91.2 FM"
+bpm = 128.0
+color = Color(0.8784314, 0.627451, 0.2509804, 1)
+root_hz = 73.42
+fifth_hz = 110.0
+scale_steps = PackedInt32Array(0, 1, 4, 5, 7, 8, 11)
+instruments = PackedStringArray("kick", "snare", "hat", "bass", "lead")
+drum_density = 0.9
+texture = 0.6

@@ -1,0 +1,68 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://world/sky/sky_rig.gd" id="1_sky"]
+
+[sub_resource type="ProceduralSkyMaterial" id="Sky_1"]
+sky_top_color = Color(0.27, 0.47, 0.75, 1)
+sky_horizon_color = Color(0.66, 0.77, 0.88, 1)
+sky_curve = 0.16
+ground_bottom_color = Color(0.36, 0.44, 0.33, 1)
+ground_horizon_color = Color(0.68, 0.72, 0.68, 1)
+sun_angle_max = 12.0
+sun_curve = 0.08
+
+[sub_resource type="Sky" id="SkyRes_1"]
+sky_material = SubResource("Sky_1")
+
+[sub_resource type="Environment" id="Env_1"]
+background_mode = 2
+sky = SubResource("SkyRes_1")
+ambient_light_source = 3
+ambient_light_color = Color(0.62, 0.7, 0.82, 1)
+ambient_light_sky_contribution = 0.35
+ambient_light_energy = 0.45
+tonemap_mode = 3
+tonemap_white = 8.0
+tonemap_exposure = 1.0
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 1.2
+glow_enabled = true
+glow_intensity = 0.5
+glow_bloom = 0.15
+glow_blend_mode = 2
+glow_hdr_threshold = 1.0
+volumetric_fog_density = 0.004
+volumetric_fog_albedo = Color(0.86, 0.9, 0.96, 1)
+volumetric_fog_emission_energy = 0.0
+volumetric_fog_length = 96.0
+volumetric_fog_detail_spread = 2.0
+fog_enabled = true
+fog_light_color = Color(0.72, 0.79, 0.85, 1)
+fog_density = 0.0
+fog_depth_begin = 90.0
+fog_depth_end = 260.0
+adjustment_enabled = true
+adjustment_contrast = 1.08
+adjustment_saturation = 1.24
+
+[node name="SkyRig" type="Node3D"]
+script = ExtResource("1_sky")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env_1")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+light_color = Color(1, 0.94, 0.84, 1)
+light_energy = 1.45
+shadow_enabled = true
+shadow_bias = 0.06
+shadow_normal_bias = 2.5
+shadow_opacity = 0.78
+directional_shadow_mode = 2
+directional_shadow_split_1 = 0.07
+directional_shadow_split_2 = 0.2
+directional_shadow_split_3 = 0.5
+directional_shadow_blend_splits = true
+directional_shadow_max_distance = 130.0
+

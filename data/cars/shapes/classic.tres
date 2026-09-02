@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="CarShapeData" format=3]
+
+[ext_resource type="Script" path="res://schema/car_shape_data.gd" id="1_xf3cb"]
+
+[resource]
+script = ExtResource("1_xf3cb")
+silhouette = &"retro"
+width = 1.85
+length = 4.0

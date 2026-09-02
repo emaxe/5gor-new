@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TrafficTypeData" format=3]
+
+[ext_resource type="Script" path="res://schema/traffic_type_data.gd" id="1_tj3uc"]
+
+[resource]
+script = ExtResource("1_tj3uc")
+id = &"suv_sport"
+silhouette = &"suv"
+radius = 2.35
+length = 4.75
+width = 2.05
+weight = 3.0
+colors = PackedColorArray(0.078431375, 0.078431375, 0.078431375, 1, 0.95686275, 0.95686275, 0.95686275, 1, 0.6901961, 0.1254902, 0.1254902, 1)
+body_kit = &"sport"

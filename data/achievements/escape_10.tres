@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_o3kxm"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_p3ihp"]
+
+[sub_resource type="Resource" id="Resource_1tx8s"]
+script = ExtResource("1_o3kxm")
+stat = &"total_escapes"
+value = 10.0
+
+[resource]
+script = ExtResource("2_p3ihp")
+id = &"escape_10"
+display_name = "ACH_ESCAPE_10_NAME"
+description = "ACH_ESCAPE_10_DESC"
+toast = "ACH_ESCAPE_10_TOAST"
+icon = &"escape_10"
+requirements = Array[ExtResource("1_o3kxm")]([SubResource("Resource_1tx8s")])
+track_stat = &"total_escapes"
+track_target = 10.0

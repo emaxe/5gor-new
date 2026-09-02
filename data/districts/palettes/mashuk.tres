@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="PaletteData" format=3]
+
+[ext_resource type="Script" path="res://schema/palette_data.gd" id="1_4cm3h"]
+
+[resource]
+script = ExtResource("1_4cm3h")
+id = &"mashuk"
+facades = PackedColorArray(0.7529412, 0.6901961, 0.5647059, 1, 0.6901961, 0.627451, 0.5019608, 1, 0.8156863, 0.7529412, 0.627451, 1, 0.65882355, 0.59607846, 0.47058824, 1, 0.78431374, 0.72156864, 0.59607846, 1)

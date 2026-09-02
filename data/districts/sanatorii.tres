@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="DistrictData" format=3]
+
+[ext_resource type="Resource" path="res://data/districts/palettes/sanatorii.tres" id="1_4m6q8"]
+[ext_resource type="Script" path="res://schema/district_data.gd" id="2_ila7h"]
+
+[resource]
+script = ExtResource("2_ila7h")
+id = &"sanatorii"
+display_name = "DISTRICT_SANATORII_NAME"
+unlock_rating = 45
+weight = 11.0
+palette = ExtResource("1_4m6q8")
+height_min = 10.0
+height_max = 19.0
+density = 2
+map_color = Color(0.72156864, 0.65882355, 0.53333336, 1)
+demand_morning = 0.9
+demand_day = 0.9
+demand_evening = 1.4
+demand_night = 0.8

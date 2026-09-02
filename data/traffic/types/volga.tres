@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="TrafficTypeData" format=3]
+
+[ext_resource type="Script" path="res://schema/traffic_type_data.gd" id="1_yrlm4"]
+
+[resource]
+script = ExtResource("1_yrlm4")
+id = &"volga"
+silhouette = &"retro"
+radius = 2.1
+length = 4.7
+width = 1.85
+weight = 5.0
+colors = PackedColorArray(0.16470589, 0.22745098, 0.16470589, 1, 0.101960786, 0.101960786, 0.101960786, 1, 0.78431374, 0.7529412, 0.65882355, 1)

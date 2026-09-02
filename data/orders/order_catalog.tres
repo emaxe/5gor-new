@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="OrderCatalog" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/day_note_crashes.tres" id="1_8vgeb"]
+[ext_resource type="Resource" path="res://data/quotes/day_note_general.tres" id="2_0qr87"]
+[ext_resource type="Resource" path="res://data/quotes/day_note_good.tres" id="3_gmrae"]
+[ext_resource type="Resource" path="res://data/quotes/day_note_low_earned.tres" id="4_ie6du"]
+[ext_resource type="Resource" path="res://data/quotes/dispatcher_fog.tres" id="5_a45ry"]
+[ext_resource type="Resource" path="res://data/quotes/dispatcher_general.tres" id="6_dpe68"]
+[ext_resource type="Resource" path="res://data/quotes/dispatcher_night.tres" id="7_vw0mn"]
+[ext_resource type="Resource" path="res://data/quotes/dispatcher_rain.tres" id="8_l83sx"]
+[ext_resource type="Resource" path="res://data/quotes/drift_reaction.tres" id="9_id51l"]
+[ext_resource type="Script" path="res://schema/mission_data.gd" id="10_p1gxd"]
+[ext_resource type="Resource" path="res://data/orders/missions/grandma.tres" id="11_waxsn"]
+[ext_resource type="Resource" path="res://data/orders/missions/doctor.tres" id="12_vvoip"]
+[ext_resource type="Resource" path="res://data/orders/missions/race.tres" id="13_pvdtp"]
+[ext_resource type="Resource" path="res://data/orders/missions/tour.tres" id="14_j4ud2"]
+[ext_resource type="Resource" path="res://data/orders/missions/night.tres" id="15_a63m0"]
+[ext_resource type="Script" path="res://schema/mood_tier.gd" id="16_inj8y"]
+[ext_resource type="Resource" path="res://data/orders/mood_0.tres" id="17_p7f3g"]
+[ext_resource type="Resource" path="res://data/orders/mood_1.tres" id="18_jqrpg"]
+[ext_resource type="Resource" path="res://data/orders/mood_2.tres" id="19_tn57u"]
+[ext_resource type="Resource" path="res://data/orders/mood_3.tres" id="20_onnbp"]
+[ext_resource type="Resource" path="res://data/orders/mood_4.tres" id="21_g4btk"]
+[ext_resource type="Resource" path="res://data/quotes/passenger_names.tres" id="22_0i2tu"]
+[ext_resource type="Resource" path="res://data/quotes/review_1.tres" id="23_1xegp"]
+[ext_resource type="Resource" path="res://data/quotes/review_2.tres" id="24_u1oud"]
+[ext_resource type="Resource" path="res://data/quotes/review_3.tres" id="25_yrin3"]
+[ext_resource type="Resource" path="res://data/quotes/review_4.tres" id="26_w1g2w"]
+[ext_resource type="Resource" path="res://data/quotes/review_5.tres" id="27_lr60h"]
+[ext_resource type="Script" path="res://schema/catalog/order_catalog.gd" id="28_p6mrj"]
+[ext_resource type="Script" path="res://schema/order_type_data.gd" id="29_6c3k2"]
+[ext_resource type="Resource" path="res://data/orders/types/normal.tres" id="30_wujbg"]
+[ext_resource type="Resource" path="res://data/orders/types/urgent.tres" id="31_byapq"]
+[ext_resource type="Resource" path="res://data/orders/types/vip.tres" id="32_iasw2"]
+[ext_resource type="Resource" path="res://data/orders/types/package.tres" id="33_lrawa"]
+[ext_resource type="Resource" path="res://data/orders/types/drunk.tres" id="34_2e7l3"]
+[ext_resource type="Resource" path="res://data/orders/types/group.tres" id="35_wesnu"]
+[ext_resource type="Resource" path="res://data/orders/types/race.tres" id="36_yauwo"]
+[ext_resource type="Resource" path="res://data/orders/types/tour.tres" id="37_lr1oq"]
+[ext_resource type="Resource" path="res://data/quotes/weather_clear.tres" id="38_yo5qs"]
+[ext_resource type="Resource" path="res://data/quotes/weather_fog.tres" id="39_q3k0d"]
+[ext_resource type="Resource" path="res://data/quotes/weather_rain.tres" id="40_tb0kw"]
+
+[resource]
+script = ExtResource("28_p6mrj")
+types = Array[ExtResource("29_6c3k2")]([ExtResource("30_wujbg"), ExtResource("31_byapq"), ExtResource("32_iasw2"), ExtResource("33_lrawa"), ExtResource("34_2e7l3"), ExtResource("35_wesnu"), ExtResource("36_yauwo"), ExtResource("37_lr1oq")])
+missions = Array[ExtResource("10_p1gxd")]([ExtResource("11_waxsn"), ExtResource("12_vvoip"), ExtResource("13_pvdtp"), ExtResource("14_j4ud2"), ExtResource("15_a63m0")])
+mood_tiers = Array[ExtResource("16_inj8y")]([ExtResource("17_p7f3g"), ExtResource("18_jqrpg"), ExtResource("19_tn57u"), ExtResource("20_onnbp"), ExtResource("21_g4btk")])
+reviews_1 = ExtResource("23_1xegp")
+reviews_2 = ExtResource("24_u1oud")
+reviews_3 = ExtResource("25_yrin3")
+reviews_4 = ExtResource("26_w1g2w")
+reviews_5 = ExtResource("27_lr60h")
+passenger_names = ExtResource("22_0i2tu")
+drift_reactions = ExtResource("9_id51l")
+dispatcher_general = ExtResource("6_dpe68")
+dispatcher_rain = ExtResource("8_l83sx")
+dispatcher_fog = ExtResource("5_a45ry")
+dispatcher_night = ExtResource("7_vw0mn")
+day_note_good = ExtResource("3_gmrae")
+day_note_crashes = ExtResource("1_8vgeb")
+day_note_low_earned = ExtResource("4_ie6du")
+day_note_general = ExtResource("2_0qr87")
+weather_clear = ExtResource("38_yo5qs")
+weather_rain = ExtResource("40_tb0kw")
+weather_fog = ExtResource("39_q3k0d")

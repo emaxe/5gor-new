@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_jdnac"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_4iarf"]
+
+[sub_resource type="Resource" id="Resource_vvjdn"]
+script = ExtResource("1_jdnac")
+stat = &"shift_punches"
+value = 10.0
+
+[resource]
+script = ExtResource("2_4iarf")
+id = &"hot_head"
+display_name = "ACH_HOT_HEAD_NAME"
+description = "ACH_HOT_HEAD_DESC"
+toast = "ACH_HOT_HEAD_TOAST"
+icon = &"hot_head"
+requirements = Array[ExtResource("1_jdnac")]([SubResource("Resource_vvjdn")])
+track_stat = &"shift_punches"
+track_target = 10.0

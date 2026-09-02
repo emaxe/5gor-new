@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="GfxCatalog" format=3]
+
+[ext_resource type="Script" path="res://schema/gfx_preset.gd" id="1_mh7fx"]
+[ext_resource type="Resource" path="res://data/gfx/presets/low.tres" id="2_vu7wt"]
+[ext_resource type="Resource" path="res://data/gfx/presets/medium.tres" id="3_exxqb"]
+[ext_resource type="Resource" path="res://data/gfx/presets/high.tres" id="4_dv7vi"]
+[ext_resource type="Script" path="res://schema/catalog/gfx_catalog.gd" id="5_nikxp"]
+
+[resource]
+script = ExtResource("5_nikxp")
+items = Array[ExtResource("1_mh7fx")]([ExtResource("2_vu7wt"), ExtResource("3_exxqb"), ExtResource("4_dv7vi")])

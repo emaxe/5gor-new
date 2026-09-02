@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="StyleConfig" format=3]
+
+[ext_resource type="Script" path="res://schema/style_config.gd" id="1_rlpi1"]
+
+[resource]
+script = ExtResource("1_rlpi1")
+near_miss_streak_counts = PackedInt32Array(2, 5, 10)
+near_miss_streak_mults = PackedFloat32Array(2, 5, 10)
+combo_streak_counts = PackedInt32Array(3, 5, 10)

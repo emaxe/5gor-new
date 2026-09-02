@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_dhmir"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_qdvwi"]
+
+[sub_resource type="Resource" id="Resource_lsrg7"]
+script = ExtResource("1_dhmir")
+stat = &"total_earned"
+value = 100000.0
+
+[resource]
+script = ExtResource("2_qdvwi")
+id = &"earn_100k"
+display_name = "ACH_EARN_100K_NAME"
+description = "ACH_EARN_100K_DESC"
+toast = "ACH_EARN_100K_TOAST"
+icon = &"earn_100k"
+requirements = Array[ExtResource("1_dhmir")]([SubResource("Resource_lsrg7")])
+track_stat = &"total_earned"
+track_target = 100000.0

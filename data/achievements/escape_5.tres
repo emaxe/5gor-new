@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_gyv20"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_v0aoa"]
+
+[sub_resource type="Resource" id="Resource_jv86n"]
+script = ExtResource("1_gyv20")
+stat = &"max_escape_level"
+value = 5.0
+
+[resource]
+script = ExtResource("2_v0aoa")
+id = &"escape_5"
+display_name = "ACH_ESCAPE_5_NAME"
+description = "ACH_ESCAPE_5_DESC"
+toast = "ACH_ESCAPE_5_TOAST"
+icon = &"escape_5"
+requirements = Array[ExtResource("1_gyv20")]([SubResource("Resource_jv86n")])
+track_stat = &"max_escape_level"
+track_target = 5.0

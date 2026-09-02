@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="PedConfig" format=3]
+
+[ext_resource type="Script" path="res://schema/ped_config.gd" id="1_juaip"]
+
+[resource]
+script = ExtResource("1_juaip")
+punch_arc = 1.0471975511965976

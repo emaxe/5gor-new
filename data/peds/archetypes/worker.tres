@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="PedArchetypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/ped_curse_worker.tres" id="1_6asti"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_flee_worker.tres" id="2_d1iuy"]
+[ext_resource type="Resource" path="res://data/quotes/ped_worker.tres" id="3_uqqep"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_witness.tres" id="4_6wwdn"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_retaliate_worker.tres" id="5_gwj87"]
+[ext_resource type="Script" path="res://schema/ped_archetype_data.gd" id="6_l4xwu"]
+
+[resource]
+script = ExtResource("6_l4xwu")
+id = &"worker"
+speed_min = 2.2
+speed_max = 2.8
+cloth_colors = PackedColorArray()
+pants_colors = PackedColorArray()
+accessories = PackedStringArray("helmet", "hi_vis", "wrench")
+quotes_idle = ExtResource("3_uqqep")
+quotes_curse = ExtResource("1_6asti")
+quotes_panic = ExtResource("4_6wwdn")
+quotes_flee = ExtResource("2_d1iuy")
+quotes_retaliate = ExtResource("5_gwj87")
+retaliate_chance = 0.5

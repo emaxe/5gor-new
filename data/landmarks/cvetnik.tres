@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="LandmarkData" format=3]
+
+[ext_resource type="Script" path="res://schema/landmark_data.gd" id="1_mteh7"]
+
+[resource]
+script = ExtResource("1_mteh7")
+id = &"cvetnik"
+display_name = "LANDMARK_CVETNIK_NAME"
+description = "LANDMARK_CVETNIK_DESC"
+position = Vector2(-32, 18)

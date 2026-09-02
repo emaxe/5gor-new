@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="TrafficTypeData" format=3]
+
+[ext_resource type="Script" path="res://schema/traffic_type_data.gd" id="1_t27hv"]
+
+[resource]
+script = ExtResource("1_t27hv")
+id = &"coupe"
+silhouette = &"coupe"
+radius = 1.9
+length = 4.3
+width = 1.88
+weight = 5.0
+colors = PackedColorArray(0.7529412, 0.1254902, 0.1882353, 1, 0.101960786, 0.101960786, 0.101960786, 1, 0.84705883, 0.84705883, 0.84705883, 1, 0.1254902, 0.3137255, 0.627451, 1)

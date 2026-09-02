@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://world/landmarks/vokzal.gd" id="1_vokzal"]
+
+[node name="Vokzal" type="Node3D"]
+script = ExtResource("1_vokzal")

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="QuoteBank" format=3]
+
+[ext_resource type="Script" path="res://schema/quote_bank.gd" id="1_d7dnx"]
+
+[resource]
+script = ExtResource("1_d7dnx")
+id = &"review_1"
+lines = PackedStringArray("REVIEW_1_01", "REVIEW_1_02", "REVIEW_1_03")

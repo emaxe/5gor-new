@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" path="res://schema/upgrade_data.gd" id="1_ll7as"]
+
+[resource]
+script = ExtResource("1_ll7as")
+id = &"armor"
+display_name = "UPGRADE_ARMOR_NAME"
+description = "UPGRADE_ARMOR_DESC"
+icon = &"armor"
+base_cost = 700
+armor_per_level = 0.35

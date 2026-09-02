@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="OrderTypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/dialog_crash.tres" id="1_pcht8"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_group_dropoff.tres" id="2_eyevu"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_group_pickup.tres" id="3_wntgw"]
+[ext_resource type="Script" path="res://schema/order_type_data.gd" id="4_2enyh"]
+
+[resource]
+script = ExtResource("4_2enyh")
+id = &"group"
+display_name = "ORDER_GROUP_NAME"
+description = "ORDER_GROUP_DESC"
+icon = "К"
+color = Color(0.24313726, 0.61960787, 0.43137255, 1)
+pay_mult = 0.9
+rating_reward = 9
+day_weight = 0.1
+night_weight = 0.0
+required_capacity = 2
+stops = 2
+quotes_pickup = ExtResource("3_wntgw")
+quotes_dropoff = ExtResource("2_eyevu")
+quotes_crash = ExtResource("1_pcht8")

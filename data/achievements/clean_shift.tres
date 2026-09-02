@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_4y2ac"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_dl1oy"]
+
+[sub_resource type="Resource" id="Resource_bfslp"]
+script = ExtResource("1_4y2ac")
+stat = &"shift_orders"
+value = 5.0
+
+[sub_resource type="Resource" id="Resource_7hix2"]
+script = ExtResource("1_4y2ac")
+stat = &"shift_crashes"
+op = 2
+
+[sub_resource type="Resource" id="Resource_6qch3"]
+script = ExtResource("1_4y2ac")
+stat = &"shift_peds"
+op = 2
+
+[resource]
+script = ExtResource("2_dl1oy")
+id = &"clean_shift"
+display_name = "ACH_CLEAN_SHIFT_NAME"
+description = "ACH_CLEAN_SHIFT_DESC"
+toast = "ACH_CLEAN_SHIFT_TOAST"
+icon = &"clean_shift"
+requirements = Array[ExtResource("1_4y2ac")]([SubResource("Resource_bfslp"), SubResource("Resource_7hix2"), SubResource("Resource_6qch3")])

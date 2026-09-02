@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_8i8d0"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_s0i8p"]
+
+[sub_resource type="Resource" id="Resource_b1a2l"]
+script = ExtResource("1_8i8d0")
+stat = &"total_orders"
+value = 50.0
+
+[resource]
+script = ExtResource("2_s0i8p")
+id = &"orders_50"
+display_name = "ACH_ORDERS_50_NAME"
+description = "ACH_ORDERS_50_DESC"
+toast = "ACH_ORDERS_50_TOAST"
+icon = &"orders_50"
+requirements = Array[ExtResource("1_8i8d0")]([SubResource("Resource_b1a2l")])
+track_stat = &"total_orders"
+track_target = 50.0

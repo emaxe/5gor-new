@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TuningCatalog" format=3]
+
+[ext_resource type="Script" path="res://schema/tuning_catalog.gd" id="1_dkuyh"]
+
+[resource]
+script = ExtResource("1_dkuyh")
+color_names = PackedStringArray("TUNING_COLOR_ТАКСИ_ЖЁЛТЫЙ", "TUNING_COLOR_КРАСНЫЙ", "TUNING_COLOR_СИНИЙ", "TUNING_COLOR_БЕЛЫЙ", "TUNING_COLOR_ЧЁРНЫЙ", "TUNING_COLOR_ЗЕЛЁНЫЙ", "TUNING_COLOR_ОРАНЖЕВЫЙ")
+colors = PackedColorArray(0.9490196, 0.75686276, 0.18039216, 1, 0.7529412, 0.22352941, 0.16862746, 1, 0.18039216, 0.43529412, 0.70980394, 1, 0.9411765, 0.9411765, 0.93333334, 1, 0.1254902, 0.14117648, 0.17254902, 1, 0.24313726, 0.5568628, 0.30588236, 1, 0.9019608, 0.49411765, 0.13333334, 1)
+rim_names = PackedStringArray("TUNING_RIM_DISC", "TUNING_RIM_SPOKE", "TUNING_RIM_CHROME")
+rim_colors = PackedColorArray(0.72156864, 0.72156864, 0.72156864, 1, 0.16470589, 0.16470589, 0.16470589, 1, 0.9098039, 0.9254902, 0.9411765, 1)
+rim_styles = PackedStringArray("disc", "spoke", "chrome")
+body_kit_names = PackedStringArray("TUNING_KIT_STOCK", "TUNING_KIT_SPORT")
+body_kit_ids = PackedStringArray("stock", "sport")
+decal_names = PackedStringArray("TUNING_DECAL_NONE", "TUNING_DECAL_STRIPE", "TUNING_DECAL_CHECKER", "TUNING_DECAL_RACING")
+decal_ids = PackedStringArray("none", "stripe", "checker", "racing")

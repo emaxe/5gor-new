@@ -1,0 +1,14 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://fx/shaders/palette_toon.gdshader" id="1_shader"]
+
+[resource]
+resource_name = "mat_palette"
+render_priority = 0
+shader = ExtResource("1_shader")
+shader_parameter/ao_strength = 0.26
+shader_parameter/ao_height = 3.0
+shader_parameter/sky_fill = Color(0.42, 0.52, 0.65, 1)
+shader_parameter/sky_fill_strength = 0.07
+shader_parameter/roughness_value = 0.95
+shader_parameter/metallic_value = 0.0

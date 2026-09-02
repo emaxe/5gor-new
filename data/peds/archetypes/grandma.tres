@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="PedArchetypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/ped_curse_grandma.tres" id="1_ltg61"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_flee_default.tres" id="2_sx4l5"]
+[ext_resource type="Resource" path="res://data/quotes/ped_grandma.tres" id="3_tffrx"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_witness.tres" id="4_wc8ho"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_retaliate_default.tres" id="5_wlxly"]
+[ext_resource type="Script" path="res://schema/ped_archetype_data.gd" id="6_syfne"]
+
+[resource]
+script = ExtResource("6_syfne")
+id = &"grandma"
+speed_min = 1.3
+speed_max = 1.7
+scale_y_min = 0.84
+scale_y_max = 0.92
+scale_xz_min = 1.02
+scale_xz_max = 1.15
+cloth_colors = PackedColorArray(0.3764706, 0.2509804, 0.3137255, 1, 0.2901961, 0.3529412, 0.2509804, 1, 0.3529412, 0.2901961, 0.22745098, 1, 0.4392157, 0.21960784, 0.28235295, 1)
+pants_colors = PackedColorArray(0.22745098, 0.16470589, 0.22745098, 1, 0.16470589, 0.16470589, 0.16470589, 1)
+accessories = PackedStringArray("headscarf", "string_bag")
+quotes_idle = ExtResource("3_tffrx")
+quotes_curse = ExtResource("1_ltg61")
+quotes_panic = ExtResource("4_wc8ho")
+quotes_flee = ExtResource("2_sx4l5")
+quotes_retaliate = ExtResource("5_wlxly")
+retaliate_chance = 0.2

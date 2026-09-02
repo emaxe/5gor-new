@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="DistrictData" format=3]
+
+[ext_resource type="Resource" path="res://data/districts/palettes/rynok.tres" id="1_r8v3g"]
+[ext_resource type="Script" path="res://schema/district_data.gd" id="2_h6pcm"]
+
+[resource]
+script = ExtResource("2_h6pcm")
+id = &"rynok"
+display_name = "DISTRICT_RYNOK_NAME"
+unlock_rating = 30
+weight = 12.0
+palette = ExtResource("1_r8v3g")
+height_min = 6.0
+height_max = 11.0
+map_color = Color(0.6039216, 0.47843137, 0.2901961, 1)
+demand_morning = 1.2
+demand_day = 1.5
+demand_evening = 0.7
+demand_night = 0.4

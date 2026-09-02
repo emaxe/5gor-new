@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="MoodTier" format=3]
+
+[ext_resource type="Script" path="res://schema/mood_tier.gd" id="1_eghsd"]
+
+[resource]
+script = ExtResource("1_eghsd")
+min_style = 0.45
+icon = &"mood_2"
+display_name = "MOOD_2_LABEL"
+color = Color(0.8901961, 0.7019608, 0.25490198, 1)

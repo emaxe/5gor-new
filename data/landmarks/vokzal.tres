@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="LandmarkData" format=3]
+
+[ext_resource type="Script" path="res://schema/landmark_data.gd" id="1_njhn1"]
+
+[resource]
+script = ExtResource("1_njhn1")
+id = &"vokzal"
+display_name = "LANDMARK_VOKZAL_NAME"
+description = "LANDMARK_VOKZAL_DESC"
+position = Vector2(160, 96)

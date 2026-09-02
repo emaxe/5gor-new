@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="OrderTypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/dialog_crash.tres" id="1_q162p"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_tour_dropoff.tres" id="2_lgtay"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_tour_pickup.tres" id="3_nx0qs"]
+[ext_resource type="Script" path="res://schema/order_type_data.gd" id="4_pxeeq"]
+
+[resource]
+script = ExtResource("4_pxeeq")
+id = &"tour"
+display_name = "ORDER_TOUR_NAME"
+description = "ORDER_TOUR_DESC"
+icon = "Т"
+color = Color(0.18039216, 0.61960787, 0.78431374, 1)
+pay_mult = 2.0
+rating_reward = 10
+day_weight = 0.08
+night_weight = 0.06
+required_rating = 15
+stops = 2
+is_tour = true
+quotes_pickup = ExtResource("3_nx0qs")
+quotes_dropoff = ExtResource("2_lgtay")
+quotes_crash = ExtResource("1_q162p")

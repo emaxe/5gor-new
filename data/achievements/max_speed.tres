@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_pw7xt"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_nujf8"]
+
+[sub_resource type="Resource" id="Resource_3pg7d"]
+script = ExtResource("1_pw7xt")
+stat = &"max_speed_kmh"
+value = 150.0
+
+[resource]
+script = ExtResource("2_nujf8")
+id = &"max_speed"
+display_name = "ACH_MAX_SPEED_NAME"
+description = "ACH_MAX_SPEED_DESC"
+toast = "ACH_MAX_SPEED_TOAST"
+icon = &"max_speed"
+requirements = Array[ExtResource("1_pw7xt")]([SubResource("Resource_3pg7d")])
+track_stat = &"max_speed_kmh"
+track_target = 150.0

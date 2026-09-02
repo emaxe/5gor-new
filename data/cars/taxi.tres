@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CarData" format=3]
+
+[ext_resource type="Script" path="res://schema/car_data.gd" id="1_asdt3"]
+[ext_resource type="Resource" path="res://data/cars/shapes/taxi.tres" id="2_eylbw"]
+
+[resource]
+script = ExtResource("1_asdt3")
+id = &"taxi"
+display_name = "CAR_TAXI_NAME"
+description = "CAR_TAXI_DESC"
+shape = ExtResource("2_eylbw")
+body_color = Color(0.9490196, 0.75686276, 0.18039216, 1)
+is_taxi = true
+default_decal = &"checker"

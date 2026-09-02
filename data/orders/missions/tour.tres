@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MissionData" format=3]
+
+[ext_resource type="Script" path="res://schema/mission_data.gd" id="1_2pfey"]
+
+[resource]
+script = ExtResource("1_2pfey")
+id = &"tour"
+title = "MISSION_TOUR_TITLE"
+description = "MISSION_TOUR_DESC"
+icon = "Т"
+color = Color(0.18039216, 0.61960787, 0.78431374, 1)
+required_rating = 45
+pay = 2400
+kind = &"tour"
+drops = PackedVector2Array(-72, -160, 12, -350, 0, -448)
+drop_names = PackedStringArray("MISSION_TOUR_DROP_1", "MISSION_TOUR_DROP_2", "MISSION_TOUR_DROP_3")

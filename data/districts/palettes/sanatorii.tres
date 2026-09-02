@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="PaletteData" format=3]
+
+[ext_resource type="Script" path="res://schema/palette_data.gd" id="1_o7nd5"]
+
+[resource]
+script = ExtResource("1_o7nd5")
+id = &"sanatorii"
+facades = PackedColorArray(0.9411765, 0.9254902, 0.8784314, 1, 0.9098039, 0.8784314, 0.8156863, 1, 0.972549, 0.95686275, 0.9098039, 1, 0.8784314, 0.84705883, 0.78431374, 1, 0.9254902, 0.89411765, 0.83137256, 1)

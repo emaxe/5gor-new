@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="PedArchetypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/ped_curse_nurse.tres" id="1_hq4nu"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_flee_default.tres" id="2_fmc0v"]
+[ext_resource type="Resource" path="res://data/quotes/ped_nurse.tres" id="3_241j7"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_witness.tres" id="4_ckw6j"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_retaliate_default.tres" id="5_idw26"]
+[ext_resource type="Script" path="res://schema/ped_archetype_data.gd" id="6_g86fu"]
+
+[resource]
+script = ExtResource("6_g86fu")
+id = &"nurse"
+speed_min = 2.0
+speed_max = 2.6
+cloth_colors = PackedColorArray()
+pants_colors = PackedColorArray()
+accessories = PackedStringArray("nurse_cap", "stethoscope")
+quotes_idle = ExtResource("3_241j7")
+quotes_curse = ExtResource("1_hq4nu")
+quotes_panic = ExtResource("4_ckw6j")
+quotes_flee = ExtResource("2_fmc0v")
+quotes_retaliate = ExtResource("5_idw26")
+retaliate_chance = 0.2

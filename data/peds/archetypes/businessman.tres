@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PedArchetypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/ped_curse_businessman.tres" id="1_0ttd0"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_flee_default.tres" id="2_5ohtu"]
+[ext_resource type="Resource" path="res://data/quotes/ped_businessman.tres" id="3_ittut"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_witness.tres" id="4_01xb0"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_retaliate_default.tres" id="5_gxfxj"]
+[ext_resource type="Script" path="res://schema/ped_archetype_data.gd" id="6_5p50b"]
+
+[resource]
+script = ExtResource("6_5p50b")
+id = &"businessman"
+scale_y_min = 1.02
+scale_y_max = 1.1
+cloth_colors = PackedColorArray(0.10980392, 0.14117648, 0.1882353, 1, 0.16470589, 0.18039216, 0.21176471, 1, 0.21960784, 0.20392157, 0.1882353, 1, 0.08235294, 0.10980392, 0.14117648, 1)
+pants_colors = PackedColorArray()
+accessories = PackedStringArray("briefcase")
+quotes_idle = ExtResource("3_ittut")
+quotes_curse = ExtResource("1_0ttd0")
+quotes_panic = ExtResource("4_01xb0")
+quotes_flee = ExtResource("2_5ohtu")
+quotes_retaliate = ExtResource("5_gxfxj")

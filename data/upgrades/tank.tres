@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" path="res://schema/upgrade_data.gd" id="1_1gtj8"]
+
+[resource]
+script = ExtResource("1_1gtj8")
+id = &"tank"
+display_name = "UPGRADE_TANK_NAME"
+description = "UPGRADE_TANK_DESC"
+icon = &"tank"
+base_cost = 500
+tank_per_level = 50.0

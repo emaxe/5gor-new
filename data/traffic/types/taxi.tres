@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="TrafficTypeData" format=3]
+
+[ext_resource type="Script" path="res://schema/traffic_type_data.gd" id="1_stjuk"]
+
+[resource]
+script = ExtResource("1_stjuk")
+id = &"taxi"
+weight = 8.0
+colors = PackedColorArray(0.9490196, 0.75686276, 0.18039216, 1)
+force_color = true
+livery = true

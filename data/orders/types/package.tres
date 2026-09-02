@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="OrderTypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/dialog_crash.tres" id="1_trjg4"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_package_dropoff.tres" id="2_brkpf"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_package_pickup.tres" id="3_x5gik"]
+[ext_resource type="Script" path="res://schema/order_type_data.gd" id="4_4wbc4"]
+
+[resource]
+script = ExtResource("4_4wbc4")
+id = &"package"
+display_name = "ORDER_PACKAGE_NAME"
+description = "ORDER_PACKAGE_DESC"
+icon = "Г"
+color = Color(0.5411765, 0.3529412, 0.16470589, 1)
+pay_mult = 1.15
+rating_reward = 5
+day_weight = 0.12
+night_weight = 0.1
+is_parcel = true
+quotes_pickup = ExtResource("3_x5gik")
+quotes_dropoff = ExtResource("2_brkpf")
+quotes_crash = ExtResource("1_trjg4")

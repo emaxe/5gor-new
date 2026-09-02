@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeCatalog" format=3]
+
+[ext_resource type="Script" path="res://schema/upgrade_data.gd" id="1_hev7l"]
+[ext_resource type="Resource" path="res://data/upgrades/engine.tres" id="2_bx33a"]
+[ext_resource type="Resource" path="res://data/upgrades/suspension.tres" id="3_gmmr8"]
+[ext_resource type="Resource" path="res://data/upgrades/brakes.tres" id="4_53jhm"]
+[ext_resource type="Resource" path="res://data/upgrades/armor.tres" id="5_8vbo6"]
+[ext_resource type="Resource" path="res://data/upgrades/tank.tres" id="6_rlqmp"]
+[ext_resource type="Resource" path="res://data/upgrades/capacity.tres" id="7_m2ujf"]
+[ext_resource type="Script" path="res://schema/catalog/upgrade_catalog.gd" id="8_jx3h8"]
+
+[resource]
+script = ExtResource("8_jx3h8")
+items = Array[ExtResource("1_hev7l")]([ExtResource("2_bx33a"), ExtResource("3_gmmr8"), ExtResource("4_53jhm"), ExtResource("5_8vbo6"), ExtResource("6_rlqmp"), ExtResource("7_m2ujf")])

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="QuoteBank" format=3]
+
+[ext_resource type="Script" path="res://schema/quote_bank.gd" id="1_a3oju"]
+
+[resource]
+script = ExtResource("1_a3oju")
+id = &"drift_reaction"
+lines = PackedStringArray("QUOTE_DRIFT_01", "QUOTE_DRIFT_02", "QUOTE_DRIFT_03", "QUOTE_DRIFT_04", "QUOTE_DRIFT_05", "QUOTE_DRIFT_06", "QUOTE_DRIFT_07", "QUOTE_DRIFT_08", "QUOTE_DRIFT_09", "QUOTE_DRIFT_10", "QUOTE_DRIFT_11", "QUOTE_DRIFT_12", "QUOTE_DRIFT_13", "QUOTE_DRIFT_14", "QUOTE_DRIFT_15", "QUOTE_DRIFT_16")

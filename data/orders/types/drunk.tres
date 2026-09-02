@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="OrderTypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/dialog_crash.tres" id="1_6xor8"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_drunk_detour.tres" id="2_2wv5k"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_drunk_dropoff.tres" id="3_sj05d"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_drunk_pickup.tres" id="4_4ssg0"]
+[ext_resource type="Script" path="res://schema/order_type_data.gd" id="5_mrhhh"]
+
+[resource]
+script = ExtResource("5_mrhhh")
+id = &"drunk"
+display_name = "ORDER_DRUNK_NAME"
+description = "ORDER_DRUNK_DESC"
+icon = "Д"
+color = Color(0.6039216, 0.3529412, 0.7529412, 1)
+pay_mult = 1.35
+rating_reward = 6
+day_weight = 0.08
+night_weight = 0.2
+may_change_destination = true
+quotes_pickup = ExtResource("4_4ssg0")
+quotes_dropoff = ExtResource("3_sj05d")
+quotes_detour = ExtResource("2_2wv5k")
+quotes_crash = ExtResource("1_6xor8")

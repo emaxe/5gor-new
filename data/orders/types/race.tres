@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="OrderTypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/dialog_crash.tres" id="1_migph"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_race_dropoff.tres" id="2_kksq6"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_race_pickup.tres" id="3_76oe6"]
+[ext_resource type="Script" path="res://schema/order_type_data.gd" id="4_t6w5m"]
+
+[resource]
+script = ExtResource("4_t6w5m")
+id = &"race"
+display_name = "ORDER_RACE_NAME"
+description = "ORDER_RACE_DESC"
+icon = "R"
+color = Color(0.9098039, 0.3764706, 0.1254902, 1)
+pay_mult = 1.9
+time_limit = 90.0
+rating_reward = 12
+day_weight = 0.0
+night_weight = 0.0
+quotes_pickup = ExtResource("3_76oe6")
+quotes_dropoff = ExtResource("2_kksq6")
+quotes_crash = ExtResource("1_migph")

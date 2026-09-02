@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="MissionData" format=3]
+
+[ext_resource type="Script" path="res://schema/mission_data.gd" id="1_cex8i"]
+
+[resource]
+script = ExtResource("1_cex8i")
+id = &"grandma"
+title = "MISSION_GRANDMA_TITLE"
+description = "MISSION_GRANDMA_DESC"
+icon = "Б"
+color = Color(0.9098039, 0.47843137, 0.22745098, 1)
+required_rating = 10
+drops = PackedVector2Array(96, -8)
+drop_names = PackedStringArray("MISSION_GRANDMA_DROP_1")

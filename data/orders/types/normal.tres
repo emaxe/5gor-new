@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="OrderTypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/dialog_crash.tres" id="1_yfr23"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_normal_dropoff.tres" id="2_unr2i"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_normal_pickup.tres" id="3_1dmh5"]
+[ext_resource type="Script" path="res://schema/order_type_data.gd" id="4_0c0ya"]
+
+[resource]
+script = ExtResource("4_0c0ya")
+id = &"normal"
+display_name = "ORDER_NORMAL_NAME"
+description = "ORDER_NORMAL_DESC"
+color = Color(0.24313726, 0.5568628, 0.87058824, 1)
+day_weight = 0.3
+night_weight = 0.22
+quotes_pickup = ExtResource("3_1dmh5")
+quotes_dropoff = ExtResource("2_unr2i")
+quotes_crash = ExtResource("1_yfr23")

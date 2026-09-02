@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_s5gd5"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_0b8lk"]
+
+[sub_resource type="Resource" id="Resource_g2otp"]
+script = ExtResource("1_s5gd5")
+stat = &"total_earned"
+value = 50000.0
+
+[resource]
+script = ExtResource("2_0b8lk")
+id = &"earn_50k"
+display_name = "ACH_EARN_50K_NAME"
+description = "ACH_EARN_50K_DESC"
+toast = "ACH_EARN_50K_TOAST"
+icon = &"earn_50k"
+requirements = Array[ExtResource("1_s5gd5")]([SubResource("Resource_g2otp")])
+track_stat = &"total_earned"
+track_target = 50000.0

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="DistrictData" format=3]
+
+[ext_resource type="Resource" path="res://data/districts/palettes/mashuk.tres" id="1_k87ui"]
+[ext_resource type="Script" path="res://schema/district_data.gd" id="2_t80js"]
+
+[resource]
+script = ExtResource("2_t80js")
+id = &"mashuk"
+display_name = "DISTRICT_MASHUK_NAME"
+unlock_rating = 60
+weight = 8.0
+palette = ExtResource("1_k87ui")
+height_min = 6.0
+height_max = 11.0
+density = 2
+map_color = Color(0.37254903, 0.5411765, 0.37254903, 1)
+demand_morning = 0.8
+demand_day = 1.1
+demand_night = 1.5

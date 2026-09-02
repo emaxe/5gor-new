@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="TrafficTypeData" format=3]
+
+[ext_resource type="Script" path="res://schema/traffic_type_data.gd" id="1_bu186"]
+
+[resource]
+script = ExtResource("1_bu186")
+id = &"van"
+silhouette = &"van"
+radius = 2.3
+length = 5.2
+width = 2.1
+weight = 7.0
+colors = PackedColorArray(0.84705883, 0.84705883, 0.8156863, 1, 0.65882355, 0.72156864, 0.627451, 1, 0.78431374, 0.627451, 0.3764706, 1, 0.9098039, 0.8784314, 0.8156863, 1)

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="DistrictData" format=3]
+
+[ext_resource type="Resource" path="res://data/districts/palettes/center.tres" id="1_xcxlo"]
+[ext_resource type="Script" path="res://schema/district_data.gd" id="2_llmai"]
+
+[resource]
+script = ExtResource("2_llmai")
+id = &"center"
+display_name = "DISTRICT_CENTER_NAME"
+weight = 22.0
+palette = ExtResource("1_xcxlo")
+height_min = 11.0
+height_max = 24.0
+density = 4
+map_color = Color(0.47843137, 0.2901961, 0.16862746, 1)
+demand_day = 1.3
+demand_evening = 1.1
+demand_night = 1.2

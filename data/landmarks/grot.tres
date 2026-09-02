@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="LandmarkData" format=3]
+
+[ext_resource type="Script" path="res://schema/landmark_data.gd" id="1_l8pbn"]
+
+[resource]
+script = ExtResource("1_l8pbn")
+id = &"grot"
+display_name = "LANDMARK_GROT_NAME"
+description = "LANDMARK_GROT_DESC"
+position = Vector2(-52, 8)

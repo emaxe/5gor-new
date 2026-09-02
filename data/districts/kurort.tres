@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="DistrictData" format=3]
+
+[ext_resource type="Resource" path="res://data/districts/palettes/kurort.tres" id="1_s1vc3"]
+[ext_resource type="Script" path="res://schema/district_data.gd" id="2_ailqc"]
+
+[resource]
+script = ExtResource("2_ailqc")
+id = &"kurort"
+display_name = "DISTRICT_KURORT_NAME"
+weight = 18.0
+palette = ExtResource("1_s1vc3")
+height_max = 15.0
+map_color = Color(0.42745098, 0.56078434, 0.37254903, 1)
+demand_morning = 0.8
+demand_day = 1.1
+demand_evening = 1.4
+demand_night = 0.9

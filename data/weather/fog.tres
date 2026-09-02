@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeatherData" format=3]
+
+[ext_resource type="Script" path="res://schema/weather_data.gd" id="1_srnrg"]
+
+[resource]
+script = ExtResource("1_srnrg")
+id = &"fog"
+display_name = "WEATHER_FOG_NAME"
+icon = &"fog"
+fog_near = 60.0
+fog_far = 220.0
+grip = 0.95
+traffic = 0.9
+spawn_weight = 20.0
+sky_tint = Color(0.5411765, 0.58431375, 0.63529414, 1)
+sky_tint_strength = 0.78

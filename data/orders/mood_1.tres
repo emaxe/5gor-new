@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="MoodTier" format=3]
+
+[ext_resource type="Script" path="res://schema/mood_tier.gd" id="1_n55rd"]
+
+[resource]
+script = ExtResource("1_n55rd")
+min_style = 0.25
+icon = &"mood_1"
+display_name = "MOOD_1_LABEL"
+color = Color(1, 0.61960787, 0.22745098, 1)

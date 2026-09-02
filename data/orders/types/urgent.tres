@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="OrderTypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/dialog_crash.tres" id="1_krnbs"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_urgent_dropoff.tres" id="2_qahpk"]
+[ext_resource type="Resource" path="res://data/quotes/dialog_urgent_pickup.tres" id="3_rcrkx"]
+[ext_resource type="Script" path="res://schema/order_type_data.gd" id="4_n1vgw"]
+
+[resource]
+script = ExtResource("4_n1vgw")
+id = &"urgent"
+display_name = "ORDER_URGENT_NAME"
+description = "ORDER_URGENT_DESC"
+icon = "!"
+color = Color(0.8784314, 0.22745098, 0.22745098, 1)
+pay_mult = 1.6
+time_limit = 75.0
+rating_reward = 6
+day_weight = 0.2
+night_weight = 0.3
+quotes_pickup = ExtResource("3_rcrkx")
+quotes_dropoff = ExtResource("2_qahpk")
+quotes_crash = ExtResource("1_krnbs")

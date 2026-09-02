@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="RadioStationData" format=3]
+
+[ext_resource type="Script" path="res://schema/radio_station_data.gd" id="1_un24d"]
+
+[resource]
+script = ExtResource("1_un24d")
+id = &"rock"
+display_name = "RADIO_ROCK_NAME"
+genre = "RADIO_ROCK_GENRE"
+frequency = "89.1 FM"
+bpm = 140.0
+color = Color(0.84705883, 0.2509804, 0.1882353, 1)
+root_hz = 55.0
+fifth_hz = 82.41
+scale_steps = PackedInt32Array(0, 3, 5, 6, 7, 10)
+instruments = PackedStringArray("kick", "snare", "hat", "bass", "lead")
+drum_density = 1.0
+texture = 0.9

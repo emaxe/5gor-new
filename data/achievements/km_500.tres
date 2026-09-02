@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_i71us"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_yxb6i"]
+
+[sub_resource type="Resource" id="Resource_iqf4g"]
+script = ExtResource("1_i71us")
+stat = &"total_km"
+value = 500.0
+
+[resource]
+script = ExtResource("2_yxb6i")
+id = &"km_500"
+display_name = "ACH_KM_500_NAME"
+description = "ACH_KM_500_DESC"
+toast = "ACH_KM_500_TOAST"
+icon = &"km_500"
+requirements = Array[ExtResource("1_i71us")]([SubResource("Resource_iqf4g")])
+track_stat = &"total_km"
+track_target = 500.0

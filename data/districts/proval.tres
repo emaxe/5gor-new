@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="DistrictData" format=3]
+
+[ext_resource type="Resource" path="res://data/districts/palettes/proval.tres" id="1_gksbj"]
+[ext_resource type="Script" path="res://schema/district_data.gd" id="2_0o72x"]
+
+[resource]
+script = ExtResource("2_0o72x")
+id = &"proval"
+display_name = "DISTRICT_PROVAL_NAME"
+unlock_rating = 15
+palette = ExtResource("1_gksbj")
+height_min = 7.0
+height_max = 13.0
+density = 2
+map_color = Color(0.2901961, 0.47843137, 0.6, 1)
+demand_morning = 0.7
+demand_day = 1.2
+demand_night = 1.2

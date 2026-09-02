@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_8hmkh"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_5unjn"]
+
+[sub_resource type="Resource" id="Resource_jmyr4"]
+script = ExtResource("1_8hmkh")
+stat = &"total_orders"
+value = 1.0
+
+[resource]
+script = ExtResource("2_5unjn")
+id = &"first_order"
+display_name = "ACH_FIRST_ORDER_NAME"
+description = "ACH_FIRST_ORDER_DESC"
+toast = "ACH_FIRST_ORDER_TOAST"
+icon = &"first_order"
+requirements = Array[ExtResource("1_8hmkh")]([SubResource("Resource_jmyr4")])
+track_stat = &"total_orders"
+track_target = 1.0

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="MissionData" format=3]
+
+[ext_resource type="Script" path="res://schema/mission_data.gd" id="1_u8ei4"]
+
+[resource]
+script = ExtResource("1_u8ei4")
+id = &"race"
+title = "MISSION_RACE_TITLE"
+description = "MISSION_RACE_DESC"
+icon = "R"
+color = Color(0.9098039, 0.3764706, 0.1254902, 1)
+required_rating = 35
+pay = 1600
+time_limit = 85.0
+kind = &"race"
+pickup_district = &"kurort"
+drops = PackedVector2Array()
+drop_names = PackedStringArray("MISSION_RACE_DROP_1")
+final_drop_from_district = &"vokzal"

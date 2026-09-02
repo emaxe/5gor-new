@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="PaletteData" format=3]
+
+[ext_resource type="Script" path="res://schema/palette_data.gd" id="1_y1ddl"]
+
+[resource]
+script = ExtResource("1_y1ddl")
+id = &"center"
+facades = PackedColorArray(0.9098039, 0.7882353, 0.5411765, 1, 0.8784314, 0.6901961, 0.3764706, 1, 0.84705883, 0.627451, 0.3137255, 1, 0.9411765, 0.84705883, 0.627451, 1, 0.8156863, 0.5647059, 0.3764706, 1)

@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="TrafficCatalog" format=3]
+
+[ext_resource type="Script" path="res://schema/traffic_type_data.gd" id="1_s8go6"]
+[ext_resource type="Resource" path="res://data/traffic/types/sedan.tres" id="2_ac8kc"]
+[ext_resource type="Resource" path="res://data/traffic/types/hatch.tres" id="3_ulxxd"]
+[ext_resource type="Resource" path="res://data/traffic/types/wagon.tres" id="4_l3oqf"]
+[ext_resource type="Resource" path="res://data/traffic/types/coupe.tres" id="5_n66pu"]
+[ext_resource type="Resource" path="res://data/traffic/types/coupe_sport.tres" id="6_1j8ku"]
+[ext_resource type="Resource" path="res://data/traffic/types/suv.tres" id="7_yalrh"]
+[ext_resource type="Resource" path="res://data/traffic/types/suv_sport.tres" id="8_pget1"]
+[ext_resource type="Resource" path="res://data/traffic/types/cab_black.tres" id="9_yivv5"]
+[ext_resource type="Resource" path="res://data/traffic/types/limo.tres" id="10_0libm"]
+[ext_resource type="Resource" path="res://data/traffic/types/van.tres" id="11_xpoie"]
+[ext_resource type="Resource" path="res://data/traffic/types/pickup.tres" id="12_f0egf"]
+[ext_resource type="Resource" path="res://data/traffic/types/truck.tres" id="13_h0s26"]
+[ext_resource type="Resource" path="res://data/traffic/types/marshrutka.tres" id="14_eiwg8"]
+[ext_resource type="Resource" path="res://data/traffic/types/bus.tres" id="15_xrkf4"]
+[ext_resource type="Resource" path="res://data/traffic/types/police.tres" id="16_a4306"]
+[ext_resource type="Resource" path="res://data/traffic/types/ambulance.tres" id="17_sxk8f"]
+[ext_resource type="Resource" path="res://data/traffic/types/zhiguli.tres" id="18_u58cc"]
+[ext_resource type="Resource" path="res://data/traffic/types/volga.tres" id="19_sd6gi"]
+[ext_resource type="Resource" path="res://data/traffic/types/bukhanka.tres" id="20_15j7l"]
+[ext_resource type="Resource" path="res://data/traffic/types/taxi.tres" id="21_ov366"]
+[ext_resource type="Resource" path="res://data/quotes/driver_hit_ped.tres" id="22_x6keb"]
+[ext_resource type="Resource" path="res://data/quotes/driver_ped.tres" id="23_5efeo"]
+[ext_resource type="Resource" path="res://data/quotes/driver_ped_jwalk.tres" id="24_e61hu"]
+[ext_resource type="Resource" path="res://data/quotes/driver_ped_reply.tres" id="25_dsaso"]
+[ext_resource type="Resource" path="res://data/quotes/driver_ped_reply_jwalk.tres" id="26_etubs"]
+[ext_resource type="Resource" path="res://data/quotes/driver_ram.tres" id="27_n2pii"]
+[ext_resource type="Script" path="res://schema/catalog/traffic_catalog.gd" id="28_klrxy"]
+
+[resource]
+script = ExtResource("28_klrxy")
+items = Array[ExtResource("1_s8go6")]([ExtResource("2_ac8kc"), ExtResource("3_ulxxd"), ExtResource("4_l3oqf"), ExtResource("5_n66pu"), ExtResource("6_1j8ku"), ExtResource("7_yalrh"), ExtResource("8_pget1"), ExtResource("9_yivv5"), ExtResource("10_0libm"), ExtResource("11_xpoie"), ExtResource("12_f0egf"), ExtResource("13_h0s26"), ExtResource("14_eiwg8"), ExtResource("15_xrkf4"), ExtResource("16_a4306"), ExtResource("17_sxk8f"), ExtResource("18_u58cc"), ExtResource("19_sd6gi"), ExtResource("20_15j7l"), ExtResource("21_ov366")])
+quotes_ram = ExtResource("27_n2pii")
+quotes_ped = ExtResource("23_5efeo")
+quotes_ped_jwalk = ExtResource("24_e61hu")
+quotes_hit_ped = ExtResource("22_x6keb")
+quotes_ped_reply = ExtResource("25_dsaso")
+quotes_ped_reply_jwalk = ExtResource("26_etubs")

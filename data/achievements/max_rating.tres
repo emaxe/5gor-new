@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AchievementData" format=3]
+
+[ext_resource type="Script" path="res://schema/achievement_req.gd" id="1_kcr37"]
+[ext_resource type="Script" path="res://schema/achievement_data.gd" id="2_yqeu2"]
+
+[sub_resource type="Resource" id="Resource_tr6be"]
+script = ExtResource("1_kcr37")
+stat = &"max_rating"
+value = 100.0
+
+[resource]
+script = ExtResource("2_yqeu2")
+id = &"max_rating"
+display_name = "ACH_MAX_RATING_NAME"
+description = "ACH_MAX_RATING_DESC"
+toast = "ACH_MAX_RATING_TOAST"
+icon = &"max_rating"
+requirements = Array[ExtResource("1_kcr37")]([SubResource("Resource_tr6be")])
+track_stat = &"max_rating"
+track_target = 100.0

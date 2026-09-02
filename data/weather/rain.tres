@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeatherData" format=3]
+
+[ext_resource type="Script" path="res://schema/weather_data.gd" id="1_6jfj7"]
+
+[resource]
+script = ExtResource("1_6jfj7")
+id = &"rain"
+display_name = "WEATHER_RAIN_NAME"
+icon = &"rain"
+rain = 1.0
+fog_near = 120.0
+fog_far = 420.0
+grip = 0.78
+traffic = 0.7
+spawn_weight = 25.0
+sky_tint = Color(0.22745098, 0.28235295, 0.3372549, 1)
+sky_tint_strength = 0.72

@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="PedArchetypeData" format=3]
+
+[ext_resource type="Resource" path="res://data/quotes/ped_curse.tres" id="1_iq81o"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_flee_default.tres" id="2_denob"]
+[ext_resource type="Resource" path="res://data/quotes/ped_animal_cat.tres" id="3_73dwr"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_witness.tres" id="4_oc5sd"]
+[ext_resource type="Resource" path="res://data/quotes/ped_punch_retaliate_default.tres" id="5_6ovah"]
+[ext_resource type="Script" path="res://schema/ped_archetype_data.gd" id="6_1dxkf"]
+
+[resource]
+script = ExtResource("6_1dxkf")
+id = &"cat"
+is_animal = true
+speed_min = 2.2
+speed_max = 3.5
+weight = 2.0
+scale_y_min = 1.0
+scale_y_max = 1.0
+scale_xz_min = 1.0
+scale_xz_max = 1.0
+cloth_colors = PackedColorArray()
+pants_colors = PackedColorArray()
+accessories = PackedStringArray()
+quotes_idle = ExtResource("3_73dwr")
+quotes_curse = ExtResource("1_iq81o")
+quotes_panic = ExtResource("4_oc5sd")
+quotes_flee = ExtResource("2_denob")
+quotes_retaliate = ExtResource("5_6ovah")

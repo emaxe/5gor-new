@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="QuoteBank" format=3]
+
+[ext_resource type="Script" path="res://schema/quote_bank.gd" id="1_1moav"]
+
+[resource]
+script = ExtResource("1_1moav")
+id = &"weather_fog"
+lines = PackedStringArray("QUOTE_WEATHER_FOG_01", "QUOTE_WEATHER_FOG_02", "QUOTE_WEATHER_FOG_03", "QUOTE_WEATHER_FOG_04", "QUOTE_WEATHER_FOG_05", "QUOTE_WEATHER_FOG_06", "QUOTE_WEATHER_FOG_07")
