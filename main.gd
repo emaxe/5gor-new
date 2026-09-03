@@ -67,6 +67,8 @@ func _show_main_menu() -> void:
 func _on_start_game() -> void:
 	Game.start_shift(1)
 	Dir.set_state(&"driving")
+	if Dir.world != null and Dir.world.hud != null:
+		Dir.world.hud.play_shift_intro(Game.day)
 
 
 
