@@ -61,6 +61,7 @@ func _build_main_menu() -> void:
 
 	_menu.start_game_requested.connect(_on_start_game)
 	_menu.continue_requested.connect(_on_continue_game)
+	_menu.slot_delete_requested.connect(_on_delete_slot)
 	_menu.garage_requested.connect(func() -> void:
 		Dir.push(&"garage")
 	)
@@ -68,8 +69,7 @@ func _build_main_menu() -> void:
 		Dir.push(&"settings")
 	)
 	_menu.achievements_requested.connect(func() -> void:
-		if not Dir.push(&"achievements"):
-			_menu.flash_notice("Достижения скоро появятся")
+		Dir.push(&"achievements")
 	)
 
 
@@ -129,15 +129,15 @@ func _show_main_menu() -> void:
 	Dir.set_state(&"menu")
 
 
-## «Новая игра». Слот 0 уже занят? Прошлая игра перезаписывается со свежим
-## случайным сидом — а раз сид новый, мир (построенный один раз при старте
-## процесса) нужно перестроить, иначе город не будет соответствовать
-## сохранённому сиду. Слота ещё нет (самый первый запуск) — используем уже
-## построенный мир как есть, дефолтный сид совпадёт с тем, что уйдёт в сейв.
-func _on_start_game() -> void:
-	var rebuild := SaveManager.has_slot(0)
+## «Новая игра» в выбранном слоте. Если слот уже занят — прошлая игра
+## перезаписывается со свежим случайным сидом, и мир нужно перестроить
+## (построен один раз при старте процесса, см. комментарий World). Пустой
+## слот — используем уже построенный мир как есть, дефолтный сид совпадёт
+## с тем, что уйдёт в сейв.
+func _on_start_game(slot: int) -> void:
+	var rebuild := SaveManager.has_slot(slot)
 	var world_seed: int = randi() if rebuild else Game.world_seed
-	SaveManager.new_game(0, world_seed)
+	SaveManager.new_game(slot, world_seed)
 	if rebuild:
 		Dir.unload_world()
 		await Dir.load_world(self)
@@ -147,18 +147,34 @@ func _on_start_game() -> void:
 		Dir.world.hud.play_shift_intro(Game.day)
 
 
-## «Продолжить». Мир уже построен с правильным сидом (SaveManager.apply_boot_seed()
-## в _ready() выше) — load_slot() восстанавливает только деньги/рейтинг/гараж/
-## lifetime-статистику. Позиция/топливо/урон/активные заказы не сохраняются
-## (как и в оригинале) — смена всегда начинается заново.
-func _on_continue_game() -> void:
-	if not SaveManager.load_slot(0):
-		await _on_start_game()
+## «Продолжить» в выбранном слоте. Мир строится один раз за процесс, и
+## при старте был подставлен сид слота 0 — если игрок жмёт «Продолжить»
+## для слота 1/2, сид сохранённого слота может быть другим, и нужно
+## перестроить мир, иначе город не совпадёт. Слот может не существовать
+## (гонка UI) — переключаемся на новую игру в нём же.
+func _on_continue_game(slot: int) -> void:
+	if not SaveManager.load_slot(slot):
+		await _on_start_game(slot)
 		return
+	# После load_slot() Game.world_seed = сид слота. Если он не совпадает
+	# с тем, с которым мир реально построен (Dir.current_world_seed),
+	# город чужой — перестраиваем.
+	if Dir.current_world_seed != Game.world_seed:
+		Dir.unload_world()
+		await Dir.load_world(self)
 	Game.start_shift(Game.day)
 	Dir.set_state(&"driving")
 	if Dir.world != null and Dir.world.hud != null:
 		Dir.world.hud.play_shift_intro(Game.day)
+
+
+## Удаление слота по long-press в карточке меню. Меню открыто — никаких
+## побочных эффектов на текущий мир; активный слот (SaveManager.current_slot)
+## совпадал с удаляемым — обнуляем, чтобы мир не прикидывался «от этого слота».
+func _on_delete_slot(slot: int) -> void:
+	SaveManager.delete_slot(slot)
+	if _menu.has_method("_refresh_continue"):
+		_menu.call("_refresh_continue")
 
 
 

@@ -1,0 +1,44 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://world/sky/rain_particles.gd" id="1_rain"]
+
+[sub_resource type="StandardMaterial3D" id="RainMat"]
+transparency = 1
+albedo_color = Color(0.627451, 0.705882, 0.862745, 0.705882)
+shading_mode = 0
+billboard_mode = 3
+billboard_keep_scale = true
+disable_receive_shadows = true
+
+[sub_resource type="QuadMesh" id="RainQuad"]
+material = SubResource("RainMat")
+size = Vector2(0.04, 0.5)
+
+[sub_resource type="ParticleProcessMaterial" id="RainProc"]
+emission_shape = 3
+emission_box_extents = Vector3(25, 0.5, 25)
+direction = Vector3(-4, -38, -2)
+spread = 4.0
+initial_velocity_min = 38.0
+initial_velocity_max = 38.0
+gravity = Vector3(0, 0, 0)
+scale_min = 1.0
+scale_max = 1.0
+color = Color(0.63, 0.71, 0.86, 1)
+
+[node name="RainParticles" type="Node3D"]
+script = ExtResource("1_rain")
+
+[node name="Particles" type="GPUParticles3D" parent="."]
+amount = 1200
+lifetime = 1.45
+preprocess = 0.5
+explosiveness = 0.0
+randomness = 0.2
+fixed_fps = 60
+local_coords = false
+draw_order = 1
+mesh = SubResource("RainQuad")
+material = SubResource("RainMat")
+process_material = SubResource("RainProc")
+emitting = false

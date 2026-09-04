@@ -17,10 +17,21 @@ const SLOT_PATH_FMT := "user://slot_%d.save"
 const ACHIEVEMENTS_PATH := "user://achievements.cfg"
 const SAVE_VERSION := 1
 const AUTOSAVE_INTERVAL_SEC := 30.0
+## Слоты нумеруются 0..SLOT_COUNT-1; API SaveManager уже работал с
+## произвольным индексом, явная константа фиксирует UX-решение
+## (1 → 3 слота в главном меню).
+const SLOT_COUNT := 3
 
 ## Состояния Dir, на входе в которые стоит сохраниться независимо от таймера —
 ## моменты, когда игрок ожидаемо может закрыть игру или потерять прогресс.
 const _AUTOSAVE_STATES: Array[StringName] = [&"driving", &"pause", &"shift_end", &"menu"]
+
+## Отметка времени последней записи achievements.cfg. Сравнивается с
+## Bus.achievement_unlocked — между разблокировкой и сохранением есть окно
+## (append + запись на диск), при краш-выходе в нём можно потерять последнюю
+## ачивку. Периодический автосейв закрывает окно, без него единственная
+## страховка — подписка на сигнал, которая не срабатывает на NOTIFICATION_WM_CLOSE_REQUEST.
+var _last_achievements_save_ms: int = 0
 
 ## -1 — ни один слот не активен (главное меню до выбора «Продолжить»/«Новая игра»).
 var current_slot: int = -1
@@ -60,6 +71,11 @@ func _on_state_changed(state: StringName) -> void:
 func _autosave() -> void:
 	if current_slot >= 0:
 		save_slot(current_slot)
+	# Ачивки пишем каждый тик автосейва (30 с) — дешёвая операция
+	# (ConfigFile в user://achievements.cfg, обычно < 1 КБ) и закрывает окно
+	# между unlocked.append() и записью по сигналу, в которое можно попасть
+	# при краш-выходе на WM_CLOSE_REQUEST.
+	_save_achievements()
 
 
 # --- Слоты --------------------------------------------------------------------
@@ -115,6 +131,15 @@ func load_slot(index: int) -> bool:
 		"lifetime_stats": cfg.get_value("stats", "lifetime", {}),
 	})
 	Game.garage.apply_save_dict(cfg.get_value("garage", "data", {}))
+	# Ачивки — профильный файл, не слот-привязанный, но Game.achievements
+	# хранит разблокировки в памяти. Без явной перезагрузки после «Новая
+	# игра в слоте 1 → разблокировали что-то → Продолжить слот 0» память
+	# продолжает показывать разблокировки слота 1, а файл (общий) их не
+	# содержит. _load_achievements() читает user://achievements.cfg и
+	# перезатирает Game.achievements.unlocked тем, что на диске — а на диске
+	# всегда актуальное состояние, потому что _save_achievements() пишет
+	# туда и по сигналу, и в _autosave().
+	_load_achievements()
 
 	current_slot = index
 	return true
@@ -177,6 +202,8 @@ func _save_achievements() -> void:
 	var err := cfg.save(ACHIEVEMENTS_PATH)
 	if err != OK:
 		push_error("SaveManager: не удалось записать %s (код %d)" % [ACHIEVEMENTS_PATH, err])
+		return
+	_last_achievements_save_ms = Time.get_ticks_msec()
 
 
 # --- Миграции -------------------------------------------------------------------

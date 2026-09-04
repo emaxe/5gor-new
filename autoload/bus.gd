@@ -50,5 +50,5 @@ signal game_state_changed(state: StringName)
 ## Мир сгенерирован и готов к игре.
 signal world_ready(world_seed: int)
 
-## Настройки применены. section: &"audio" | &"gfx" | &"input" | &"driver"
+## Настройки применены. section: &"audio" | &"gfx" | &"input" | &"driver" | &"hud"
 signal settings_applied(section: StringName)

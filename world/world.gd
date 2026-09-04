@@ -15,6 +15,7 @@ signal build_finished(stats: Dictionary)
 
 @onready var sky: SkyRig = $SkyRig
 @onready var camera: ChaseCamera = $Camera3D
+@onready var rain: RainParticles = $SkyRig/RainParticles
 
 var city: CityBuilder
 var collision := CityCollision.new()
@@ -45,8 +46,16 @@ var _signal_phase := -1
 
 
 func _ready() -> void:
+	Bus.weather_changed.connect(_on_weather_changed)
 	if auto_build:
 		build()
+
+
+## Включает дождь-частицы при погоде &"rain"; всё остальное — выключает.
+func _on_weather_changed(id: StringName) -> void:
+	if rain == null:
+		return
+	rain.set_enabled(id == &"rain")
 
 
 func build() -> void:
@@ -176,7 +185,7 @@ func _on_player_hit_ped() -> void:
 	Game.add_rating(-float(b.rating_loss_hit_ped))
 	Bus.notify.emit(&"toast",
 		"Вы сбили пешехода! -%d ₽, рейтинг -%d" % [b.hit_ped_fine, b.rating_loss_hit_ped],
-		{"color": Color("#ff6b6b")})
+		{"level": &"critical"})
 	if police != null:
 		police.check_hit_ped(player.global_position.x, player.global_position.z)
 	if style != null:
@@ -222,7 +231,7 @@ func _on_order_event_style(kind: StringName, _order_id: int, data: Dictionary) -
 				player.runtime.style = clampf(
 					player.runtime.style + Db.balance.style.perfect_stop_style_bonus, 0.0, 1.0)
 				Bus.notify.emit(&"toast", "✨ Идеальная остановка! +%d ₽" % ps_reward,
-					{"color": Color("#7ee787")})
+					{"level": &"reward"})
 				Bus.juice_event.emit(&"perfect_stop", ps)
 
 			var pay: int = data.get("pay", 0)
@@ -235,7 +244,7 @@ func _on_order_event_style(kind: StringName, _order_id: int, data: Dictionary) -
 			if streak in Db.balance.style.combo_streak_counts:
 				Bus.notify.emit(&"toast",
 					"🔥 СЕРИЯ ЗАКАЗОВ ×%d! Бонус ×%.2f" % [streak, combo.get("mult", 1.0)],
-					{"color": Color("#ffd75e")})
+					{"level": &"reward"})
 			Bus.juice_event.emit(&"combo", combo)
 		&"failed":
 			# Проваленный заказ обрывает только заслуженную, но не выданную
@@ -305,6 +314,13 @@ func _process(delta: float) -> void:
 		Db.weather.get_weather(Game.weather_id))
 	var t1 := Time.get_ticks_usec()
 	prof_sky_us += (t1 - t0)
+
+	# Дождь следует за игроком; позиция берётся по активному телу.
+	if rain != null and rain.visible:
+		if in_car and player != null:
+			rain.global_position = player.global_position
+		elif not in_car and player_ped != null:
+			rain.global_position = player_ped.global_position
 
 	if in_car and player != null:
 		var tf := player.get_global_transform_interpolated() if player.is_inside_tree() else player.global_transform
@@ -386,7 +402,7 @@ func _update_style(delta: float) -> void:
 		var style_bonus: float = drift.get("style_bonus", 0.0)
 		if style_bonus > 0.0:
 			player.runtime.style = clampf(player.runtime.style + style_bonus, 0.0, 1.0)
-		Bus.notify.emit(&"toast", "💨 Занос! +%d ₽" % reward, {"color": Color("#ffd75e")})
+		Bus.notify.emit(&"toast", "💨 Занос! +%d ₽" % reward, {"level": &"reward"})
 		Bus.juice_event.emit(&"drift", drift)
 		_maybe_speak_drift_reaction()
 
@@ -495,10 +511,10 @@ func _apply_near_miss_reward(is_ped: bool, now: float) -> void:
 			player.runtime.style + Db.balance.style.near_miss_style_bonus, 0.0, 1.0)
 	if streak in Db.balance.style.near_miss_streak_counts:
 		Bus.notify.emit(&"toast", "🔥 Серия сближений ×%d! (+%d ₽)" % [streak, reward],
-			{"color": Color("#ffd75e")})
+			{"level": &"reward"})
 	else:
 		var label := "⚡ Опасное сближение!" if is_ped else "⚡ Опасный обгон!"
-		Bus.notify.emit(&"toast", "%s +%d ₽" % [label, reward], {"color": Color("#70d6ff")})
+		Bus.notify.emit(&"toast", "%s +%d ₽" % [label, reward], {"level": &"reward"})
 	Bus.juice_event.emit(&"near_miss", r)
 
 

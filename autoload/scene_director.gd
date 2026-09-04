@@ -14,6 +14,11 @@ const WORLD_SCENE := "res://world/world.tscn"
 
 var state: StringName = &"boot"
 var world: World = null
+## Сид, с которым текущий Dir.world был построен. Нужен в main.gd, чтобы
+## понять, надо ли перестраивать мир при «Продолжить» слота N>0: если
+## Game.world_seed (из сейва) отличается от current_world_seed, город чужой
+## и нужен unload + reload.
+var current_world_seed: int = -1
 
 var _stack: Array[StringName] = []
 var _screens: Dictionary = {}  # StringName -> Node (show_screen()/hide_screen())
@@ -97,6 +102,7 @@ func load_world(parent: Node) -> World:
 	world.build()
 
 	hide_status()
+	current_world_seed = Game.world_seed
 	set_state(&"driving")
 	return world
 
@@ -105,6 +111,7 @@ func unload_world() -> void:
 	if world != null:
 		world.queue_free()
 		world = null
+		current_world_seed = -1
 
 
 # --- Оверлей ----------------------------------------------------------------

@@ -534,14 +534,20 @@ static func _add_details(b: MeshBuilder, spec: Spec, include_beacon: bool = true
 		b.box(Vector3(0.0, deck_y - 0.18, sz * (hl + 0.032)),
 			Vector3(0.44, 0.10, 0.018), PLATE)
 
-	# Зеркала заднего вида
+	# Зеркала заднего вида. У легковых силуэтов cab_y — центр «теплицы»
+	# салона (порт carmodel.js: mirror.y = cabY - cabH*0.3), а не низ окна —
+	# без сдвига вниз зеркало повисало в воздухе над капотом, оторванное от
+	# кузова. У van/bus/pickup/truck отдельного cab_h нет (кабина строится
+	# захардкоженными числами в _add_van_body и т.п.), их s["cab_y"] уже сам
+	# по себе лежит у низа кабины — сдвиг там не нужен, поэтому cab_h = 0.
 	var mirror_z: float = hl * (0.36 if not s.get("van", false) else 0.42)
+	var mirror_y: float = float(s["cab_y"]) - float(s.get("cab_h", 0.0)) * 0.3
 	for sx: float in [-1.0, 1.0]:
-		b.box(Vector3(sx * (hw + 0.03), s["cab_y"] - 0.02, mirror_z),
+		b.box(Vector3(sx * (hw + 0.03), mirror_y - 0.02, mirror_z),
 			Vector3(0.06, 0.04, 0.06), DARK)
-		b.box(Vector3(sx * (hw + 0.09), s["cab_y"], mirror_z),
+		b.box(Vector3(sx * (hw + 0.09), mirror_y, mirror_z),
 			Vector3(0.12, 0.09, 0.14), spec.body_color)
-		b.box(Vector3(sx * (hw + 0.09), s["cab_y"], mirror_z - 0.072),
+		b.box(Vector3(sx * (hw + 0.09), mirror_y, mirror_z - 0.072),
 			Vector3(0.10, 0.07, 0.01), Color("#bcd0e0"))
 
 	# Боковой защитный молдинг (для не-автобусов)
@@ -586,6 +592,65 @@ static func _add_details(b: MeshBuilder, spec: Spec, include_beacon: bool = true
 	_add_decal(b, spec, s)
 
 
+## Высота верхней поверхности кузова в точке z: капот → (рампа по лобовому) →
+## крыша → (рампа по заднему) → багажник. Только для легковых силуэтов —
+## у них есть все нужные ключи в SHAPES (hood/trunk/roof_len/*_rise); у
+## van/bus/pickup/truck кузов строится захардкоженными числами в отдельных
+## _add_*_body(), общего контура нет. Опора для _add_decal(): раньше декаль
+## рисовалась одной плоскостью на высоте крыши на всю длину — над капотом
+## и багажником, которые заметно ниже крыши, она повисала в воздухе
+## (порядка 0.3-0.5 м зазора, см. отчёт по капоту такси).
+static func _decal_surface_y(s: Dictionary, l: float, z: float) -> float:
+	var deck_top: float = float(s["deck_y"]) + float(s["deck_h"]) * 0.5
+	var hl := l * 0.5
+	var hood_len: float = l * float(s["hood"])
+	var trunk_len: float = l * float(s["trunk"])
+	var roof_len: float = l * float(s["roof_len"])
+	var hood_back := hl - hood_len
+	var trunk_front := -hl + trunk_len
+	var cab_z := (hood_back + trunk_front) * 0.5
+	var roof_back := cab_z - roof_len * 0.5
+	var roof_front := cab_z + roof_len * 0.5
+	var roof_h: float = float(s["roof_y"]) + float(s["roof_h"]) * 0.5
+	# Высоты концов капота/багажника — те же формулы, что в _add_car_body:
+	# верх усечённого бокса = center.y + half_height + rise на нужном конце.
+	var trunk_back_h := deck_top + 0.07
+	var trunk_front_h := trunk_back_h + float(s["trunk_rise"])
+	var hood_back_h := deck_top + 0.09
+	var hood_front_h := hood_back_h + float(s["hood_rise"])
+
+	# Опорные точки контура сзади наперёд; между ними — прямая рампа (в т.ч.
+	# через лобовое/заднее стекло, где сплошной обшивки нет).
+	var points: Array = [
+		[-hl, trunk_back_h], [trunk_front, trunk_front_h],
+		[roof_back, roof_h], [roof_front, roof_h],
+		[hood_back, hood_back_h], [hl, hood_front_h],
+	]
+	for i in points.size() - 1:
+		var a: Array = points[i]
+		var seg_b: Array = points[i + 1]
+		if z <= float(seg_b[0]) or i == points.size() - 2:
+			var span: float = maxf(float(seg_b[0]) - float(a[0]), 0.0001)
+			var t := clampf((z - float(a[0])) / span, 0.0, 1.0)
+			return lerpf(float(a[1]), float(seg_b[1]), t)
+	return hood_front_h
+
+
+## Режет длинную полосу-декаль на короткие сегменты вдоль z и кладёт каждый
+## на актуальную высоту кузова (_decal_surface_y) — иначе одна плоская
+## коробка на всю длину парит там, где кузов ниже крыши (капот, багажник).
+static func _add_decal_strip(b: MeshBuilder, s: Dictionary, l: float,
+		x: float, width: float, span: float, color: Color) -> void:
+	const SEGMENTS := 10
+	var seg_len := span / SEGMENTS
+	for k in SEGMENTS:
+		var z := span * 0.5 - seg_len * (k + 0.5)
+		b.box(Vector3(x, _decal_surface_y(s, l, z) + 0.006, z),
+			# Небольшой нахлёст по Z, чтобы соседние сегменты на разной
+			# высоте не оставляли видимую щель на стыке.
+			Vector3(width, 0.008, seg_len * 1.05), color)
+
+
 ## Декаль тюнинга — рисуется по верху кузова (капот-крыша-багажник), чтобы не
 ## конфликтовать с шашечками такси на бортах (_add_taxi_livery). Цвет —
 ## контрастный к body_color, чтобы декаль было видно на любой окраске.
@@ -595,15 +660,25 @@ static func _add_decal(b: MeshBuilder, spec: Spec, s: Dictionary) -> void:
 	var w := spec.width
 	var l := spec.length
 	var hl := l * 0.5
-	var top_y: float = roof_height(s) + 0.006
 	var accent := Color.BLACK if spec.body_color.get_luminance() > 0.5 else Color.WHITE
+	# van/bus/pickup/truck строят кузов без общего контура (см. комментарий
+	# у _decal_surface_y) — оставляем им прежнюю плоскость на высоте крыши,
+	# а не падаем на отсутствующих ключах SHAPES.
+	var is_van: bool = s.get("van", false)
+	var flat_y: float = roof_height(s) + 0.006
 
 	match spec.decal:
 		&"stripe":
-			b.box(Vector3(0.0, top_y, 0.0), Vector3(w * 0.22, 0.008, l * 0.86), accent)
+			if is_van:
+				b.box(Vector3(0.0, flat_y, 0.0), Vector3(w * 0.22, 0.008, l * 0.86), accent)
+			else:
+				_add_decal_strip(b, s, l, 0.0, w * 0.22, l * 0.86, accent)
 		&"racing":
 			for sx: float in [-0.16, 0.16]:
-				b.box(Vector3(sx * w, top_y, 0.0), Vector3(w * 0.09, 0.008, l * 0.86), accent)
+				if is_van:
+					b.box(Vector3(sx * w, flat_y, 0.0), Vector3(w * 0.09, 0.008, l * 0.86), accent)
+				else:
+					_add_decal_strip(b, s, l, sx * w, w * 0.09, l * 0.86, accent)
 		&"checker":
 			var hood_len: float = float(s.get("hood", 0.3)) * l
 			var cells := 6
@@ -612,7 +687,8 @@ static func _add_decal(b: MeshBuilder, spec: Spec, s: Dictionary) -> void:
 				if k % 2 == 1:
 					continue
 				var z := hl - hood_len * 0.07 - k * cell_len - cell_len * 0.5
-				b.box(Vector3(0.0, top_y, z), Vector3(w * 0.5, 0.006, cell_len), accent)
+				var y := flat_y if is_van else _decal_surface_y(s, l, z) + 0.006
+				b.box(Vector3(0.0, y, z), Vector3(w * 0.5, 0.006, cell_len), accent)
 
 
 ## Фирменный световой короб «ТАКСИ» и шашечки на бортах.

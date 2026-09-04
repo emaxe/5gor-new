@@ -169,7 +169,8 @@ func try_punch() -> bool:
 			Game.spend(fine)
 			Game.add_rating(-r_loss)
 			Bus.notify.emit(&"toast",
-				"Нападение на прохожего! -%d ₽, рейтинг -%d" % [fine, int(r_loss)], {})
+				"Нападение на прохожего! -%d ₽, рейтинг -%d" % [fine, int(r_loss)],
+				{"level": &"critical"})
 
 			# Полиция может добавить свой штраф и розыск, если патруль рядом.
 			if police != null:

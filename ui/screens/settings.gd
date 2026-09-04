@@ -18,6 +18,8 @@ var _sound_check: CheckBox
 var _music_check: CheckBox
 var _radio_lbl: Label
 var _gfx_option: OptionButton
+var _hud_mode_option: OptionButton
+var _hud_opacity_slider: HSlider
 var _belly_check: CheckBox
 var _cap_check: CheckBox
 var _volume_sliders: Dictionary[StringName, HSlider] = {}
@@ -47,6 +49,8 @@ func _refresh() -> void:
 	for bus_name: StringName in _volume_sliders:
 		_volume_sliders[bus_name].value = Prefs.volumes.get(bus_name, 0.0)
 	_select_gfx_option(Prefs.gfx_preset)
+	_select_hud_mode_option(Prefs.hud_mode)
+	_hud_opacity_slider.value = Prefs.hud_opacity
 	_belly_check.button_pressed = Prefs.driver.get(&"belly", false)
 	_cap_check.button_pressed = Prefs.driver.get(&"cap", true)
 	for key: StringName in _driver_swatches:
@@ -62,6 +66,13 @@ func _select_gfx_option(id: StringName) -> void:
 	for i in _gfx_option.item_count:
 		if _gfx_option.get_item_metadata(i) == id:
 			_gfx_option.select(i)
+			return
+
+
+func _select_hud_mode_option(id: StringName) -> void:
+	for i in _hud_mode_option.item_count:
+		if _hud_mode_option.get_item_metadata(i) == id:
+			_hud_mode_option.select(i)
 			return
 
 
@@ -89,6 +100,17 @@ func _on_gfx_selected(index: int) -> void:
 	Prefs.gfx_preset = id
 	if Dir.world != null and Dir.world.sky != null:
 		Dir.world.sky.apply_preset(Db.gfx.get_preset(id))
+
+
+func _on_hud_mode_selected(index: int) -> void:
+	var id: StringName = _hud_mode_option.get_item_metadata(index)
+	Prefs.hud_mode = id
+	Prefs.apply_hud()
+
+
+func _on_hud_opacity_changed(value: float) -> void:
+	Prefs.hud_opacity = value
+	Prefs.apply_hud()
 
 
 func _on_driver_bool_toggled(key: StringName, pressed: bool) -> void:
@@ -155,6 +177,7 @@ func _build_ui() -> void:
 	_build_sound_section(content)
 	_build_volume_section(content)
 	_build_gfx_section(content)
+	_build_hud_section(content)
 	_build_driver_section(content)
 
 
@@ -232,6 +255,49 @@ func _build_gfx_section(parent: VBoxContainer) -> void:
 			_gfx_option.set_item_metadata(_gfx_option.item_count - 1, preset.id)
 	_gfx_option.item_selected.connect(_on_gfx_selected)
 	parent.add_child(_gfx_option)
+
+
+func _build_hud_section(parent: VBoxContainer) -> void:
+	_section_header("ИНТЕРФЕЙС", parent)
+
+	var mode_box := HBoxContainer.new()
+	mode_box.add_theme_constant_override("separation", 10)
+	parent.add_child(mode_box)
+
+	var mode_lbl := Label.new()
+	mode_lbl.text = "Режим HUD"
+	mode_lbl.custom_minimum_size = Vector2(90, 0)
+	mode_lbl.add_theme_color_override("font_color", UiTheme.COLOR_TEXT_MUTED)
+	mode_lbl.add_theme_font_size_override("font_size", 13)
+	mode_box.add_child(mode_lbl)
+
+	_hud_mode_option = OptionButton.new()
+	_hud_mode_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var modes := {&"full": "Полный", &"minimal": "Минимальный", &"hidden": "Скрыт"}
+	for id: StringName in modes:
+		_hud_mode_option.add_item(modes[id])
+		_hud_mode_option.set_item_metadata(_hud_mode_option.item_count - 1, id)
+	_hud_mode_option.item_selected.connect(_on_hud_mode_selected)
+	mode_box.add_child(_hud_mode_option)
+
+	var opacity_box := HBoxContainer.new()
+	opacity_box.add_theme_constant_override("separation", 10)
+	parent.add_child(opacity_box)
+
+	var opacity_lbl := Label.new()
+	opacity_lbl.text = "Прозрачность"
+	opacity_lbl.custom_minimum_size = Vector2(90, 0)
+	opacity_lbl.add_theme_color_override("font_color", UiTheme.COLOR_TEXT_MUTED)
+	opacity_lbl.add_theme_font_size_override("font_size", 13)
+	opacity_box.add_child(opacity_lbl)
+
+	_hud_opacity_slider = HSlider.new()
+	_hud_opacity_slider.min_value = 0.4
+	_hud_opacity_slider.max_value = 1.0
+	_hud_opacity_slider.step = 0.05
+	_hud_opacity_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_hud_opacity_slider.value_changed.connect(_on_hud_opacity_changed)
+	opacity_box.add_child(_hud_opacity_slider)
 
 
 func _build_driver_section(parent: VBoxContainer) -> void:

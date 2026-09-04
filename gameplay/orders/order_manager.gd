@@ -377,7 +377,7 @@ func complete(player_car: PlayerCar, _hour: float, rating: float) -> Dictionary:
 	}
 
 	Bus.order_event.emit(&"completed", o.id, result)
-	Bus.notify.emit(&"toast", "+%d ₽ (включая чаевые %d ₽)" % [total, tips], {"color": Color("#7ee787")})
+	Bus.notify.emit(&"toast", "+%d ₽ (включая чаевые %d ₽)" % [total, tips], {"level": &"reward"})
 
 	var drop_quote: String = _get_dialogue_quote(o, &"dropoff")
 	if not drop_quote.is_empty():
@@ -402,7 +402,7 @@ func fail(order: RefCounted, reason: StringName) -> void:
 	Game.add_rating(-balance.rating_fail_order)
 
 	Bus.order_event.emit(&"failed", order.id, {"reason": reason, "order": order})
-	Bus.notify.emit(&"toast", "Заказ провален: %s" % order.title, {"color": Color("#ff7b72")})
+	Bus.notify.emit(&"toast", "Заказ провален: %s" % order.title, {"level": &"critical"})
 
 
 # --- Внутренние пассажиры и уходящие пешеходы --------------------------------
@@ -512,9 +512,9 @@ func _on_player_crashed(impact: float, _victim: StringName) -> void:
 	if active_order.type_id == &"package" and impact > 15.0:
 		if not active_order.fragile_broken:
 			active_order.fragile_broken = true
-			Bus.notify.emit(&"toast", "Хрупкий груз повреждён! Штраф к оплате.", {"color": Color("#ff7b72")})
+			Bus.notify.emit(&"toast", "Хрупкий груз повреждён! Штраф к оплате.", {"level": &"critical"})
 	elif active_order.type_id == &"vip" and impact > 22.0:
-		Bus.notify.emit(&"toast", "VIP-клиент возмущён аварией и покидает такси!", {"color": Color("#ff7b72")})
+		Bus.notify.emit(&"toast", "VIP-клиент возмущён аварией и покидает такси!", {"level": &"critical"})
 		fail(active_order, &"vip_crash")
 
 

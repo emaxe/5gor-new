@@ -244,3 +244,108 @@ func test_new_game_resets_progress_and_persists_slot() -> void:
 	assert_that(Game.lifetime_stats["total_orders"]).is_equal(0)
 	assert_that(Game.garage.owns(&"classic")).is_false()
 	assert_that(SaveManager.has_slot(TEST_SLOT)).is_true()
+
+
+# --- Страховка: автосейв ачивок закрывает окно между unlock и записью ----------
+
+## Если процесс падает посреди unlocked.append() и записи achievements.cfg,
+## последняя ачивка теряется. _autosave() пишет их раз в AUTOSAVE_INTERVAL_SEC
+## (30 с) — дёргаем его напрямую и убеждаемся, что неподписанный на сигнал
+## unlock всё равно сохраняется.
+func test_achievements_persist_via_autosave_without_unlock_signal() -> void:
+	# Чтобы не зависеть от других тестов — убираем всё из файла и из памяти.
+	SaveManager._save_achievements() # записать текущее пустое состояние
+	Game.achievements.apply_save_dict({"unlocked": []})
+
+	Game.achievements.unlocked.append(&"km_500")
+	Game.achievements.unlocked.append(&"night_owl")
+
+	# Сигнал НЕ эмитим — имитируем «потерянную» разблокировку, которую
+	# подхватит только периодический автосейв.
+	SaveManager._autosave()
+
+	var cfg := ConfigFile.new()
+	assert_that(cfg.load(SaveManager.ACHIEVEMENTS_PATH)).is_equal(OK)
+	var unlocked: Array = cfg.get_value("achievements", "unlocked", [])
+	assert_that(unlocked).contains(&"km_500")
+	assert_that(unlocked).contains(&"night_owl")
+
+
+func test_slot_count_is_three() -> void:
+	assert_that(SaveManager.SLOT_COUNT).is_equal(3)
+
+
+## Карточка слота N>0 должна подхватывать сохранённые данные: новая игра в
+## слоте 1 → прогресс не виден в слоте 0 → возврат к слоту 0 сохраняет его
+## прежним. Гарантия, что UI с 3 слотами не перезатирает чужие сохранения.
+func test_three_slots_isolate_progress() -> void:
+	SaveManager.delete_slot(0)
+	SaveManager.delete_slot(1)
+	SaveManager.delete_slot(2)
+
+	# Заполняем слот 0.
+	SaveManager.new_game(0, 111)
+	Game.set_money(1234)
+	SaveManager.save_slot(0)
+
+	# Заполняем слот 1 другими данными.
+	SaveManager.new_game(1, 222)
+	Game.set_money(5678)
+	SaveManager.save_slot(1)
+
+	# Слот 0 — деньги 1234, сид 111.
+	assert_that(SaveManager.slot_summary(0)["money"]).is_equal(1234)
+	assert_that(SaveManager.slot_summary(0)["world_seed"]).is_equal(111)
+
+	# Слот 1 — деньги 5678, сид 222.
+	assert_that(SaveManager.slot_summary(1)["money"]).is_equal(5678)
+	assert_that(SaveManager.slot_summary(1)["world_seed"]).is_equal(222)
+
+	# Слот 2 пуст.
+	assert_that(SaveManager.slot_summary(2)).is_empty()
+	assert_that(SaveManager.has_slot(2)).is_false()
+
+
+## UI гаража читает Game.garage — один instance на все слоты. load_slot()
+## обязан перезатирать его содержимым указанного слота, не оставляя хвостов
+## от предыдущего. Иначе открытие гаража после «Продолжить» слота 1 при
+## последнем сейве в слоте 0 показало бы чужой прогресс.
+##
+## Примечание про ачивки: AchievementTracker привязан к профилю, а не к
+## слоту, поэтому здесь мы проверяем только гараж — ачивки остаются
+## общими на весь профиль (по дизайну плана).
+func test_loading_different_slot_replaces_garage() -> void:
+	SaveManager.delete_slot(0)
+	SaveManager.delete_slot(1)
+
+	# Слот 0: такси + апгрейд.
+	SaveManager.new_game(0, 100)
+	Game.set_rating(50.0)
+	Game.set_money(100000)
+	Game.garage.buy_upgrade(&"taxi", &"engine")
+	SaveManager.save_slot(0)
+
+	# Слот 1: classic без апгрейдов.
+	SaveManager.new_game(1, 200)
+	Game.set_rating(50.0)
+	Game.set_money(100000)
+	Game.garage.buy_car(&"classic")
+	SaveManager.save_slot(1)
+
+	# Переключаемся на слот 0 — не должно остаться хвостов от слота 1.
+	SaveManager.load_slot(0)
+	assert_that(Game.garage.owns(&"taxi")).is_true()
+	assert_that(Game.garage.owns(&"classic")).is_false()
+	assert_that(Game.garage.upgrade_level(&"taxi", &"engine")).is_equal(1)
+
+	# Переключаемся на слот 1 — обратная картина.
+	SaveManager.load_slot(1)
+	assert_that(Game.garage.owns(&"taxi")).is_true()
+	assert_that(Game.garage.owns(&"classic")).is_true()
+	assert_that(Game.garage.upgrade_level(&"taxi", &"engine")).is_equal(0)
+
+	# И обратно — переключение должно быть идемпотентным.
+	SaveManager.load_slot(0)
+	assert_that(Game.garage.owns(&"taxi")).is_true()
+	assert_that(Game.garage.owns(&"classic")).is_false()
+	assert_that(Game.garage.upgrade_level(&"taxi", &"engine")).is_equal(1)

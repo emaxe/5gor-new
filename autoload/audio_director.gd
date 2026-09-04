@@ -13,6 +13,12 @@ extends Node
 
 const BUS_LIST: Array[StringName] = [&"Music", &"SFX", &"Engine", &"Ambient", &"UI", &"Voice"]
 const SFX_POOL_SIZE := 24
+## Размер пула 3D-голосов для звуков с позицией (гудки трафика, сирены,
+## шаги пешеходов). Один источник живёт в AudioStreamPlayer3D, когда
+## воспроизведение кончается — возвращается в пул. Размер пула ограничивает
+## одновременное число звучащих 3D-эффектов; при превышении самые старые
+## подрезаются.
+const SFX_3D_POOL_SIZE := 16
 const LOOP_SMOOTH := 0.18
 const RAIN_SMOOTH := 0.05
 
@@ -23,8 +29,15 @@ class _Voice extends RefCounted:
 	var in_use := false
 
 
+class _Voice3D extends RefCounted:
+	var player: AudioStreamPlayer3D
+	var budget_tag: StringName = &""
+	var in_use := false
+
+
 var _alloc := VoiceAllocator.new()
 var _pool: Array[_Voice] = []
+var _pool_3d: Array[_Voice3D] = []
 
 var _engine_players: Array[AudioStreamPlayer] = []
 var _tire_road: AudioStreamPlayer
@@ -83,6 +96,7 @@ var _in_car := false
 func _ready() -> void:
 	_ensure_buses()
 	_build_pool()
+	_build_pool_3d()
 	_build_loops()
 	_radio_player = AudioStreamPlayer.new()
 	add_child(_radio_player)
@@ -159,6 +173,22 @@ func _build_pool() -> void:
 		p.finished.connect(_on_voice_finished.bind(v))
 
 
+## 3D-пул: те же бюджеты/кулдауны VoiceAllocator, но носитель — Node3D-
+	## позиционированный плеер с обратной квадратичной зависимостью
+	## (ATTENUATION_INVERSE_DISTANCE) — машина на 80 м уже почти не слышна,
+	## что и нужно для уличного звука.
+func _build_pool_3d() -> void:
+	for i in SFX_3D_POOL_SIZE:
+		var p := AudioStreamPlayer3D.new()
+		p.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+		p.max_distance = 80.0
+		add_child(p)
+		var v := _Voice3D.new()
+		v.player = p
+		_pool_3d.append(v)
+		p.finished.connect(_on_voice_3d_finished.bind(v))
+
+
 ## Порт alloc()+play() (audiocore.js) — бюджет/кулдаун по тегам рецепта,
 ## голос освобождается по `AudioStreamPlayer.finished` (точнее оригинального
 ## releaseAfter(ms), см. VoiceAllocator).
@@ -190,7 +220,46 @@ func _free_voice() -> _Voice:
 	return null
 
 
+## 3D-вариант play_sfx — позиционирует голос в мире. Те же бюджеты/кулдауны
+## по тегу рецепта, тот же пул, но носитель AudioStreamPlayer3D.
+## Используется NPC-звуками с привязкой к позиции (гудки трафика, сирены,
+## шаги пешеходов, скрип шин). false — пул/бюджет исчерпан.
+func play_sfx_3d(id: StringName, position: Vector3, gain_mul: float = 1.0) -> bool:
+	var recipe := Db.stations.get_sfx(id)
+	if recipe == null:
+		push_warning("Audio: неизвестный SFX id %s" % id)
+		return false
+	var now := Time.get_ticks_msec()
+	if not _alloc.try_alloc(recipe.budget_tag, recipe.cooldown_tag, now):
+		return false
+	var voice := _free_voice_3d()
+	if voice == null:
+		_alloc.release(recipe.budget_tag)
+		return false
+	voice.in_use = true
+	voice.budget_tag = recipe.budget_tag
+	voice.player.global_position = position
+	voice.player.stream = SfxCache.get_stream(recipe)
+	voice.player.bus = recipe.bus
+	voice.player.volume_db = linear_to_db(clampf(gain_mul, 0.0001, 4.0))
+	voice.player.play()
+	return true
+
+
+func _free_voice_3d() -> _Voice3D:
+	for v in _pool_3d:
+		if not v.in_use:
+			return v
+	return null
+
+
 func _on_voice_finished(voice: _Voice) -> void:
+	voice.in_use = false
+	_alloc.release(voice.budget_tag)
+	voice.budget_tag = &""
+
+
+func _on_voice_3d_finished(voice: _Voice3D) -> void:
 	voice.in_use = false
 	_alloc.release(voice.budget_tag)
 	voice.budget_tag = &""
@@ -503,9 +572,13 @@ func _on_juice_event(kind: StringName, data: Dictionary) -> void:
 			play_combo_milestone(int(data.get("level", 1)))
 
 
-func _on_notify(kind: StringName, _text: String, _data: Dictionary) -> void:
+func _on_notify(kind: StringName, _text: String, data: Dictionary) -> void:
 	if kind == &"dialogue":
 		play_sfx(&"voice_default")
+	elif kind == &"siren":
+		var pos_v: Variant = data.get("position")
+		if pos_v is Vector3:
+			play_sfx_3d(&"siren_police", pos_v)
 
 
 func _on_weather_changed(id: StringName) -> void:

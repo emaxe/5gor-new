@@ -39,6 +39,11 @@ var locale := "ru"
 ## Темп смены: 0.5 / 1.0 / 2.0.
 var shift_speed := 1.0
 
+## Режим игрового HUD: &"full" | &"minimal" | &"hidden".
+var hud_mode: StringName = &"full"
+## Множитель непрозрачности фонов HUD-плашек.
+var hud_opacity := 1.0
+
 var _volume_save_timer: SceneTreeTimer = null
 
 
@@ -64,6 +69,8 @@ func load_prefs() -> void:
 		driver[k] = cfg.get_value("driver", String(k), driver[k])
 	locale = cfg.get_value("misc", "locale", locale)
 	shift_speed = cfg.get_value("misc", "shift_speed", shift_speed)
+	hud_mode = StringName(cfg.get_value("hud", "mode", String(hud_mode)))
+	hud_opacity = cfg.get_value("hud", "opacity", hud_opacity)
 	_load_input_map(cfg)
 
 
@@ -81,6 +88,8 @@ func save_prefs() -> void:
 		cfg.set_value("driver", String(k), driver[k])
 	cfg.set_value("misc", "locale", locale)
 	cfg.set_value("misc", "shift_speed", shift_speed)
+	cfg.set_value("hud", "mode", String(hud_mode))
+	cfg.set_value("hud", "opacity", hud_opacity)
 	_save_input_map(cfg)
 	cfg.save(PATH)
 
@@ -97,6 +106,12 @@ func apply_audio() -> void:
 	for bus_name: StringName in volumes:
 		_apply_bus(bus_name)
 	Bus.settings_applied.emit(&"audio")
+
+
+## Hud слушает settings_applied(&"hud") и перечитывает hud_mode/hud_opacity —
+## вызывается сразу при правке в SettingsScreen, без ожидания hide_screen().
+func apply_hud() -> void:
+	Bus.settings_applied.emit(&"hud")
 
 
 func _apply_bus(bus_name: StringName) -> void:
@@ -123,7 +138,12 @@ func _save_input_map(cfg: ConfigFile) -> void:
 			continue
 		var events: Array = []
 		for e in InputMap.action_get_events(action):
-			events.append(var_to_bytes(e))
+			# InputEvent — Object, а не структура: обычный var_to_bytes()
+			# сериализует объекты только ссылкой на instance ID (12 байт,
+			# без keycode/button_index/axis), а не их данными — нужен
+			# явный _with_objects, иначе bytes_to_var() в _load_input_map()
+			# ниже не восстановит из этого ни одного валидного InputEvent.
+			events.append(var_to_bytes_with_objects(e))
 		remapped[String(action)] = events
 	cfg.set_value("input", "actions", remapped)
 
@@ -134,8 +154,19 @@ func _load_input_map(cfg: ConfigFile) -> void:
 		var action := StringName(action_name)
 		if not InputMap.has_action(action):
 			continue
-		InputMap.action_erase_events(action)
+		var events: Array[InputEvent] = []
 		for packed: PackedByteArray in remapped[action_name]:
-			var e: Variant = bytes_to_var(packed)
+			var e: Variant = bytes_to_var_with_objects(packed)
 			if e is InputEvent:
-				InputMap.action_add_event(action, e)
+				events.append(e)
+		# Пусто — или действие сохранили без единого события, или это файл
+		# со старого сломанного _save_input_map() (см. комментарий выше:
+		# события распадались в bytes_to_var() и раньше сюда не долетали
+		# вообще ни одного). Не стираем InputMap.action_erase_events() из
+		# project.godot вслепую — иначе газ/руль/тормоз остаются без единой
+		# привязки навсегда, пока файл настроек не удалят руками.
+		if events.is_empty():
+			continue
+		InputMap.action_erase_events(action)
+		for e in events:
+			InputMap.action_add_event(action, e)

@@ -274,7 +274,8 @@ func _fine(v: Violation) -> void:
 	Game.add_rating(-scaled_rating)
 	Game.bump("", "police_fines", 1.0)
 	Bus.notify.emit(&"toast",
-		"🚨 %s Штраф: %d ₽, рейтинг -%d" % [v.id, scaled_fine, scaled_rating], {})
+		"🚨 %s Штраф: %d ₽, рейтинг -%d" % [v.id, scaled_fine, scaled_rating],
+		{"level": &"critical"})
 	violation_fined.emit(v.id)
 
 
@@ -316,7 +317,8 @@ func update(delta: float, px: float, pz: float, in_car: bool,
 		Game.bump("escapes", "total_escapes", 1.0)
 		Game.track_max("max_escape_level", float(peak))
 		Bus.notify.emit(&"toast",
-			"✅ Побег от полиции! +%d ₽, +%d рейтинга" % [reward, rating_bonus], {})
+			"✅ Побег от полиции! +%d ₽, +%d рейтинга" % [reward, rating_bonus],
+			{"level": &"reward"})
 		escaped.emit(peak)
 
 

@@ -49,3 +49,43 @@ func test_ids_are_unique_and_increasing() -> void:
 	var b: Array = q.push()
 
 	assert_that(b[0]).is_greater(a[0])
+
+
+## Ранги: 0 = награда, 1 = инфо (по умолчанию), 2 = критическое —
+## см. HudStyle.level_rank().
+
+func test_reward_does_not_evict_three_criticals() -> void:
+	var q = ToastQueueScript.new(3)
+	q.push(2)
+	q.push(2)
+	q.push(2)
+
+	var result: Array = q.push(0)
+
+	assert_that(result[0]).is_equal(-1)
+	assert_that(result[1]).is_equal(-1)
+	assert_that(q.size()).is_equal(3)
+
+
+func test_critical_evicts_oldest_of_lowest_present_rank() -> void:
+	var q = ToastQueueScript.new(3)
+	var first_reward: Array = q.push(0)
+	q.push(0)
+	q.push(1)
+
+	var result: Array = q.push(2)
+
+	assert_that(result[1]).is_equal(first_reward[0])
+	assert_that(q.size()).is_equal(3)
+
+
+func test_equal_rank_evicts_oldest_same_as_before() -> void:
+	var q = ToastQueueScript.new(3)
+	var first: Array = q.push(1)
+	q.push(1)
+	q.push(1)
+
+	var result: Array = q.push(1)
+
+	assert_that(result[1]).is_equal(first[0])
+	assert_that(q.size()).is_equal(3)
