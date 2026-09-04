@@ -3,10 +3,14 @@ extends Node
 const MainMenuScript = preload("res://ui/screens/main_menu.gd")
 const ShiftEndScript = preload("res://ui/screens/shift_end.gd")
 const AchievementsScreenScript = preload("res://ui/screens/achievements.gd")
+const SettingsScreenScript = preload("res://ui/screens/settings.gd")
+const GarageScreenScript = preload("res://ui/screens/garage.gd")
 
 var _menu: CanvasLayer
 var _shift_end: CanvasLayer
 var _achievements: CanvasLayer
+var _settings: CanvasLayer
+var _garage: CanvasLayer
 
 
 func _ready() -> void:
@@ -18,6 +22,8 @@ func _ready() -> void:
 	_build_main_menu()
 	_build_shift_end()
 	_build_achievements()
+	_build_settings()
+	_build_garage()
 
 	var args := OS.get_cmdline_user_args()
 	if "--benchmark" in args:
@@ -51,12 +57,10 @@ func _build_main_menu() -> void:
 
 	_menu.start_game_requested.connect(_on_start_game)
 	_menu.garage_requested.connect(func() -> void:
-		if not Dir.push(&"garage"):
-			_menu.flash_notice("Гараж скоро откроется")
+		Dir.push(&"garage")
 	)
 	_menu.settings_requested.connect(func() -> void:
-		if not Dir.push(&"settings"):
-			_menu.flash_notice("Настройки скоро откроются")
+		Dir.push(&"settings")
 	)
 	_menu.achievements_requested.connect(func() -> void:
 		if not Dir.push(&"achievements"):
@@ -88,6 +92,28 @@ func _build_achievements() -> void:
 	Dir.register_screen(&"achievements", _achievements)
 
 	_achievements.closed.connect(func() -> void:
+		Dir.pop()
+	)
+
+
+func _build_settings() -> void:
+	_settings = SettingsScreenScript.new()
+	_settings.name = "Settings"
+	add_child(_settings)
+	Dir.register_screen(&"settings", _settings)
+
+	_settings.closed.connect(func() -> void:
+		Dir.pop()
+	)
+
+
+func _build_garage() -> void:
+	_garage = GarageScreenScript.new()
+	_garage.name = "Garage"
+	add_child(_garage)
+	Dir.register_screen(&"garage", _garage)
+
+	_garage.closed.connect(func() -> void:
 		Dir.pop()
 	)
 

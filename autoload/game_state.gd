@@ -6,7 +6,13 @@ extends Node
 ## add_money()/add_rating(). В оригинале шесть мест правили this.money в обход
 ## сеттера, из-за чего не эмитился money:changed и не показывался cash-pop.
 
+const GarageScript = preload("res://gameplay/economy/garage.gd")
+
 const RATING_MAX := 100.0
+
+## Владение машинами и апгрейды — не сбрасывается start_shift(), гараж не
+## привязан к смене (см. gameplay/economy/garage.gd).
+var garage := GarageScript.new()
 
 var money: int = 0
 var rating: float = 0.0
