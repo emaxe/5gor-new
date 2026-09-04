@@ -45,6 +45,7 @@ var _volume_save_timer: SceneTreeTimer = null
 func _ready() -> void:
 	load_prefs()
 	apply_audio()
+	TranslationServer.set_locale(locale)
 
 
 func load_prefs() -> void:
