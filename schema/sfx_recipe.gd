@@ -5,8 +5,8 @@ extends Resource
 ##
 ## Многослойные эффекты (несколько одновременных/последовательных `tone()`
 ## в одном методе оригинала) — несколько `SfxRecipeLayer` в `layers`.
-## Запекается один раз в `AudioStreamWAV` (`audio/synth/sfx_synth.gd`) и
-## кэшируется в `user://sfx_cache_v1/<hash>.res` (`audio/synth/sfx_cache.gd`).
+## Запекается один раз в `AudioStreamWAV` (`audio/sfx/sfx_synth.gd`) и
+## кэшируется в `user://sfx_cache_v1/<hash>.res` (`audio/sfx/sfx_cache.gd`).
 
 enum Wave { SINE, SAW, SQUARE, TRIANGLE, NOISE }
 enum Filter { NONE, LOWPASS, HIGHPASS, BANDPASS }
