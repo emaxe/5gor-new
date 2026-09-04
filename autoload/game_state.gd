@@ -119,7 +119,7 @@ func advance_time(delta: float) -> void:
 
 	if b.auto_end_shift and shift_elapsed >= b.day_length_sec:
 		_running = false
-		Bus.game_state_changed.emit(&"shift_end")
+		Dir.push(&"shift_end")
 
 
 func is_night() -> bool:
@@ -174,6 +174,12 @@ func bump(shift_key: String, lifetime_key: String, amount: float = 1.0) -> void:
 
 func track_max(key: String, value: float) -> void:
 	lifetime_stats[key] = maxf(lifetime_stats.get(key, 0.0), value)
+
+
+## Максимум за смену (best_combo, max_near_miss_streak) — симметрично track_max,
+## но пишет в shift_stats, который каждую смену обнуляется reset_shift().
+func track_shift_max(key: String, value: float) -> void:
+	shift_stats[key] = maxi(shift_stats.get(key, 0), roundi(value))
 
 
 ## Слитая статистика для проверки условий достижений.

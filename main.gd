@@ -1,8 +1,12 @@
 extends Node
 
 const MainMenuScript = preload("res://ui/screens/main_menu.gd")
+const ShiftEndScript = preload("res://ui/screens/shift_end.gd")
+const AchievementsScreenScript = preload("res://ui/screens/achievements.gd")
 
 var _menu: CanvasLayer
+var _shift_end: CanvasLayer
+var _achievements: CanvasLayer
 
 
 func _ready() -> void:
@@ -12,6 +16,8 @@ func _ready() -> void:
 
 	await Dir.load_world(self)
 	_build_main_menu()
+	_build_shift_end()
+	_build_achievements()
 
 	var args := OS.get_cmdline_user_args()
 	if "--benchmark" in args:
@@ -55,6 +61,34 @@ func _build_main_menu() -> void:
 	_menu.achievements_requested.connect(func() -> void:
 		if not Dir.push(&"achievements"):
 			_menu.flash_notice("Достижения скоро появятся")
+	)
+
+
+func _build_shift_end() -> void:
+	_shift_end = ShiftEndScript.new()
+	_shift_end.name = "ShiftEnd"
+	add_child(_shift_end)
+	Dir.register_screen(&"shift_end", _shift_end)
+
+	_shift_end.next_shift_requested.connect(func() -> void:
+		Game.start_shift(Game.day + 1)
+		Dir.set_state(&"driving")
+		if Dir.world != null and Dir.world.hud != null:
+			Dir.world.hud.play_shift_intro(Game.day)
+	)
+	_shift_end.main_menu_requested.connect(func() -> void:
+		Dir.set_state(&"menu")
+	)
+
+
+func _build_achievements() -> void:
+	_achievements = AchievementsScreenScript.new()
+	_achievements.name = "Achievements"
+	add_child(_achievements)
+	Dir.register_screen(&"achievements", _achievements)
+
+	_achievements.closed.connect(func() -> void:
+		Dir.pop()
 	)
 
 

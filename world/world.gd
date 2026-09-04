@@ -31,6 +31,7 @@ var gps: GpsRouter
 var _drift_reaction_cd := 0.0
 var hud: CanvasLayer
 var pause_menu: CanvasLayer
+var map_screen: CanvasLayer
 
 ## Точка старта смены: правая полоса проспекта, как в оригинале (0, 20).
 const SPAWN := Vector3(-2.5, 0.0, 20.0)
@@ -258,6 +259,12 @@ func _spawn_hud() -> void:
 	pause_menu.resume_requested.connect(func() -> void: Dir.pop())
 	pause_menu.main_menu_requested.connect(_on_pause_main_menu)
 	pause_menu.end_shift_requested.connect(_on_pause_end_shift)
+
+	var map_script: GDScript = load("res://ui/screens/map_screen.gd")
+	map_screen = map_script.new()
+	map_screen.name = "MapScreen"
+	add_child(map_screen)
+	Dir.register_screen(&"map", map_screen)
 
 
 
@@ -503,6 +510,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			Dir.pop()
 		elif Dir.state == &"driving":
 			Dir.push(&"pause")
+		return
+
+	if event.is_action_pressed(&"map"):
+		if Dir.state == &"map":
+			Dir.pop()
+		elif Dir.state == &"driving":
+			Dir.push(&"map")
 		return
 
 	if event.is_action_pressed(&"interact"):
