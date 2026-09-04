@@ -39,6 +39,13 @@ var cell: float = 64.0
 var road_half: float = 6.0
 var sidewalk: float = 4.0
 var grid_ext: float = 36.0
+
+## Уровни поверхностей города (согласованы с CityMesher).
+const Y_GROUND := -0.02
+const Y_ROAD := 0.05
+const Y_SIDEWALK := 0.15
+const Y_CURB := 0.16
+
 ## Координаты осей дорог (одинаковы для вертикальных и горизонтальных).
 var road_axes: PackedFloat32Array = PackedFloat32Array()
 ## Перекрёстки — декартово произведение осей.
@@ -116,6 +123,8 @@ func _snap_axis(v: float) -> float:
 
 ## Базовый рельеф без дороги: Машук + вторая вершина, гладко сопряжённые.
 func base_height(x: float, z: float) -> float:
+	if z > -288.0:
+		return 0.0
 	var h := MathUtils.smin(
 		HILL.cone * (1.0 - MathUtils.dist_2d(x, z, HILL.x, HILL.z) / HILL.r),
 		HILL.top, 6.0)
@@ -149,6 +158,40 @@ func height_at(x: float, z: float) -> float:
 func dist_to_serp(x: float, z: float) -> float:
 	var d := _serp_near(x, z)
 	return INF if d.x < 0.0 else d.x
+
+
+## Реальная высота поверхности под колёсами в точке (x, z):
+## полотно дороги, тротуар, бордюр или рельеф Машука.
+func surface_height_at(x: float, z: float) -> float:
+	if z <= TERRAIN_Z_MAX:
+		var h := height_at(x, z)
+		if on_road(x, z) and h < 2.0:
+			return maxf(h, Y_ROAD * (1.0 - h * 0.5))
+		return h
+
+	var span := 256.0 + grid_ext
+	if absf(x) > span or absf(z) > span:
+		return Y_GROUND
+
+	var vx := _snap_axis(x)
+	var hz := _snap_axis(z)
+	var dv := absf(x - vx)
+	var dh := absf(z - hz)
+
+	# 1. Проезжая часть (включая перекрёстки)
+	if (dv <= road_half and absf(z) <= span) or (dh <= road_half and absf(x) <= span):
+		return Y_ROAD
+
+	# 2. Бордюр и тротуар
+	var curb_end := road_half + 0.5
+	var walk_end := road_half + sidewalk
+	if (dv <= walk_end and absf(z) <= span) or (dh <= walk_end and absf(x) <= span):
+		if dv <= curb_end or dh <= curb_end:
+			return Y_CURB
+		return Y_SIDEWALK
+
+	# 3. Газон / дворы внутри квартала
+	return Y_GROUND
 
 
 # --- Серпантин --------------------------------------------------------------
@@ -255,7 +298,7 @@ func _build_serp_hash() -> void:
 ## Ближайшая точка оси: возвращает Vector2(расстояние, высота).
 ## x < 0 означает «вне зоны влияния».
 func _serp_near(x: float, z: float) -> Vector2:
-	var best_d := INF
+	var best_d_sq := INF
 	var best_y := 0.0
 	var key := MathUtils.hash_key(floori(x / SERP_HASH_CELL), floori(z / SERP_HASH_CELL))
 	if _serp_hash.has(key):
@@ -267,13 +310,18 @@ func _serp_near(x: float, z: float) -> Vector2:
 			var denom := dx * dx + dz * dz
 			var t := 0.0 if denom < 1e-9 else ((x - ax) * dx + (z - az) * dz) / denom
 			t = clampf(t, 0.0, 1.0)
-			var d := MathUtils.dist_2d(x, z, ax + dx * t, az + dz * t)
-			if d < best_d:
-				best_d = d
+			var px := ax + dx * t
+			var pz := az + dz * t
+			var d_sq := (x - px) * (x - px) + (z - pz) * (z - pz)
+			if d_sq < best_d_sq:
+				best_d_sq = d_sq
 				best_y = _serp_y[i] + (_serp_y[i + 1] - _serp_y[i]) * t
+	var best_d := sqrt(best_d_sq)
 	# Плоская площадка на вершине.
-	var dt: float = maxf(0.0,
-		MathUtils.dist_2d(x, z, HILL.x, HILL.z) - SUMMIT_FLAT_R)
+	var dhx := x - HILL.x
+	var dhz := z - HILL.z
+	var hill_dist := sqrt(dhx * dhx + dhz * dhz)
+	var dt: float = maxf(0.0, hill_dist - SUMMIT_FLAT_R)
 	if dt < best_d:
 		best_d = dt
 		best_y = HILL.top

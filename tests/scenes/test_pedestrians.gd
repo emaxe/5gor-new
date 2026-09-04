@@ -80,6 +80,12 @@ func _place_camera() -> void:
 		1: # живой ИИ на перекрёстке со светофором
 			cam.position = Vector3(20.0, 22.0, 44.0)
 			cam.look_at(Vector3(0.0, 1.0, 20.0), Vector3.UP)
+		2: # крупный план на головы туриста и студента в изометрии
+			cam.position = Vector3(-5.0, 3.2, 45.0)
+			cam.look_at(Vector3(-5.0, 1.4, 40.0), Vector3.UP)
+		3: # вид сверху-сзади (как в геймплее)
+			cam.position = Vector3(-6.0, 4.5, 45.5)
+			cam.look_at(Vector3(-6.0, 1.3, 40.0), Vector3.UP)
 		_: # витрина архетипов в ряд
 			cam.position = Vector3(0.0, 3.0, 52.0)
 			cam.look_at(Vector3(0.0, 1.4, 40.0), Vector3.UP)

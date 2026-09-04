@@ -28,6 +28,8 @@ const WHEEL_STEER := 0.5
 var runtime := CarRuntime.new()
 var motion := CarPhysics.Motion.new()
 var field: CityField
+var is_active: bool = true
+var _empty_axes := Inp.DriveAxes.new()
 
 var _body: Node3D
 var _wheels: Array[Node3D] = []
@@ -64,17 +66,18 @@ func _build_collider(shape: CarShapeData) -> void:
 	for c in _shapes:
 		c.queue_free()
 	_shapes.clear()
-	var capsule := CapsuleShape3D.new()
-	capsule.radius = shape.collider_radius()
-	capsule.height = CAPSULE_HEIGHT
+	var cylinder := CylinderShape3D.new()
+	cylinder.radius = shape.collider_radius()
+	cylinder.height = CAPSULE_HEIGHT
 	var sep := shape.collider_separation()
 	# Один ресурс шейпа на три ноды: смена машины — правка радиуса в одном месте.
 	for z: float in [sep, 0.0, -sep]:
 		var cs := CollisionShape3D.new()
-		cs.shape = capsule
+		cs.shape = cylinder
 		cs.position = Vector3(0.0, CAPSULE_HEIGHT * 0.5, z)
 		add_child(cs)
 		_shapes.append(cs)
+
 
 
 func _build_visuals(data: CarData) -> void:
@@ -143,22 +146,26 @@ func _physics_process(delta: float) -> void:
 	if runtime.stats == null or field == null:
 		return
 	_sample_surface()
-	var axes := Inp.drive_axes()
+	var axes := Inp.drive_axes() if is_active else _empty_axes
 	motion.position = global_position
 	CarPhysics.step(motion, axes, _surface, runtime.stats,
 		runtime.engine_dead(), delta)
 
+	# Разворачиваем коллайдер по курсу перед перемещением, чтобы при заносе
+	# и повороте не вкручивать коллизию внутрь статики.
+	basis = Heading.basis_of(motion.heading)
+
 	# Позиция считается собственной интеграцией, а move_and_slide только
-	# разрешает столкновения: velocity здесь — не «куда двигать», а
-	# «с какой скоростью мы уже летим».
+	# разрешает столкновения.
 	velocity = motion.velocity
 	move_and_slide()
 	_resolve_impacts()
 
-	# Машина едет по рельефу, а не по физическому полу.
-	global_position.y = field.height_at(global_position.x, global_position.z)
+	# Машина едет колёсами по поверхности (дорога 0.05, тротуар 0.15, Машук).
+	# Плавная подвеска гасит ступени бордюров при заезде на тротуар.
+	var target_y := field.surface_height_at(global_position.x, global_position.z)
+	global_position.y = MathUtils.damp(global_position.y, target_y, 0.45, delta)
 	motion.position = global_position
-	basis = Heading.basis_of(motion.heading)
 
 	runtime.tick(motion, _surface.on_road, delta)
 	_update_visuals(axes, delta)
@@ -166,7 +173,8 @@ func _physics_process(delta: float) -> void:
 
 func _sample_surface() -> void:
 	_surface.on_road = field.on_road(global_position.x, global_position.z)
-	_surface.ground_height = field.height_at(global_position.x, global_position.z)
+	_surface.ground_height = field.surface_height_at(global_position.x, global_position.z)
+
 
 
 ## Разбор столкновений: направление и коэффициент отскока взяты из оригинала,
@@ -224,8 +232,11 @@ func place(pos: Vector3, heading: float) -> void:
 	motion.velocity = Vector3.ZERO
 	motion.heading = heading
 	motion.speed = 0.0
-	global_position = Vector3(pos.x, field.height_at(pos.x, pos.z), pos.z)
+	var y := field.surface_height_at(pos.x, pos.z) if field != null else pos.y
+	global_position = Vector3(pos.x, y, pos.z)
 	basis = Heading.basis_of(heading)
+	reset_physics_interpolation()
+
 
 
 ## Скорость в км/ч для HUD.

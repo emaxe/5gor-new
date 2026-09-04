@@ -24,77 +24,69 @@ const LAMP_TURN := Color("#e08a20")
 ## (carmodel.js:456-486).
 const SHAPES := {
 	&"sedan": {
-		"deck_y": 0.72, "deck_h": 0.42, "belt_w": 0.98,
-		"hood": 0.32, "hood_rise": -0.30, "trunk": 0.28, "trunk_rise": -0.30,
-		"cab_w": 0.90, "cab_h": 0.46, "cab_y": 1.32, "cab_len": 0.46,
-		"roof_w": 0.74, "roof_h": 0.09, "roof_y": 1.52, "roof_len": 0.24,
-		"wheel_r": 0.38, "van": false,
+		"deck_y": 0.48, "deck_h": 0.38, "belt_w": 0.98,
+		"hood": 0.32, "hood_rise": -0.14, "trunk": 0.26, "trunk_rise": -0.08,
+		"cab_w": 0.88, "cab_h": 0.46, "cab_y": 0.88, "cab_len": 0.48,
+		"roof_w": 0.74, "roof_h": 0.06, "roof_y": 1.15, "roof_len": 0.26,
+		"wheel_r": 0.31, "van": false,
 	},
 	&"hatch": {
-		"deck_y": 0.70, "deck_h": 0.42, "belt_w": 0.98,
-		"hood": 0.30, "hood_rise": -0.28, "trunk": 0.16, "trunk_rise": -0.14,
-		"cab_w": 0.88, "cab_h": 0.50, "cab_y": 1.30, "cab_len": 0.50,
-		"roof_w": 0.76, "roof_h": 0.09, "roof_y": 1.54, "roof_len": 0.30,
-		"wheel_r": 0.36, "van": false,
+		"deck_y": 0.48, "deck_h": 0.38, "belt_w": 0.98,
+		"hood": 0.30, "hood_rise": -0.12, "trunk": 0.14, "trunk_rise": -0.04,
+		"cab_w": 0.88, "cab_h": 0.48, "cab_y": 0.90, "cab_len": 0.54,
+		"roof_w": 0.74, "roof_h": 0.06, "roof_y": 1.17, "roof_len": 0.34,
+		"wheel_r": 0.30, "van": false,
 	},
 	&"wagon": {
-		"deck_y": 0.72, "deck_h": 0.42, "belt_w": 0.99,
-		"hood": 0.28, "hood_rise": -0.28, "trunk": 0.10, "trunk_rise": -0.06,
-		"cab_w": 0.88, "cab_h": 0.50, "cab_y": 1.32, "cab_len": 0.58,
-		"roof_w": 0.78, "roof_h": 0.09, "roof_y": 1.58, "roof_len": 0.44,
-		"wheel_r": 0.37, "van": false, "rack": true,
+		"deck_y": 0.48, "deck_h": 0.38, "belt_w": 0.98,
+		"hood": 0.30, "hood_rise": -0.12, "trunk": 0.10, "trunk_rise": -0.02,
+		"cab_w": 0.88, "cab_h": 0.48, "cab_y": 0.90, "cab_len": 0.58,
+		"roof_w": 0.76, "roof_h": 0.06, "roof_y": 1.18, "roof_len": 0.44,
+		"wheel_r": 0.31, "van": false, "rack": true,
 	},
 	&"coupe": {
-		"deck_y": 0.66, "deck_h": 0.40, "belt_w": 0.98,
-		"hood": 0.36, "hood_rise": -0.34, "trunk": 0.26, "trunk_rise": -0.32,
-		"cab_w": 0.88, "cab_h": 0.40, "cab_y": 1.20, "cab_len": 0.40,
-		"roof_w": 0.70, "roof_h": 0.08, "roof_y": 1.38, "roof_len": 0.18,
-		"wheel_r": 0.37, "van": false,
+		"deck_y": 0.44, "deck_h": 0.36, "belt_w": 0.98,
+		"hood": 0.36, "hood_rise": -0.16, "trunk": 0.24, "trunk_rise": -0.10,
+		"cab_w": 0.86, "cab_h": 0.40, "cab_y": 0.82, "cab_len": 0.42,
+		"roof_w": 0.70, "roof_h": 0.05, "roof_y": 1.05, "roof_len": 0.20,
+		"wheel_r": 0.31, "van": false,
 	},
 	&"suv": {
-		"deck_y": 0.86, "deck_h": 0.52, "belt_w": 0.99,
-		"hood": 0.26, "hood_rise": -0.20, "trunk": 0.12, "trunk_rise": -0.06,
-		"cab_w": 0.92, "cab_h": 0.56, "cab_y": 1.56, "cab_len": 0.56,
-		"roof_w": 0.82, "roof_h": 0.09, "roof_y": 1.86, "roof_len": 0.42,
-		"wheel_r": 0.44, "van": false, "rack": true,
+		"deck_y": 0.58, "deck_h": 0.46, "belt_w": 0.98,
+		"hood": 0.28, "hood_rise": -0.08, "trunk": 0.14, "trunk_rise": -0.02,
+		"cab_w": 0.90, "cab_h": 0.52, "cab_y": 1.08, "cab_len": 0.56,
+		"roof_w": 0.80, "roof_h": 0.07, "roof_y": 1.38, "roof_len": 0.42,
+		"wheel_r": 0.36, "van": false, "rack": true,
 	},
 	&"retro": {
-		"deck_y": 0.74, "deck_h": 0.46, "belt_w": 0.96,
-		"hood": 0.32, "hood_rise": -0.10, "trunk": 0.26, "trunk_rise": -0.10,
-		"cab_w": 0.88, "cab_h": 0.52, "cab_y": 1.36, "cab_len": 0.48,
-		"roof_w": 0.76, "roof_h": 0.09, "roof_y": 1.60, "roof_len": 0.28,
-		"wheel_r": 0.36, "van": false,
+		"deck_y": 0.50, "deck_h": 0.40, "belt_w": 0.96,
+		"hood": 0.32, "hood_rise": -0.06, "trunk": 0.26, "trunk_rise": -0.04,
+		"cab_w": 0.88, "cab_h": 0.50, "cab_y": 0.94, "cab_len": 0.48,
+		"roof_w": 0.76, "roof_h": 0.07, "roof_y": 1.22, "roof_len": 0.28,
+		"wheel_r": 0.31, "van": false,
 	},
 	&"premium": {
-		"deck_y": 0.74, "deck_h": 0.44, "belt_w": 0.99,
-		"hood": 0.34, "hood_rise": -0.26, "trunk": 0.28, "trunk_rise": -0.26,
-		"cab_w": 0.90, "cab_h": 0.44, "cab_y": 1.34, "cab_len": 0.48,
-		"roof_w": 0.76, "roof_h": 0.09, "roof_y": 1.56, "roof_len": 0.26,
-		"wheel_r": 0.39, "van": false,
+		"deck_y": 0.48, "deck_h": 0.38, "belt_w": 0.98,
+		"hood": 0.34, "hood_rise": -0.14, "trunk": 0.26, "trunk_rise": -0.08,
+		"cab_w": 0.88, "cab_h": 0.44, "cab_y": 0.88, "cab_len": 0.48,
+		"roof_w": 0.74, "roof_h": 0.06, "roof_y": 1.15, "roof_len": 0.26,
+		"wheel_r": 0.32, "van": false,
 	},
 	&"van": {
-		"deck_y": 0.62, "deck_h": 0.40, "cab_len_frac": 0.22,
-		"cab_h": 0.90, "cab_y": 1.05, "windshield_rise": -0.28,
-		"cargo_len": 0.68, "cargo_h": 1.50, "cargo_y": 1.35,
-		"wheel_r": 0.40, "van": true,
+		"deck_y": 0.52, "deck_h": 0.40, "cab_y": 1.15, "roof_y": 1.70,
+		"wheel_r": 0.34, "van": true, "type": "van",
 	},
 	&"bus": {
-		"deck_y": 0.70, "deck_h": 0.46, "cab_len_frac": 0.16,
-		"cab_h": 1.10, "cab_y": 1.30, "windshield_rise": -0.20,
-		"cargo_len": 0.80, "cargo_h": 2.10, "cargo_y": 1.70,
-		"wheel_r": 0.46, "van": true,
+		"deck_y": 0.58, "deck_h": 0.44, "cab_y": 1.40, "roof_y": 2.15,
+		"wheel_r": 0.38, "van": true, "type": "bus",
 	},
 	&"pickup": {
-		"deck_y": 0.80, "deck_h": 0.46, "cab_len_frac": 0.40,
-		"cab_h": 0.80, "cab_y": 1.36, "windshield_rise": -0.24,
-		"cargo_len": 0.44, "cargo_h": 0.55, "cargo_y": 1.06,
-		"wheel_r": 0.42, "van": true, "open_bed": true,
+		"deck_y": 0.54, "deck_h": 0.42, "cab_y": 1.08, "roof_y": 1.42,
+		"wheel_r": 0.34, "van": true, "type": "pickup",
 	},
 	&"truck": {
-		"deck_y": 0.86, "deck_h": 0.52, "cab_len_frac": 0.26,
-		"cab_h": 1.40, "cab_y": 1.70, "windshield_rise": -0.16,
-		"cargo_len": 0.66, "cargo_h": 2.30, "cargo_y": 2.05,
-		"wheel_r": 0.50, "van": true,
+		"deck_y": 0.68, "deck_h": 0.48, "cab_y": 1.35, "roof_y": 2.05,
+		"wheel_r": 0.42, "van": true, "type": "truck",
 	},
 }
 
@@ -102,11 +94,11 @@ const SHAPES := {
 ## Описание конкретной машины.
 class Spec extends RefCounted:
 	var silhouette: StringName = &"sedan"
-	var width := 1.9
-	var length := 4.3
+	var width := 1.82
+	var length := 4.30
 	var body_color := Color("#f2c12e")
-	var rim_style: StringName = &"disc"
-	var rim_color := Color("#b8b8b8")
+	var rim_style: StringName = &"spoke"
+	var rim_color := Color("#c4c6ca")
 	var body_kit: StringName = &"stock"
 	var spoiler := false
 	## Ливрея такси: шашечки по борту и плафон на крыше.
@@ -121,12 +113,9 @@ static func shape_of(silhouette: StringName) -> Dictionary:
 	return SHAPES.get(silhouette, SHAPES[&"sedan"])
 
 
-## Верх кузова. У легковых это крыша, у фургонов — верх грузового объёма:
-## мигалку и багажник надо ставить на них одинаково.
+## Верх кузова. У легковых это крыша, у автобусов/фургонов — верх крыши.
 static func roof_height(s: Dictionary) -> float:
-	if s.get("van", false):
-		return float(s["cargo_y"]) + float(s["cargo_h"]) * 0.5
-	return float(s["roof_y"])
+	return float(s.get("roof_y", 1.20))
 
 
 ## Кузов целиком одним мешем — вариант для трафика: одна машина, один draw call.
@@ -143,8 +132,7 @@ static func build_merged(spec: Spec, include_beacon: bool = true) -> ArrayMesh:
 	return b.commit()
 
 
-## Кузов без света и колёс — вариант для машины игрока: свет и колёса
-## живут отдельными узлами, чтобы мигать и вращаться.
+## Кузов без света и колёс — вариант для машины игрока.
 static func build_body(spec: Spec) -> ArrayMesh:
 	var b := MeshBuilder.new()
 	_add_body(b, spec)
@@ -157,35 +145,76 @@ static func build_wheel(spec: Spec) -> ArrayMesh:
 	var r: float = s["wheel_r"]
 	var b := MeshBuilder.new()
 	var across := Basis(Vector3.FORWARD, PI * 0.5)
-	b.cylinder(Vector3.ZERO, r, r, 0.30, TYRE, 12, across)
-	match spec.rim_style:
-		&"spoke":
-			b.cylinder(Vector3.ZERO, r * 0.45, r * 0.45, 0.34, spec.rim_color, 8, across)
-			for k in 5:
-				var a := TAU * k / 5.0
-				b.box(Vector3(0.0, sin(a) * r * 0.5, cos(a) * r * 0.5),
-					Vector3(0.34, r * 0.16, r * 0.94),
-					spec.rim_color, Basis(Vector3.RIGHT, a))
-		&"chrome":
-			b.cylinder(Vector3.ZERO, r * 0.62, r * 0.62, 0.33, CHROME, 12, across)
-			b.cylinder(Vector3.ZERO, r * 0.30, r * 0.30, 0.35, spec.rim_color, 8, across)
-		_:
-			b.cylinder(Vector3.ZERO, r * 0.58, r * 0.58, 0.33, spec.rim_color, 10, across)
+
+	# 1. Резина шины
+	b.cylinder(Vector3.ZERO, r, r, 0.20, TYRE, 16, across)
+	b.cylinder(Vector3.ZERO, r * 0.94, r * 0.94, 0.22, Color("#141416"), 14, across)
+
+	# 2. Тормозной диск и суппорт
+	b.cylinder(Vector3.ZERO, r * 0.52, r * 0.52, 0.08, Color("#444850"), 8, across)
+	b.box(Vector3(0.0, r * 0.28, 0.0), Vector3(0.12, 0.09, 0.07), Color("#cc1824"))
+
+	# 3. Обод и спицы (на обе стороны)
+	for side_x: float in [-1.0, 1.0]:
+		# Внутренняя полость диска (утоплена)
+		b.cylinder(Vector3(side_x * 0.06, 0.0, 0.0), r * 0.64, r * 0.64, 0.04,
+			Color("#121416"), 12, across)
+		# Внешний металлический кант обода
+		b.cylinder(Vector3(side_x * 0.09, 0.0, 0.0), r * 0.72, r * 0.72, 0.02,
+			spec.rim_color, 12, across)
+
+		match spec.rim_style:
+			&"spoke":
+				# Спицы
+				for k in 5:
+					var a := TAU * k / 5.0
+					var rot := Basis(Vector3.RIGHT, a)
+					var spoke_center := Vector3(side_x * 0.08, 0.0, 0.0) + rot * Vector3(0.0, r * 0.38, 0.0)
+					b.box(spoke_center, Vector3(0.02, r * 0.36, r * 0.08), spec.rim_color, rot)
+				# Центральный колпачок ступицы
+				b.cylinder(Vector3(side_x * 0.095, 0.0, 0.0), r * 0.22, r * 0.22, 0.02,
+					CHROME, 8, across)
+			&"chrome":
+				b.cylinder(Vector3(side_x * 0.085, 0.0, 0.0), r * 0.60, r * 0.60, 0.025,
+					CHROME, 12, across)
+				b.cylinder(Vector3(side_x * 0.095, 0.0, 0.0), r * 0.20, r * 0.20, 0.02,
+					Color("#16181b"), 6, across)
+			_:
+				for k in 8:
+					var a := TAU * k / 8.0
+					var rot := Basis(Vector3.RIGHT, a)
+					var spoke_center := Vector3(side_x * 0.08, 0.0, 0.0) + rot * Vector3(0.0, r * 0.38, 0.0)
+					b.box(spoke_center, Vector3(0.02, r * 0.36, r * 0.06), spec.rim_color, rot)
+				b.cylinder(Vector3(side_x * 0.095, 0.0, 0.0), r * 0.22, r * 0.22, 0.02,
+					CHROME, 8, across)
+
 	return b.commit()
 
 
-## Фары, стопы и поворотники — отдельными мешами, чтобы зажигать их
-## сменой эмиссии материала, а не пересборкой геометрии.
+## Фары, стопы и поворотники — отдельными мешами для машины игрока.
 static func build_lamps(spec: Spec, rear: bool) -> ArrayMesh:
 	var b := MeshBuilder.new()
 	var hw := spec.width * 0.5
 	var hl := spec.length * 0.5
 	var s := shape_of(spec.silhouette)
-	var y: float = s["deck_y"] + s["deck_h"] * 0.15
-	var color := LAMP_REAR if rear else LAMP_FRONT
-	var z := (-hl - 0.02) if rear else (hl + 0.02)
-	for sx: float in [-1.0, 1.0]:
-		b.box(Vector3(sx * hw * 0.66, y, z), Vector3(0.30, 0.17, 0.06), color)
+	var y: float = s["deck_y"] + s["deck_h"] * 0.12
+
+	if rear:
+		var z := -hl - 0.012
+		for sx: float in [-1.0, 1.0]:
+			b.box(Vector3(sx * hw * 0.68, y, z), Vector3(0.36, 0.16, 0.025), DARK)
+			b.box(Vector3(sx * hw * 0.66, y, z - 0.012), Vector3(0.20, 0.13, 0.025), LAMP_REAR)
+			b.box(Vector3(sx * hw * 0.52, y, z - 0.012), Vector3(0.08, 0.11, 0.025), Color("#f4f4f8"))
+			b.box(Vector3(sx * hw * 0.82, y, z - 0.012), Vector3(0.08, 0.13, 0.025), LAMP_TURN)
+	else:
+		var z := hl + 0.012
+		for sx: float in [-1.0, 1.0]:
+			b.box(Vector3(sx * hw * 0.68, y, z), Vector3(0.36, 0.16, 0.025), DARK)
+			b.box(Vector3(sx * hw * 0.64, y, z + 0.012), Vector3(0.22, 0.13, 0.025), LAMP_FRONT)
+			b.cylinder(Vector3(sx * hw * 0.64, y, z + 0.025), 0.045, 0.045, 0.015, Color.WHITE, 8,
+				Basis(Vector3.RIGHT, PI * 0.5))
+			b.box(Vector3(sx * hw * 0.82, y, z + 0.012), Vector3(0.08, 0.13, 0.025), LAMP_TURN)
+
 	return b.commit()
 
 
@@ -194,126 +223,272 @@ static func build_lamps(spec: Spec, rear: bool) -> ArrayMesh:
 static func _add_body(b: MeshBuilder, spec: Spec) -> void:
 	var s := shape_of(spec.silhouette)
 	if s.get("van", false):
-		_add_van_body(b, spec, s)
+		var vtype: String = s.get("type", "van")
+		match vtype:
+			"bus":
+				_add_bus_body(b, spec, s)
+			"pickup":
+				_add_pickup_body(b, spec, s)
+			"truck":
+				_add_truck_body(b, spec, s)
+			_:
+				_add_van_body(b, spec, s)
 	else:
 		_add_car_body(b, spec, s)
 
 
-## Легковой силуэт: единый объём кузова со скошенными капотом и багажником,
-## поверх него салон, сужающийся к крыше.
-##
-## Отдельными плитами капот и багажник не делаются: они читались полками,
-## лежащими на кузове, а не его частью.
+## Легковой силуэт: нижние пороги, мускулистые колесные арки,
+## капот с выштамповкой, салон со стойками и рельефная крыша.
 static func _add_car_body(b: MeshBuilder, spec: Spec, s: Dictionary) -> void:
 	var w := spec.width
 	var l := spec.length
+	var hw := w * 0.5
 	var hl := l * 0.5
 	var deck_y: float = s["deck_y"]
 	var deck_h: float = s["deck_h"]
 	var deck_top := deck_y + deck_h * 0.5
+	var wheel_r: float = s["wheel_r"]
 
-	# Кузов: верх уже низа (завал бортов), нос и корма опущены — отсюда
-	# покатый капот и багажник.
+	# Пороги и днище кузова
+	b.box(Vector3(0.0, deck_y - deck_h * 0.44, 0.0),
+		Vector3(w * 0.94, deck_h * 0.16, l * 0.95), DARK)
+
+	# Основной объем поясной линии
 	b.tapered_box(Vector3(0.0, deck_y, 0.0), Vector3(w, deck_h, l),
-		spec.body_color, Vector2(s["belt_w"], 1.0), 0.0,
-		s["hood_rise"] * 0.22, s["trunk_rise"] * 0.22)
+		spec.body_color, Vector2(s["belt_w"], 1.0))
 
-	# Салон стоит НА кузове и тянется до крыши — без зазора между объёмами.
-	var cab_len: float = l * s["cab_len"]
+	# Выштамповки колесных арок (передние и задние)
+	for sz: float in [-1.0, 1.0]:
+		var arch_z: float = (hl - wheel_r - 0.35) if sz > 0.0 else (-hl + wheel_r + 0.38)
+		for sx: float in [-1.0, 1.0]:
+			b.box(Vector3(sx * (hw + 0.015), deck_y - 0.04, arch_z),
+				Vector3(0.04, deck_h * 0.88, wheel_r * 2.3), spec.body_color)
+			b.cylinder(Vector3(sx * (hw + 0.01), wheel_r, arch_z),
+				wheel_r * 1.15, wheel_r * 1.15, 0.035, DARK, 10,
+				Basis(Vector3.FORWARD, PI * 0.5))
+
+	# Капот с наклоном
 	var hood_len: float = l * s["hood"]
-	var cab_z := (hl - hood_len) - cab_len * 0.5
-	var roof_y: float = s["roof_y"]
-	var cab_h: float = roof_y - deck_top
-	var cab_cy := deck_top + cab_h * 0.5
-	b.tapered_box(Vector3(0.0, cab_cy, cab_z),
-		Vector3(w * s["cab_w"], cab_h, cab_len), spec.body_color,
-		Vector2(s["roof_w"] / s["cab_w"], s["roof_len"] / s["cab_len"]),
-		cab_len * 0.10)
-	# Крыша — тонкая плита, замыкающая силуэт.
-	b.tapered_box(Vector3(0.0, roof_y + s["roof_h"] * 0.5, cab_z + cab_len * 0.10),
-		Vector3(w * s["roof_w"], s["roof_h"], l * s["roof_len"]),
-		spec.body_color, Vector2(0.97, 0.97))
+	var hood_z := hl - hood_len * 0.5
+	b.tapered_box(Vector3(0.0, deck_top + 0.04, hood_z),
+		Vector3(w * 0.94, 0.10, hood_len), spec.body_color,
+		Vector2(0.92, 1.0), 0.0, s["hood_rise"], 0.0)
 
-	_add_greenhouse(b, spec, s, cab_z, cab_len, deck_top, roof_y)
+	# Багажник / задняя часть
+	var trunk_len: float = l * s["trunk"]
+	var trunk_z := -hl + trunk_len * 0.5
+	b.tapered_box(Vector3(0.0, deck_top + 0.03, trunk_z),
+		Vector3(w * 0.94, 0.08, trunk_len), spec.body_color,
+		Vector2(0.94, 1.0), 0.0, s["trunk_rise"], 0.0)
 
-
-## Остекление: лобовое, заднее и боковые. Тонированное ядро под ними
-## не даёт увидеть «пустой» салон насквозь.
-static func _add_greenhouse(b: MeshBuilder, spec: Spec, s: Dictionary,
-		cab_z: float, cab_len: float, deck_top: float, roof_y: float) -> void:
-	var w := spec.width
+	# Остекление салона (теплица)
+	var cab_len: float = l * s["cab_len"]
 	var cab_w: float = w * s["cab_w"]
+	var cab_h: float = s["cab_h"]
+	var cab_y: float = s["cab_y"]
+	var cab_z: float = (hood_z - hood_len * 0.5 + trunk_z + trunk_len * 0.5) * 0.5
+	b.tapered_box(Vector3(0.0, cab_y, cab_z), Vector3(cab_w, cab_h, cab_len),
+		GLASS, Vector2(s["roof_w"] / s["cab_w"], 0.88), 0.0, -0.06, 0.0)
+
+	# Рельефная крыша
+	var roof_len: float = l * s["roof_len"]
 	var roof_w: float = w * s["roof_w"]
-	var roof_len: float = spec.length * s["roof_len"]
-	# Стёкла занимают верхние две трети салона: снизу остаётся линия борта.
-	var glass_bottom := deck_top + (roof_y - deck_top) * 0.26
-	var glass_h := (roof_y - glass_bottom) * 0.88
-	var y := glass_bottom + glass_h * 0.5
+	var roof_y: float = s["roof_y"]
+	b.tapered_box(Vector3(0.0, roof_y, cab_z), Vector3(roof_w, s["roof_h"], roof_len),
+		spec.body_color, Vector2(0.96, 0.98))
 
-	# Салон сужается кверху, поэтому ширина и длина остекления берутся
-	# интерполяцией по высоте: иначе стёкла торчат за борт.
-	var t: float = clampf((y - deck_top) / maxf(roof_y - deck_top, 0.001), 0.0, 1.0)
-	var half_w := lerpf(cab_w, roof_w, t) * 0.5
-	var half_len := lerpf(cab_len, roof_len, t) * 0.5
-	# Крыша сдвинута вперёд — центр остекления смещается вместе с ней.
-	var z := cab_z + cab_len * 0.10 * t
-
-	# Тонированное ядро, чтобы салон не просвечивал насквозь.
-	b.box(Vector3(0.0, y, z),
-		Vector3(half_w * 1.80, glass_h * 0.92, half_len * 1.80), GLASS_TINT)
-	# Лобовое и заднее.
-	b.box(Vector3(0.0, y, z + half_len * 1.0),
-		Vector3(half_w * 1.80, glass_h * 0.94, 0.05), GLASS)
-	b.box(Vector3(0.0, y, z - half_len * 1.0),
-		Vector3(half_w * 1.74, glass_h * 0.88, 0.05), GLASS)
-	# Боковые: два окна со стойкой между ними.
+	# Черные центральные стойки B
 	for sx: float in [-1.0, 1.0]:
-		for sz: float in [-1.0, 1.0]:
-			b.box(Vector3(sx * half_w * 1.0, y, z + sz * half_len * 0.44),
-				Vector3(0.05, glass_h * 0.9, half_len * 0.72), GLASS)
+		b.box(Vector3(sx * w * s["cab_w"] * 0.49, cab_y, cab_z + cab_len * 0.03),
+			Vector3(0.045, cab_h * 0.96, 0.07), DARK)
+		b.box(Vector3(sx * w * s["cab_w"] * 0.495, deck_top + 0.012, cab_z),
+			Vector3(0.035, 0.025, cab_len * 0.96), CHROME if spec.rim_style == &"chrome" else DARK)
+
+	# Дворники на лобовом стекле
+	b.box(Vector3(-0.16, deck_top + 0.025, cab_z + cab_len * 0.48),
+		Vector3(0.34, 0.018, 0.018), DARK, Basis(Vector3.FORWARD, 0.16))
+	b.box(Vector3(0.18, deck_top + 0.025, cab_z + cab_len * 0.48),
+		Vector3(0.34, 0.018, 0.018), DARK, Basis(Vector3.FORWARD, 0.16))
 
 
-## Кабина над двигателем: фургон, автобус, пикап, грузовик.
+## Городской автобус (ПАЗ / курортный автолайн): цельный кузов,
+## двухсекционное лобовое стекло, табло маршрута, пассажирская складная дверь,
+## 5 больших окон, люки на крыше.
+static func _add_bus_body(b: MeshBuilder, spec: Spec, s: Dictionary) -> void:
+	var w := spec.width
+	var l := spec.length
+	var hl := l * 0.5
+	var hw := w * 0.5
+
+	# 1. Нижняя темная юбка кузова
+	b.box(Vector3(0.0, 0.46, 0.0), Vector3(w * 0.98, 0.26, l * 0.99), Color("#2b3038"))
+
+	# 2. Основной монолитный кузов автобуса
+	b.tapered_box(Vector3(0.0, 1.35, 0.0), Vector3(w, 1.55, l),
+		spec.body_color, Vector2(0.96, 0.98))
+
+	# 3. Скругленная обтекаемая крыша
+	b.tapered_box(Vector3(0.0, 2.16, 0.0), Vector3(w * 0.94, 0.14, l * 0.98),
+		spec.body_color, Vector2(0.92, 0.96))
+
+	# 4. Вентиляционные люки на крыше
+	for zh: float in [-2.4, 0.0, 2.4]:
+		b.box(Vector3(0.0, 2.26, zh), Vector3(0.75, 0.06, 0.75), Color("#dddddd"))
+		b.box(Vector3(0.0, 2.27, zh), Vector3(0.68, 0.05, 0.68), Color("#bbbbbb"))
+
+	# 5. Передняя маска
+	# Огромное 2-секционное лобовое стекло
+	b.box(Vector3(0.0, 1.48, hl - 0.02), Vector3(w * 0.88, 0.82, 0.05), GLASS)
+	# Резиновый вертикальный разделитель
+	b.box(Vector3(0.0, 1.48, hl), Vector3(0.04, 0.84, 0.06), DARK)
+	# Электронное табло маршрута над лобовым стеклом
+	b.box(Vector3(0.0, 1.98, hl - 0.04), Vector3(w * 0.70, 0.18, 0.05), Color("#111620"))
+	b.box(Vector3(0.0, 1.98, hl - 0.01), Vector3(w * 0.64, 0.08, 0.02), Color("#f5a623"))
+	# Стеклоочистители
+	for sx: float in [-0.45, 0.45]:
+		b.box(Vector3(sx, 1.15, hl + 0.01), Vector3(0.40, 0.02, 0.02), DARK, Basis(Vector3.FORWARD, 0.2))
+
+	# 6. Пассажирские боковые окна (5 рядов)
+	var rows := 5
+	var win_span := l * 0.68
+	var win_step := win_span / rows
+	for k in rows:
+		var z := 0.2 + (k - (rows - 1) * 0.5) * win_step
+		for sx: float in [-1.0, 1.0]:
+			# На правом борту спереди — пассажирская складная дверь
+			if sx > 0.0 and k == rows - 1:
+				continue
+			b.box(Vector3(sx * (hw + 0.005), 1.52, z),
+				Vector3(0.03, 0.68, win_step * 0.82), GLASS)
+			b.box(Vector3(sx * (hw + 0.008), 1.76, z),
+				Vector3(0.025, 0.02, win_step * 0.80), DARK) # планка форточки
+
+	# 7. Пассажирская дверь справа (двухстворчатая гармошка)
+	var door_z := hl - 1.4
+	b.box(Vector3(hw + 0.005, 1.12, door_z), Vector3(0.03, 1.48, 0.88), Color("#242830"))
+	b.box(Vector3(hw + 0.01, 1.35, door_z - 0.22), Vector3(0.025, 0.80, 0.32), GLASS)
+	b.box(Vector3(hw + 0.01, 1.35, door_z + 0.22), Vector3(0.025, 0.80, 0.32), GLASS)
+
+	# 8. Заднее стекло
+	b.box(Vector3(0.0, 1.55, -hl + 0.02), Vector3(w * 0.82, 0.64, 0.04), GLASS)
+
+
+## Микроавтобус / ГАЗель / Маршрутка: полукапотная компоновка,
+## покатый капот, высокое наклонное лобовое стекло, сдвижная дверь и окна.
 static func _add_van_body(b: MeshBuilder, spec: Spec, s: Dictionary) -> void:
 	var w := spec.width
 	var l := spec.length
 	var hl := l * 0.5
-	b.tapered_box(Vector3(0.0, s["deck_y"], 0.0), Vector3(w, s["deck_h"], l),
-		spec.body_color, Vector2(0.99, 1.0))
+	var hw := w * 0.5
 
-	var cab_len: float = l * s["cab_len_frac"]
-	var cab_z := hl - cab_len * 0.5
-	b.tapered_box(Vector3(0.0, s["cab_y"], cab_z),
-		Vector3(w * 0.97, s["cab_h"], cab_len), spec.body_color,
-		Vector2(0.96, 1.0), 0.0, s["windshield_rise"] * 0.3, 0.0)
-	# Лобовое стекло кабины.
-	b.box(Vector3(0.0, s["cab_y"] + s["cab_h"] * 0.18, cab_z + cab_len * 0.46),
-		Vector3(w * 0.86, s["cab_h"] * 0.52, 0.06), GLASS)
+	# 1. Нижняя юбка
+	b.box(Vector3(0.0, 0.44, 0.0), Vector3(w * 0.96, 0.22, l * 0.98), DARK)
 
-	var cargo_len: float = l * s["cargo_len"]
-	var cargo_z := hl - cab_len - cargo_len * 0.5
-	if s.get("open_bed", false):
-		# Открытый кузов пикапа: борта, а не коробка.
-		var h: float = s["cargo_h"]
-		var y: float = s["deck_y"] + s["deck_h"] * 0.5 + h * 0.5
+	# 2. Покатый передний капот (aerodynamic nose)
+	var hood_len := 1.25
+	var hood_z := hl - hood_len * 0.5
+	b.tapered_box(Vector3(0.0, 0.72, hood_z), Vector3(w * 0.94, 0.36, hood_len),
+		spec.body_color, Vector2(0.90, 1.0), 0.0, -0.08, 0.0)
+
+	# 3. Основной высокий салон / грузовой кузов
+	var cabin_len := l - 1.15
+	var cabin_z := hl - hood_len - cabin_len * 0.5 + 0.1
+	b.tapered_box(Vector3(0.0, 1.22, cabin_z), Vector3(w * 0.98, 1.12, cabin_len),
+		spec.body_color, Vector2(0.92, 0.98))
+
+	# 4. Высокая аэродинамическая крыша
+	b.tapered_box(Vector3(0.0, 1.82, cabin_z + 0.1), Vector3(w * 0.90, 0.16, cabin_len - 0.2),
+		spec.body_color, Vector2(0.88, 0.96))
+
+	# 5. Большое наклонное лобовое стекло
+	b.box(Vector3(0.0, 1.26, hl - 1.18), Vector3(w * 0.86, 0.58, 0.05),
+		GLASS, Basis(Vector3.RIGHT, -0.36))
+
+	# 6. Боковые окна кабины
+	for sx: float in [-1.0, 1.0]:
+		b.box(Vector3(sx * (hw * 0.96), 1.25, hl - 1.65),
+			Vector3(0.04, 0.44, 0.65), GLASS)
+
+	# 7. Пассажирские окна салона (3 секции)
+	var rows := 3
+	var win_span := cabin_len * 0.60
+	var win_step := win_span / rows
+	for k in rows:
+		var z := -0.3 + (k - (rows - 1) * 0.5) * win_step
 		for sx: float in [-1.0, 1.0]:
-			b.box(Vector3(sx * w * 0.46, y, cargo_z),
-				Vector3(0.09, h, cargo_len), spec.body_color)
-		b.box(Vector3(0.0, y, cargo_z - cargo_len * 0.5),
-			Vector3(w * 0.94, h, 0.09), spec.body_color)
-	else:
-		b.tapered_box(Vector3(0.0, s["cargo_y"], cargo_z),
-			Vector3(w * 0.98, s["cargo_h"], cargo_len), spec.body_color,
-			Vector2(0.98, 0.99))
-		# Окна пассажирского салона.
-		if spec.silhouette == &"bus" or spec.silhouette == &"van":
-			var rows := maxi(2, int(cargo_len / 1.3))
-			for k in rows:
-				var z := cargo_z + (k - (rows - 1) * 0.5) * (cargo_len / rows)
-				for sx: float in [-1.0, 1.0]:
-					b.box(Vector3(sx * w * 0.49, s["cargo_y"] + s["cargo_h"] * 0.22, z),
-						Vector3(0.05, s["cargo_h"] * 0.34, cargo_len / rows * 0.72),
-						GLASS)
+			b.box(Vector3(sx * (hw + 0.004), 1.34, z),
+				Vector3(0.03, 0.52, win_step * 0.84), GLASS)
+
+	# 8. Направляющий желоб сдвижной двери на правом борту
+	b.box(Vector3(hw + 0.008, 0.95, -0.2), Vector3(0.015, 0.025, cabin_len * 0.65), DARK)
+
+	# 9. Задние распашные двери со стеклами
+	b.box(Vector3(0.0, 1.18, -hl + 0.02), Vector3(0.02, 1.10, 0.04), DARK) # шов дверей
+	for sx: float in [-0.45, 0.45]:
+		b.box(Vector3(sx, 1.40, -hl + 0.025), Vector3(0.60, 0.46, 0.03), GLASS)
+
+
+## Пикап с кабиной и открытым грузовым кузовом.
+static func _add_pickup_body(b: MeshBuilder, spec: Spec, _s: Dictionary) -> void:
+	var w := spec.width
+	var l := spec.length
+	var hl := l * 0.5
+	var hw := w * 0.5
+
+	# Кабина
+	var cab_len := l * 0.52
+	var cab_z := hl - cab_len * 0.5
+	b.tapered_box(Vector3(0.0, 0.68, 0.0), Vector3(w, 0.42, l), spec.body_color, Vector2(0.96, 1.0))
+	b.tapered_box(Vector3(0.0, 1.15, cab_z), Vector3(w * 0.90, 0.58, cab_len),
+		spec.body_color, Vector2(0.85, 0.92))
+	# Лобовое и заднее стекла
+	b.box(Vector3(0.0, 1.18, cab_z + cab_len * 0.46), Vector3(w * 0.82, 0.44, 0.05),
+		GLASS, Basis(Vector3.RIGHT, -0.30))
+	b.box(Vector3(0.0, 1.18, cab_z - cab_len * 0.46), Vector3(w * 0.78, 0.38, 0.05), GLASS)
+
+	# Открытый грузовой кузов
+	var bed_len := l * 0.44
+	var bed_z := -hl + bed_len * 0.5
+	var bed_h := 0.42
+	var bed_y := 0.89 + bed_h * 0.5
+	for sx: float in [-1.0, 1.0]:
+		b.box(Vector3(sx * (hw - 0.04), bed_y, bed_z), Vector3(0.08, bed_h, bed_len), spec.body_color)
+	b.box(Vector3(0.0, bed_y, -hl + 0.04), Vector3(w * 0.92, bed_h, 0.08), spec.body_color)
+
+	# Хромированная дуга безопасности
+	b.cylinder(Vector3(0.0, bed_y + bed_h * 0.6, bed_z + bed_len * 0.44),
+		0.04, 0.04, w * 0.86, CHROME, 8, Basis(Vector3.FORWARD, PI * 0.5))
+
+
+## Грузовик с кабиной и закрытым изотермическим фургоном (будкой).
+static func _add_truck_body(b: MeshBuilder, spec: Spec, _s: Dictionary) -> void:
+	var w := spec.width
+	var l := spec.length
+	var hl := l * 0.5
+	var hw := w * 0.5
+
+	# Рама шасси
+	b.box(Vector3(0.0, 0.48, 0.0), Vector3(w * 0.80, 0.24, l * 0.98), DARK)
+	# Топливный бак сбоку
+	b.cylinder(Vector3(-hw * 0.88, 0.52, -0.4), 0.18, 0.18, 1.10, CHROME, 10,
+		Basis(Vector3.FORWARD, PI * 0.5))
+
+	# Кабина грузовика
+	var cab_len := 2.0
+	var cab_z := hl - cab_len * 0.5
+	b.tapered_box(Vector3(0.0, 1.25, cab_z), Vector3(w * 0.95, 1.10, cab_len),
+		spec.body_color, Vector2(0.92, 0.98))
+	b.box(Vector3(0.0, 1.42, hl - 0.20), Vector3(w * 0.88, 0.62, 0.05),
+		GLASS, Basis(Vector3.RIGHT, -0.20))
+
+	# Грузовая будка
+	var box_len := l - 2.3
+	var box_z := -hl + box_len * 0.5 + 0.1
+	b.box(Vector3(0.0, 1.62, box_z), Vector3(w * 1.02, 1.70, box_len), Color("#e4e6ea"))
+	# Алюминиевые уголки фургона
+	for sx: float in [-1.0, 1.0]:
+		b.box(Vector3(sx * (hw * 1.02), 1.62, box_z), Vector3(0.04, 1.72, box_len + 0.02), CHROME)
+		b.box(Vector3(sx * (hw * 1.02), 2.48, box_z), Vector3(0.06, 0.06, box_len + 0.02), CHROME)
 
 
 # --- Детали -----------------------------------------------------------------
@@ -326,106 +501,121 @@ static func _add_details(b: MeshBuilder, spec: Spec, include_beacon: bool = true
 	var hl := l * 0.5
 	var deck_y: float = s["deck_y"]
 	var deck_h: float = s["deck_h"]
-	var wheel_r: float = s["wheel_r"]
 
-	# Бамперы — узкая полоса по низу носа и кормы.
+	# Бамперы
+	b.box(Vector3(0.0, deck_y - deck_h * 0.38, hl - 0.02),
+		Vector3(w * 0.96, 0.16, 0.14), DARK)
+	b.box(Vector3(0.0, deck_y - deck_h * 0.38, -hl + 0.02),
+		Vector3(w * 0.96, 0.16, 0.14), DARK)
+
+	# Решётка радиатора с хромированной рамкой и шильдиком
+	var grille_col := CHROME if spec.rim_style == &"chrome" else DARK
+	b.box(Vector3(0.0, deck_y + 0.02, hl + 0.012), Vector3(w * 0.44, 0.18, 0.03), grille_col)
+	b.box(Vector3(0.0, deck_y + 0.02, hl + 0.02), Vector3(w * 0.40, 0.14, 0.025), Color("#121418"))
+	b.cylinder(Vector3(0.0, deck_y + 0.02, hl + 0.035), 0.035, 0.035, 0.012, CHROME, 6,
+		Basis(Vector3.RIGHT, PI * 0.5))
+
+	# Номерные знаки с черной рамкой и регионом 26
 	for sz: float in [-1.0, 1.0]:
-		b.box(Vector3(0.0, deck_y - deck_h * 0.42, sz * (hl - 0.05)),
-			Vector3(w * 0.94, 0.13, 0.14), DARK)
-	# Решётка радиатора и номерные знаки.
-	b.box(Vector3(0.0, deck_y, hl + 0.01), Vector3(w * 0.4, 0.16, 0.05), DARK)
-	for sz: float in [-1.0, 1.0]:
-		b.box(Vector3(0.0, deck_y - 0.22, sz * (hl + 0.03)),
-			Vector3(0.42, 0.14, 0.03), PLATE)
-	# Колёсных арок отдельными брусками нет: на такой детализации они читались
-	# чёрными палками, торчащими из борта. Колесо и так утоплено в кузов.
-	# Зеркала.
+		b.box(Vector3(0.0, deck_y - 0.18, sz * (hl + 0.025)),
+			Vector3(0.48, 0.13, 0.015), DARK)
+		b.box(Vector3(0.0, deck_y - 0.18, sz * (hl + 0.032)),
+			Vector3(0.44, 0.10, 0.018), PLATE)
+
+	# Зеркала заднего вида
 	var mirror_z: float = hl * (0.36 if not s.get("van", false) else 0.42)
 	for sx: float in [-1.0, 1.0]:
-		b.box(Vector3(sx * (hw + 0.06), s["cab_y"], mirror_z),
-			Vector3(0.14, 0.09, 0.16), spec.body_color)
-	# Молдинг по борту — тонкая линия на уровне ручек, ломает однотонность.
-	for sx: float in [-1.0, 1.0]:
-		b.box(Vector3(sx * (hw - 0.02), deck_y + deck_h * 0.18, 0.0),
-			Vector3(0.03, 0.04, l * 0.66), DARK)
-	# Дверные ручки.
+		b.box(Vector3(sx * (hw + 0.03), s["cab_y"] - 0.02, mirror_z),
+			Vector3(0.06, 0.04, 0.06), DARK)
+		b.box(Vector3(sx * (hw + 0.09), s["cab_y"], mirror_z),
+			Vector3(0.12, 0.09, 0.14), spec.body_color)
+		b.box(Vector3(sx * (hw + 0.09), s["cab_y"], mirror_z - 0.072),
+			Vector3(0.10, 0.07, 0.01), Color("#bcd0e0"))
+
+	# Боковой защитный молдинг (для не-автобусов)
+	if s.get("type", "") != "bus":
+		for sx: float in [-1.0, 1.0]:
+			b.box(Vector3(sx * (hw - 0.015), deck_y + deck_h * 0.14, 0.0),
+				Vector3(0.025, 0.035, l * 0.68), DARK)
+
+	# Дверные ручки под хром
 	for sx: float in [-1.0, 1.0]:
 		for sz: float in [-1.0, 1.0]:
-			b.box(Vector3(sx * (hw - 0.02), deck_y + deck_h * 0.3, sz * l * 0.12),
-				Vector3(0.04, 0.045, 0.14), CHROME)
-	# Выхлоп.
-	b.cylinder(Vector3(hw * 0.5, deck_y - 0.26, -hl - 0.03), 0.05, 0.05, 0.12,
-		CHROME, 6, Basis(Vector3.RIGHT, PI * 0.5))
+			b.box(Vector3(sx * (hw - 0.015), deck_y + deck_h * 0.28, sz * l * 0.14),
+				Vector3(0.03, 0.035, 0.12), CHROME)
 
-	if spec.body_kit == &"sport":
-		b.box(Vector3(0.0, deck_y - 0.22, hl - 0.04),
-			Vector3(w * 1.06, wheel_r * 0.22, 0.22), DARK)
-		for sx: float in [-1.0, 1.0]:
-			b.box(Vector3(sx * hw, deck_y - 0.24, 0.0),
-				Vector3(0.12, wheel_r * 0.3, l * 0.52), DARK)
+	# Двойные выхлопные патрубки
+	for sx: float in [-0.28, -0.20]:
+		b.cylinder(Vector3(sx, deck_y - deck_h * 0.40, -hl - 0.04), 0.03, 0.03, 0.10,
+			CHROME, 8, Basis(Vector3.RIGHT, PI * 0.5))
+		b.cylinder(Vector3(sx, deck_y - deck_h * 0.40, -hl - 0.095), 0.02, 0.02, 0.02,
+			DARK, 6, Basis(Vector3.RIGHT, PI * 0.5))
+
 	if spec.spoiler:
-		var sy: float = deck_y + 0.6
-		b.box(Vector3(0.0, sy + 0.24, -hl + 0.35), Vector3(w * 0.9, 0.08, 0.42),
-			spec.body_color)
-		for sx: float in [-1.0, 1.0]:
-			b.box(Vector3(sx * w * 0.32, sy + 0.1, -hl + 0.35),
-				Vector3(0.07, 0.28, 0.14), DARK)
-	if s.get("rack", false):
-		for sx: float in [-1.0, 1.0]:
-			b.box(Vector3(sx * w * 0.34, roof_height(s) + 0.07, 0.0),
-				Vector3(0.05, 0.05, l * 0.5), DARK)
+		var sp_y := deck_y + deck_h * 0.5 + 0.12
+		var sp_z := -hl + 0.14
+		for sx: float in [-0.55, 0.55]:
+			b.box(Vector3(sx, sp_y - 0.06, sp_z), Vector3(0.04, 0.12, 0.06), DARK)
+		b.box(Vector3(0.0, sp_y, sp_z), Vector3(w * 0.88, 0.03, 0.18), spec.body_color)
 
 	if spec.taxi_livery:
 		_add_taxi_livery(b, spec, s)
+
 	if spec.police_livery:
 		for sx: float in [-1.0, 1.0]:
-			b.box(Vector3(sx * (hw + 0.005), deck_y, 0.0),
-				Vector3(0.02, 0.22, l * 0.66), Color("#1a3a8a"))
+			b.box(Vector3(sx * (hw + 0.005), deck_y + 0.02, 0.0),
+				Vector3(0.02, 0.18, l * 0.68), Color("#183d96"))
+			b.box(Vector3(sx * (hw + 0.008), deck_y + 0.02, 0.0),
+				Vector3(0.02, 0.035, l * 0.55), Color.WHITE)
+
 	if spec.beacon != &"" and include_beacon:
 		_add_beacon(b, spec, s)
 
 
-## Шашечки по борту и плафон «ТАКСИ» на крыше.
+## Фирменный световой короб «ТАКСИ» и шашечки на бортах.
 static func _add_taxi_livery(b: MeshBuilder, spec: Spec, s: Dictionary) -> void:
 	var hw := spec.width * 0.5
 	var l := spec.length
 	var deck_y: float = s["deck_y"]
-	var cells := 10
+	var cells := 12
+	# Контрастный пояс шашечек по борту
 	for sx: float in [-1.0, 1.0]:
 		for k in cells:
 			if k % 2 == 1:
 				continue
-			var z := (k - (cells - 1) * 0.5) * (l * 0.62 / cells)
-			b.box(Vector3(sx * (hw + 0.006), deck_y - 0.02, z),
-				Vector3(0.02, 0.12, l * 0.62 / cells), Color("#1a1a1a"))
-	b.box(Vector3(0.0, roof_height(s) + 0.14, 0.1),
-		Vector3(0.62, 0.20, 0.26), Color("#f5b020"))
+			var z := (k - (cells - 1) * 0.5) * (l * 0.64 / cells)
+			b.box(Vector3(sx * (hw + 0.006), deck_y + 0.02, z),
+				Vector3(0.02, 0.07, l * 0.64 / cells), Color("#141414"))
+
+	# Аэродинамический световой короб "ТАКСИ" на крыше
+	var sign_y := roof_height(s) + 0.11
+	for sx: float in [-0.20, 0.20]:
+		b.cylinder(Vector3(sx, sign_y - 0.07, 0.05), 0.035, 0.035, 0.03, DARK, 6)
+
+	b.tapered_box(Vector3(0.0, sign_y, 0.05), Vector3(0.58, 0.14, 0.20),
+		Color("#f8b818"), Vector2(0.85, 0.85))
+	b.box(Vector3(0.0, sign_y, 0.152), Vector3(0.44, 0.035, 0.01), DARK)
+	b.box(Vector3(0.0, sign_y, -0.052), Vector3(0.44, 0.035, 0.01), DARK)
 
 
-## Полиция и скорая обе несут красно-синюю мигалку (carmodel.js:744-776) —
-## различается только форма плафона, не набор цветов.
+## Аэродинамическая светосигнальная балка полиции/скорой.
 static func _add_beacon(b: MeshBuilder, spec: Spec, s: Dictionary) -> void:
+	var y := roof_height(s) + 0.04
+	b.box(Vector3(0.0, y, 0.0), Vector3(spec.width * 0.64, 0.025, 0.10), DARK)
+	b.box(Vector3(0.0, y + 0.05, 0.0), Vector3(0.16, 0.08, 0.16), CHROME)
 	_add_beacon_half(b, spec, s, true)
 	_add_beacon_half(b, spec, s, false)
 
 
-## Одна половина мигалки (красная или синяя) — вынесена отдельно, чтобы
-## TrafficLayer мог собрать её самостоятельным мешем и мигать им в
-## противофазе, не трогая статичный кузов.
 static func _add_beacon_half(b: MeshBuilder, spec: Spec, s: Dictionary,
 		red: bool) -> void:
-	var y := roof_height(s) + 0.12
-	var color := Color("#d02020") if red else Color("#2040d0")
-	if spec.beacon == &"police":
-		var sx := -0.22 if red else 0.22
-		b.box(Vector3(sx, y, 0.0), Vector3(0.44, 0.14, 0.28), color)
-	else:
-		var sx := -0.2 if red else 0.2
-		b.box(Vector3(sx, y, 0.0), Vector3(0.36, 0.13, 0.2), color)
+	var y := roof_height(s) + 0.09
+	var color := Color("#e01818") if red else Color("#1850e0")
+	var sx := -0.22 if red else 0.22
+	b.tapered_box(Vector3(sx, y, 0.0), Vector3(0.32, 0.10, 0.18), color, Vector2(0.9, 0.9))
+	b.box(Vector3(sx, y, 0.0), Vector3(0.16, 0.06, 0.10), Color.WHITE)
 
 
-## Одна половина мигалки как отдельный меш — для независимого мигания в
-## трафике (build_merged печёт маячок статично, здесь он на отдельном узле).
 static func build_beacon_lamp(spec: Spec, red: bool) -> ArrayMesh:
 	var b := MeshBuilder.new()
 	_add_beacon_half(b, spec, shape_of(spec.silhouette), red)
@@ -438,22 +628,55 @@ static func _add_wheels(b: MeshBuilder, spec: Spec) -> void:
 	var hw := spec.width * 0.5
 	var hl := spec.length * 0.5
 	var across := Basis(Vector3.FORWARD, PI * 0.5)
+
 	for sx: float in [-1.0, 1.0]:
 		for sz: float in [-1.0, 1.0]:
-			var p := Vector3(sx * (hw - 0.12), r, sz * (hl - r - 0.24))
-			b.cylinder(p, r, r, 0.32, TYRE, 12, across)
-			b.cylinder(p, r * 0.58, r * 0.58, 0.34, spec.rim_color, 8, across)
+			var arch_z: float = (hl - r - 0.35) if sz > 0.0 else (-hl + r + 0.38)
+			var p := Vector3(sx * (hw - 0.08), r, arch_z)
+
+			# 1. Резина шины
+			b.cylinder(p, r, r, 0.20, TYRE, 16, across)
+			b.cylinder(p, r * 0.94, r * 0.94, 0.22, Color("#141416"), 14, across)
+
+			# 2. Внутренняя полость диска (утоплена)
+			var rim_inner := p + Vector3(sx * 0.06, 0.0, 0.0)
+			b.cylinder(rim_inner, r * 0.64, r * 0.64, 0.04, Color("#121416"), 12, across)
+
+			# 3. Внешний металлический кант обода
+			var rim_p := p + Vector3(sx * 0.09, 0.0, 0.0)
+			b.cylinder(rim_p, r * 0.72, r * 0.72, 0.02, spec.rim_color, 12, across)
+
+			# 4. Спицы
+			for k in 5:
+				var a := TAU * k / 5.0
+				var rot := Basis(Vector3.RIGHT, a)
+				var spoke_center := p + Vector3(sx * 0.08, 0.0, 0.0) + rot * Vector3(0.0, r * 0.38, 0.0)
+				b.box(spoke_center, Vector3(0.02, r * 0.36, r * 0.08), spec.rim_color, rot)
+
+			# 5. Центральный колпачок ступицы
+			b.cylinder(p + Vector3(sx * 0.095, 0.0, 0.0), r * 0.22, r * 0.22, 0.02,
+				CHROME, 8, across)
 
 
-static func _add_lights(b: MeshBuilder, spec: Spec, unlit: bool) -> void:
+static func _add_lights(b: MeshBuilder, spec: Spec, _unlit: bool) -> void:
 	var s := shape_of(spec.silhouette)
 	var hw := spec.width * 0.5
 	var hl := spec.length * 0.5
-	var y: float = s["deck_y"] + s["deck_h"] * 0.15
+	var y: float = s["deck_y"] + s["deck_h"] * 0.12
+
+	# Передние фары
+	var z_f := hl + 0.012
 	for sx: float in [-1.0, 1.0]:
-		b.box(Vector3(sx * hw * 0.66, y, hl + 0.02), Vector3(0.30, 0.17, 0.06),
-			LAMP_FRONT)
-		b.box(Vector3(sx * hw * 0.66, y, -hl - 0.02), Vector3(0.30, 0.17, 0.06),
-			LAMP_REAR)
-		b.box(Vector3(sx * hw * 0.9, y, hl - 0.02), Vector3(0.12, 0.12, 0.06),
-			LAMP_TURN)
+		b.box(Vector3(sx * hw * 0.68, y, z_f), Vector3(0.36, 0.16, 0.025), DARK)
+		b.box(Vector3(sx * hw * 0.64, y, z_f + 0.012), Vector3(0.22, 0.13, 0.025), LAMP_FRONT)
+		b.cylinder(Vector3(sx * hw * 0.64, y, z_f + 0.025), 0.045, 0.045, 0.015, Color.WHITE, 8,
+			Basis(Vector3.RIGHT, PI * 0.5))
+		b.box(Vector3(sx * hw * 0.82, y, z_f + 0.012), Vector3(0.08, 0.13, 0.025), LAMP_TURN)
+
+	# Задние фонари
+	var z_r := -hl - 0.012
+	for sx: float in [-1.0, 1.0]:
+		b.box(Vector3(sx * hw * 0.68, y, z_r), Vector3(0.36, 0.16, 0.025), DARK)
+		b.box(Vector3(sx * hw * 0.66, y, z_r - 0.012), Vector3(0.20, 0.13, 0.025), LAMP_REAR)
+		b.box(Vector3(sx * hw * 0.52, y, z_r - 0.012), Vector3(0.08, 0.11, 0.025), Color("#f4f4f8"))
+		b.box(Vector3(sx * hw * 0.82, y, z_r - 0.012), Vector3(0.08, 0.13, 0.025), LAMP_TURN)

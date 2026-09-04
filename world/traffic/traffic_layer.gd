@@ -25,6 +25,7 @@ var _beacon_red: Array[MeshInstance3D] = []
 var _beacon_blue: Array[MeshInstance3D] = []
 var _visible_count := 0
 var _space: RID
+var _field: CityField
 
 
 ## Строит SoA-состояние, узлы и коллайдеры. space — get_world_3d().space,
@@ -33,6 +34,7 @@ func setup(catalog: TrafficCatalog, field: CityField, lights: TrafficLightContro
 		rng: SeededRng, traffic_count: int, space: RID,
 		player_x: float, player_z: float) -> void:
 	_space = space
+	_field = field
 	manager.setup(catalog, field, lights, rng, traffic_count)
 	manager.place_all_near(player_x, player_z)
 	_build_nodes()
@@ -111,6 +113,10 @@ func _box_shape(size: Vector3) -> BoxShape3D:
 ## (SoA дёшев), просто не рендерятся — порт game.js:_applyDensity.
 func set_visible_count(n: int) -> void:
 	_visible_count = clampi(n, 0, manager.count)
+	for i in _bodies.size():
+		var visible := i < _visible_count
+		PhysicsServer3D.body_set_collision_layer(_bodies[i],
+			TrafficManager.COLLISION_LAYER if visible else 0)
 
 
 ## Вызывается миром раз в кадр (не в физическом тике: трафик едет «на
@@ -122,19 +128,20 @@ func tick(delta: float, player_x: float, player_z: float, density: float) -> voi
 	manager.update(delta, player_x, player_z, density)
 	for i in manager.count:
 		var visible := i < _visible_count
-		var xform := Transform3D(Heading.basis_of(manager.heading_of(i)),
-			Vector3(manager.world_x(i), 0.0, manager.world_z(i)))
 		var node := _nodes[i]
 		node.visible = visible
+		if not visible:
+			continue
+		var wx: float = manager.world_x(i)
+		var wz: float = manager.world_z(i)
+		var wy: float = ((_field.height_at(wx, wz) if wz <= -260.0 else 0.0) if _field != null else 0.0) + CityMesher.Y_ROAD
+		var xform := Transform3D(Heading.basis_of(manager.heading_of(i)), Vector3(wx, wy, wz))
 		node.transform = xform
 		PhysicsServer3D.body_set_state(_bodies[i], PhysicsServer3D.BODY_STATE_TRANSFORM, xform)
-		# Невидимая (за пределами пресета графики) машина не должна незримо
-		# блокировать игрока — снимаем слой коллизии вместе с видимостью.
-		PhysicsServer3D.body_set_collision_layer(_bodies[i],
-			TrafficManager.COLLISION_LAYER if visible else 0)
 		if _beacon_red[i] != null:
-			_beacon_red[i].visible = visible and manager.beacon_red_on
-			_beacon_blue[i].visible = visible and not manager.beacon_red_on
+			_beacon_red[i].visible = manager.beacon_red_on
+			_beacon_blue[i].visible = not manager.beacon_red_on
+
 
 
 func _exit_tree() -> void:

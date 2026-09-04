@@ -157,6 +157,27 @@ func cone(center: Vector3, radius: float, height: float, color: Color,
 	cylinder(center, 0.0, radius, height, color, segments, basis_rot)
 
 
+## Треугольная призма (двускатная крыша, фронтон, козырёк, клин).
+## Основание лежит в плоскости XZ, конёк направлен вдоль оси Z.
+func prism(center: Vector3, size: Vector3, color: Color,
+		basis_rot: Basis = Basis.IDENTITY) -> void:
+	var hw := size.x * 0.5
+	var hh := size.y * 0.5
+	var hd := size.z * 0.5
+	var c0 := center + basis_rot * Vector3(-hw, -hh, -hd)
+	var c1 := center + basis_rot * Vector3(hw, -hh, -hd)
+	var c2 := center + basis_rot * Vector3(hw, -hh, hd)
+	var c3 := center + basis_rot * Vector3(-hw, -hh, hd)
+	var t0 := center + basis_rot * Vector3(0.0, hh, -hd)
+	var t1 := center + basis_rot * Vector3(0.0, hh, hd)
+
+	quad(c0, c1, c2, c3, color) # основание (-Y)
+	quad(c2, c1, t0, t1, color) # правый скат (+X, +Y)
+	quad(c0, c3, t1, t0, color) # левый скат (-X, +Y)
+	tri(c3, c2, t1, color)      # передний фронтон (+Z)
+	tri(c1, c0, t0, color)      # задний фронтон (-Z)
+
+
 ## Гранёная «сфера» — икосаэдр-подобная форма для голов и крон деревьев.
 ## rings/segments малы намеренно: силуэт важнее гладкости.
 func sphere(center: Vector3, radius: float, color: Color,

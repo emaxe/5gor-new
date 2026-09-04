@@ -93,9 +93,10 @@ var field: CityField
 var lights: TrafficLightController
 var rng: SeededRng
 ## Необязательная ссылка на пешеходов (этап 8) — правила 4-6 (уступить на
-## зебре, наезд, уступить при повороте) выключены, пока она null. Правило 7
-## (наезд на игрока-пешехода) ждёт пешего режима игрока (этап 9).
+## зебре, наезд, уступить при повороте) выключены, пока она null.
 var peds: PedManager
+## Необязательная ссылка на пешего игрока (этап 9) — правило 7.
+var player_ped: PlayerPed
 
 var type_ref: Array[TrafficTypeData] = []
 var body_color: PackedColorArray = PackedColorArray()
@@ -113,6 +114,12 @@ var turn_t: PackedFloat32Array = PackedFloat32Array()
 var turn_around_t: PackedFloat32Array = PackedFloat32Array()
 ## 0 — решение не принято, 1 — не проезжать на красный, 2 — проехать.
 var run_red: PackedByteArray = PackedByteArray()
+
+## Одноразовые флаги near-miss (StyleService): "сближение уже засчитано" /
+## "уже было столкновение — детектор глушится". Живут с сущностью, поэтому
+## сбрасываются в place_near() вместе с остальным состоянием при респавне.
+var nm_passed: PackedByteArray = PackedByteArray()
+var nm_hit: PackedByteArray = PackedByteArray()
 
 var turning: PackedByteArray = PackedByteArray()
 var t_dist: PackedFloat32Array = PackedFloat32Array()
@@ -142,6 +149,14 @@ var beacon_red_on := true
 var _beacon_t := 0.0
 
 var _light_buf := LightInfo.new()
+var _turning_cars: PackedInt32Array = PackedInt32Array()
+
+## Индекс полицейской машины в погоне (-1 = нет погони). Устанавливается
+## PoliceManager; машина переключается на преследование игрока.
+var chase_idx: int = -1
+## Точка преследования (цель = позиция игрока), мир.
+var chase_target_x := 0.0
+var chase_target_z := 0.0
 
 
 func setup(catalog_: TrafficCatalog, field_: CityField,
@@ -200,6 +215,8 @@ func _resize(n: int) -> void:
 	turn_t.resize(n)
 	turn_around_t.resize(n)
 	run_red.resize(n)
+	nm_passed.resize(n)
+	nm_hit.resize(n)
 	turning.resize(n)
 	t_dist.resize(n)
 	t_arc.resize(n)
@@ -244,6 +261,8 @@ func place_near(i: int, player_x: float, player_z: float) -> void:
 	speed[i] = rng.randf_range(6.0, 13.0)
 	target[i] = speed[i]
 	aggressive[i] = 1 if rng.chance(catalog.aggressive_ratio) else 0
+	nm_passed[i] = 0
+	nm_hit[i] = 0
 	_sync_render(i)
 
 
@@ -297,7 +316,7 @@ func _lane_world_pos(i: int) -> Vector2:
 	return _world_pos_for(axis[i], coord[i], pos[i], dir[i])
 
 
-func _lane_heading(i: int) -> float:
+func lane_heading(i: int) -> float:
 	if axis[i] == Z_ROAD:
 		return 0.0 if dir[i] > 0.0 else PI
 	return PI * 0.5 if dir[i] > 0.0 else -PI * 0.5
@@ -307,7 +326,7 @@ func _sync_render(i: int) -> void:
 	var wp := _lane_world_pos(i)
 	render_x[i] = wp.x
 	render_z[i] = wp.y
-	render_h[i] = _lane_heading(i)
+	render_h[i] = lane_heading(i)
 
 
 func _axis_index(v: float) -> int:
@@ -327,9 +346,18 @@ func update(delta: float, player_x: float, player_z: float, density: float) -> v
 	_beacon_t = fmod(_beacon_t + delta, BEACON_PERIOD)
 	beacon_red_on = _beacon_t < BEACON_PERIOD * 0.5
 
+	_turning_cars.clear()
+	for i in count:
+		if turning[i] == 1:
+			_turning_cars.append(i)
+
 	var bucket := _build_bucket()
 
 	for i in count:
+		if i == chase_idx:
+			_update_chasing(i, player_x, player_z, delta)
+			continue
+
 		var wp := _lane_world_pos(i)
 		if MathUtils.dist_2d(wp.x, wp.y, player_x, player_z) > RESPAWN_DIST:
 			place_near(i, player_x, player_z)
@@ -350,6 +378,8 @@ func update(delta: float, player_x: float, player_z: float, density: float) -> v
 			_rule_hit_pedestrian(i)
 			if turning[i] == 1:
 				_rule_yield_turning_ped(i)
+		if player_ped != null:
+			_rule_hit_player_ped(i)
 		if turning[i] == 0:
 			_rule_intersection_priority(i)
 		_rule_player_ahead(i, player_x, player_z)
@@ -445,9 +475,7 @@ func _rule_following_distance(i: int, bucket: Dictionary[int, PackedInt32Array])
 ## порт участка «уступание дороги» из traffic.js:397-415 (без ругани — нет
 ## речевых пузырей, см. комментарий у поля `peds`).
 func _rule_yield_crossing_ped(i: int) -> void:
-	for p in peds.count:
-		if not peds.is_crossing_or_waiting(p):
-			continue
+	for p: int in peds.active_crossing_peds:
 		var px := peds.world_x(p)
 		var pz := peds.world_z(p)
 		var lateral := absf(px - coord[i]) if axis[i] == Z_ROAD else absf(pz - coord[i])
@@ -466,51 +494,88 @@ func _rule_yield_crossing_ped(i: int) -> void:
 ## Правило 5: наезд машины трафика на пешехода — порт traffic.js:417-437.
 func _rule_hit_pedestrian(i: int) -> void:
 	var r := type_ref[i].radius + HIT_PED_RADIUS_MARGIN
-	for p in peds.count:
-		if peds.mode_of(p) == PedManager.Mode.KNOCKED or peds.mode_of(p) == PedManager.Mode.FLEE:
-			continue
-		var dx := render_x[i] - peds.world_x(p)
-		var dz := render_z[i] - peds.world_z(p)
-		var d2 := dx * dx + dz * dz
-		if d2 >= r * r:
-			continue
-		var dist := sqrt(d2)
-		if dist < 0.0001:
-			continue
-		# nx/nz — от машины к пешеходу: направление, в котором он отлетает.
-		var nx := -dx / dist
-		var nz := -dz / dist
-		if speed[i] > HIT_PED_SPEED_THRESHOLD:
-			peds.knock_down_from_traffic(p, nx, nz, speed[i])
-			speed[i] = maxf(1.0, speed[i] - HIT_PED_SPEED_REDUCTION)
-		else:
-			peds.dodge_from_traffic(p, nx, nz, speed[i])
-		return
+	var rx := render_x[i]
+	var rz := render_z[i]
+	var x0 := floori((rx - r) / 8.0)
+	var x1 := floori((rx + r) / 8.0)
+	var z0 := floori((rz - r) / 8.0)
+	var z1 := floori((rz + r) / 8.0)
+	for cx in range(x0, x1 + 1):
+		for cz in range(z0, z1 + 1):
+			var key := MathUtils.hash_key(cx, cz)
+			if not peds.spatial_bucket.has(key):
+				continue
+			for p: int in peds.spatial_bucket[key]:
+				if peds.mode_of(p) == PedManager.Mode.KNOCKED or peds.mode_of(p) == PedManager.Mode.FLEE:
+					continue
+				var dx := rx - peds.world_x(p)
+				var dz := rz - peds.world_z(p)
+				var d2 := dx * dx + dz * dz
+				if d2 >= r * r:
+					continue
+				var dist := sqrt(d2)
+				if dist < 0.0001:
+					continue
+				# nx/nz — от машины к пешеходу: направление, в котором он отлетает.
+				var nx := -dx / dist
+				var nz := -dz / dist
+				if speed[i] > HIT_PED_SPEED_THRESHOLD:
+					peds.knock_down_from_traffic(p, nx, nz, speed[i])
+					speed[i] = maxf(1.0, speed[i] - HIT_PED_SPEED_REDUCTION)
+				else:
+					peds.dodge_from_traffic(p, nx, nz, speed[i])
+				return
 
 
 ## Правило 6: уступить пешеходам на зебре при активном повороте — порт
 ## traffic.js:441-452.
 func _rule_yield_turning_ped(i: int) -> void:
 	var yield_dist := TURN_YIELD_PED_DIST_AGGR if aggressive[i] == 1 else TURN_YIELD_PED_DIST_NORMAL
-	for p in peds.count:
-		if not peds.is_crossing_or_waiting(p):
-			continue
+	for p: int in peds.active_crossing_peds:
 		var d := MathUtils.dist_2d(render_x[i], render_z[i], peds.world_x(p), peds.world_z(p))
 		if d < yield_dist:
 			target[i] = 0.0
 			return
 
 
+## Правило 7: наезд машины трафика на игрока-пешехода (пеший режим) — порт traffic.js:452-473.
+func _rule_hit_player_ped(i: int) -> void:
+	if player_ped == null or not is_instance_valid(player_ped):
+		return
+	if player_ped.logic.hit_cd > 0.0 or player_ped.logic.stun_t > 0.0:
+		return
+	var dist := MathUtils.dist_2d(render_x[i], render_z[i], player_ped.logic.x, player_ped.logic.z)
+	var col_r: float = type_ref[i].radius + 0.6
+	if dist >= col_r:
+		return
+	player_ped.logic.hit_cd = 1.2
+	var dx := player_ped.logic.x - render_x[i]
+	var dz := player_ped.logic.z - render_z[i]
+	if dist < 0.0001:
+		dist = 1.0
+		dx = 0.0
+		dz = 1.0
+	var nx := dx / dist
+	var nz := dz / dist
+	if speed[i] > 2.5:
+		player_ped.take_hit(render_x[i], render_z[i], 1)
+		speed[i] = maxf(1.0, speed[i] - 3.5)
+	else:
+		player_ped.apply_knockback(nx * 4.0, nz * 4.0, 0.25)
+
+
 ## Правило 8: машина без поворота уступает уже поворачивающей рядом
 ## с тем же перекрёстком.
 func _rule_intersection_priority(i: int) -> void:
+	if _turning_cars.is_empty():
+		return
 	var nv := _nearest_axis_value(pos[i])
 	if absf(pos[i] - nv) >= INTERSECTION_STOP_TOL:
 		return
 	var isec_x := coord[i] if axis[i] == Z_ROAD else nv
 	var isec_z := nv if axis[i] == Z_ROAD else coord[i]
-	for j in count:
-		if j == i or turning[j] == 0:
+	for j: int in _turning_cars:
+		if j == i:
 			continue
 		if MathUtils.dist_2d(render_x[j], render_z[j], isec_x, isec_z) \
 				< INTERSECTION_TURN_YIELD_DIST:
@@ -573,15 +638,11 @@ func _light_ahead(i: int) -> LightInfo:
 	l.found = false
 	var p := pos[i]
 	var d := dir[i]
-	var best := INF
-	var candidate := 0.0
-	for v in field.road_axes:
-		var dist := (v - p) * d
-		if dist > 0.0 and dist <= LIGHT_LOOKAHEAD and dist < best:
-			best = dist
-			candidate = v
-			l.found = true
-	if not l.found:
+	var candidate := ceilf((p + 0.001) / field.cell) * field.cell if d > 0.0 else floorf((p - 0.001) / field.cell) * field.cell
+	if candidate < -256.0 or candidate > 256.0:
+		return l
+	var dist := (candidate - p) * d
+	if dist <= 0.0 or dist > LIGHT_LOOKAHEAD:
 		return l
 
 	var idx_candidate := _axis_index(candidate)
@@ -589,10 +650,10 @@ func _light_ahead(i: int) -> LightInfo:
 	var i_idx := idx_coord if axis[i] == Z_ROAD else idx_candidate
 	var j_idx := idx_candidate if axis[i] == Z_ROAD else idx_coord
 	if not PedGraph.is_signalized(i_idx, j_idx):
-		l.found = false
 		return l
 
-	l.dist = best
+	l.found = true
+	l.dist = dist
 	l.state = lights.car_state(i_idx, axis[i])
 	l.isec_x = coord[i] if axis[i] == Z_ROAD else candidate
 	l.isec_z = candidate if axis[i] == Z_ROAD else coord[i]
@@ -615,6 +676,96 @@ func _integrate_speed(i: int, delta: float) -> void:
 	var diff := target[i] - speed[i]
 	speed[i] = clampf(speed[i] + clampf(diff, SPEED_DECEL * delta, SPEED_ACCEL * delta),
 		0.0, SPEED_MAX)
+
+
+# --- Погоня ----------------------------------------------------------------------
+
+## Преследование игрока полицейской машиной (PoliceManager ставит chase_idx).
+## Жадная погоня по сетке дорог: машина мчится на скорости, а на перекрёстке
+## выбирает ход, который сильнее сокращает дистанцию до цели. Повороты — тот же
+## Безье-механизм, что и обычный трафик, поэтому машина не срезает углы.
+func _update_chasing(i: int, px: float, pz: float, delta: float) -> void:
+	if turning[i] == 1:
+		_advance_turn(i, delta)
+		return
+
+	target[i] = SPEED_MAX * 1.15
+	_integrate_speed(i, delta)
+
+	pos[i] += speed[i] * delta * dir[i]
+	if pos[i] < -EDGE_LIMIT - 20.0:
+		pos[i] = -EDGE_LIMIT - 20.0
+		dir[i] = -dir[i]
+	elif pos[i] > EDGE_LIMIT + 20.0:
+		pos[i] = EDGE_LIMIT + 20.0
+		dir[i] = -dir[i]
+
+	# На перекрёстке выбираем ход к цели.
+	if turn_t[i] > 0.0:
+		turn_t[i] -= delta
+	else:
+		var nv := _nearest_axis_value(pos[i])
+		if absf(pos[i] - nv) < INTERSECTION_CHOOSE_TOL:
+			var isec_x := coord[i] if axis[i] == Z_ROAD else nv
+			var isec_z := nv if axis[i] == Z_ROAD else coord[i]
+			_turn_toward_player(i, isec_x, isec_z, px, pz)
+	_sync_render(i)
+
+
+## На перекрёстке выбирает из трёх ходов (прямо/два поворота) тот, что даёт
+## точку ближе к цели, и запускает поворот Безье. Развороты не используются.
+func _turn_toward_player(i: int, isec_x: float, isec_z: float, px: float, pz: float) -> void:
+	var straight_d := _after_turn_dist(i, axis[i], dir[i], isec_x, isec_z, px, pz)
+	# Два варианта поворота в терминах _choose_direction:
+	#   Z_ROAD: right -> -dir, left -> +dir
+	#   X_ROAD: right -> +dir, left -> -dir
+	var a_dir := -dir[i] if axis[i] == Z_ROAD else dir[i]   # правый поворот
+	var b_dir := dir[i] if axis[i] == Z_ROAD else -dir[i]   # левый поворот
+	var a_axis := X_ROAD if axis[i] == Z_ROAD else Z_ROAD
+	var b_axis := a_axis
+	var a_d := _after_turn_dist(i, a_axis, a_dir, isec_x, isec_z, px, pz)
+	var b_d := _after_turn_dist(i, b_axis, b_dir, isec_x, isec_z, px, pz)
+
+	var best := straight_d
+	var best_axis := -1
+	var best_dir := 0.0
+	if a_d < best:
+		best = a_d
+		best_axis = a_axis
+		best_dir = a_dir
+	if b_d < best:
+		best = b_d
+		best_axis = b_axis
+		best_dir = b_dir
+
+	if best_axis < 0:
+		turn_t[i] = TURN_T_COOLDOWN
+		return
+
+	var new_axis := best_axis
+	var new_coord := isec_z if new_axis == X_ROAD else isec_x
+	var new_dir := best_dir
+	var exit_pos := (isec_x if axis[i] == Z_ROAD else isec_z) + new_dir * TURN_EXIT_OFFSET
+	var sdx := 0.0 if axis[i] == Z_ROAD else dir[i]
+	var sdz := dir[i] if axis[i] == Z_ROAD else 0.0
+	var edx := 0.0 if new_axis == Z_ROAD else new_dir
+	var edz := new_dir if new_axis == Z_ROAD else 0.0
+	_begin_turn(i, _lane_world_pos(i), _world_pos_for(new_axis, new_coord, exit_pos, new_dir),
+		Vector2(sdx, sdz), Vector2(edx, edz), TURN_SPEED)
+	t_new_axis[i] = new_axis
+	t_new_coord[i] = new_coord
+	t_new_pos[i] = exit_pos
+	t_new_dir[i] = new_dir
+	turn_t[i] = t_arc[i] / maxf(speed[i], 4.0) + TURN_T_COOLDOWN
+	_sync_render(i)
+
+
+## Расстояние до цели после выезда с перекрёстка на новую ось/направление.
+func _after_turn_dist(i: int, new_axis: int, new_dir: float,
+		isec_x: float, isec_z: float, px: float, pz: float) -> float:
+	if new_axis == X_ROAD:
+		return MathUtils.dist_2d(isec_x + new_dir * 6.0, isec_z, px, pz)
+	return MathUtils.dist_2d(isec_x, isec_z + new_dir * 6.0, px, pz)
 
 
 # --- Повороты --------------------------------------------------------------------
@@ -694,7 +845,7 @@ func _begin_turn(i: int, from: Vector2, to: Vector2, start_tangent: Vector2,
 	t_p1z[i] = p1.y
 	t_p2x[i] = p2.x
 	t_p2z[i] = p2.y
-	t_from_h[i] = _lane_heading(i)
+	t_from_h[i] = lane_heading(i)
 	t_speed[i] = turn_speed
 
 

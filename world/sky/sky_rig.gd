@@ -35,6 +35,9 @@ const AMBIENT_NIGHT := Color(0.32, 0.40, 0.62)
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 
 var _preset: GfxPreset
+var _last_hour := -999.0
+var _last_night_factor := -999.0
+var _last_weather: WeatherData = null
 
 
 func _ready() -> void:
@@ -49,12 +52,19 @@ func apply_preset(preset: GfxPreset) -> void:
 	RenderCaps.configure_sun(sun, preset)
 	RenderCaps.configure_environment(world_environment.environment, preset)
 	sun.directional_shadow_max_distance = preset.shadow_max_distance
+	_last_hour = -999.0
 
 
 ## Устанавливает время суток. night_factor 0..1 приходит из GameState,
 ## weather может быть null (ясно).
 func set_time_of_day(hour: float, night_factor: float,
 		weather: WeatherData) -> void:
+	if absf(hour - _last_hour) < 0.02 and absf(night_factor - _last_night_factor) < 0.01 and weather == _last_weather:
+		return
+	_last_hour = hour
+	_last_night_factor = night_factor
+	_last_weather = weather
+
 	var env := world_environment.environment
 	var sky_color := _sky_color(hour)
 	var day := clampf(sin(PI * (hour - 6.0) / 12.0), 0.0, 1.0)

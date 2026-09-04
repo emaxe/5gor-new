@@ -1,0 +1,50 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://tests/scenes/test_player_ped.gd" id="1_test"]
+[ext_resource type="PackedScene" path="res://world/sky/sky_rig.tscn" id="2_sky"]
+[ext_resource type="Script" path="res://gameplay/camera/chase_camera.gd" id="3_cam"]
+[ext_resource type="Shader" path="res://fx/shaders/screen_post.gdshader" id="4_post"]
+
+[sub_resource type="ShaderMaterial" id="Post_1"]
+shader = ExtResource("4_post")
+shader_parameter/vignette_strength = 0.32
+shader_parameter/vignette_color = Color(0.02, 0.03, 0.05, 1)
+shader_parameter/damage_flash = 0.0
+shader_parameter/aberration = 0.0
+shader_parameter/posterize_levels = 0.0
+shader_parameter/saturation = 1.0
+
+[node name="TestPlayerPed" type="Node3D"]
+script = ExtResource("1_test")
+
+[node name="SkyRig" parent="." instance=ExtResource("2_sky")]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+fov = 50.0
+near = 0.1
+far = 1000.0
+script = ExtResource("3_cam")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="InfoLabel" type="Label" parent="CanvasLayer"]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 500.0
+offset_bottom = 220.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 18
+text = "Режим пешехода"
+
+[node name="PostLayer" type="CanvasLayer" parent="."]
+layer = 100
+
+[node name="Post" type="ColorRect" parent="PostLayer"]
+material = SubResource("Post_1")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

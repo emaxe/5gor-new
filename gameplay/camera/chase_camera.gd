@@ -46,6 +46,8 @@ var target_ground := 0.0
 var yaw := 0.0
 var pitch := PITCH_START
 var distance := CAR_DIST
+var is_cinematic_panorama: bool = false
+var _panorama_angle: float = 0.0
 
 var _target_yaw := 0.0
 var _target_dist := CAR_DIST
@@ -59,6 +61,7 @@ var _touch := false
 
 
 func _ready() -> void:
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_touch = DisplayServer.is_touchscreen_available()
 	pitch = PITCH_START_TOUCH if _touch else PITCH_START
 	set_mode(Mode.CAR)
@@ -81,7 +84,8 @@ func snap_to_target() -> void:
 		return
 	yaw = target_heading
 	_target_yaw = target_heading
-	var p := target.global_position
+	var tf := target.get_global_transform_interpolated() if target.is_inside_tree() else target.global_transform
+	var p := tf.origin
 	position = _desired_position(p)
 	_look_point = p + Vector3(0.0, _focus_height, 0.0)
 	look_at(_look_point, Vector3.UP)
@@ -112,6 +116,12 @@ func _zoom(delta_dist: float) -> void:
 
 
 func _process(delta: float) -> void:
+	if is_cinematic_panorama:
+		_panorama_angle += delta * 0.12
+		var r := 110.0
+		position = Vector3(sin(_panorama_angle) * r, 42.0, cos(_panorama_angle) * r)
+		look_at(Vector3(0.0, 10.0, 0.0), Vector3.UP)
+		return
 	if target == null:
 		return
 	# Правый стик геймпада вращает камеру теми же действиями, что и мышь.
@@ -128,15 +138,20 @@ func _process(delta: float) -> void:
 		_auto_return -= delta
 	else:
 		_target_yaw = target_heading
-		yaw = Heading.turn_toward(yaw, _target_yaw, delta * RETURN_RATE * TAU)
+		var diff := Heading.delta(yaw, _target_yaw)
+		# Плавная доводка курса без пороговых рывков отсечки
+		var turn_speed := clampf(diff * 4.0, -RETURN_RATE * TAU, RETURN_RATE * TAU)
+		yaw += turn_speed * delta
 
 	distance = MathUtils.damp(distance, _target_dist, 0.2, delta)
 
-	var p := target.global_position
+	# Интерполированный трансформ цели даёт плавный ход без дёрганий на любой частоте кадров.
+	var tf := target.get_global_transform_interpolated() if target.is_inside_tree() else target.global_transform
+	var p := tf.origin
 	var desired := _desired_position(p)
-	position = MathUtils.damp_vec(position, desired, 1.0 - POS_DAMP, delta)
-	_look_point = MathUtils.damp_vec(_look_point,
-		p + Vector3(0.0, _focus_height, 0.0), 1.0 - LOOK_DAMP, delta)
+	position = MathUtils.damp_pow_vec(position, desired, POS_DAMP, delta)
+	_look_point = MathUtils.damp_pow_vec(_look_point,
+		p + Vector3(0.0, _focus_height, 0.0), LOOK_DAMP, delta)
 	look_at(_look_point, Vector3.UP)
 	_apply_shake(delta)
 
@@ -145,8 +160,9 @@ func _desired_position(p: Vector3) -> Vector3:
 	var base := (PED_BASE_Y if mode == Mode.PED else CAR_BASE_Y)
 	return Vector3(
 		p.x - sin(yaw) * cos(pitch) * distance,
-		target_ground + base + sin(pitch) * distance,
+		p.y + base + sin(pitch) * distance,
 		p.z - cos(yaw) * cos(pitch) * distance)
+
 
 
 ## Тряска — постобработка позиции, как в оригинале (game.js:1418).

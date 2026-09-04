@@ -104,11 +104,22 @@ static func step(motion: Motion, axes: Inp.DriveAxes, surface: Surface,
 			else:
 				accel_value -= stats.accel * 0.6 * axes.brake
 		if is_zero_approx(axes.throttle) and is_zero_approx(axes.brake):
-			accel_value -= signf(fwd_speed) * COAST_DRAG
+			if absf(fwd_speed) <= COAST_DRAG * delta * 1.5:
+				fwd_speed = 0.0
+				accel_value = 0.0
+			else:
+				accel_value -= signf(fwd_speed) * COAST_DRAG
 	else:
-		accel_value -= signf(fwd_speed) * DEAD_ENGINE_DRAG
+		if absf(fwd_speed) <= DEAD_ENGINE_DRAG * delta * 1.5:
+			fwd_speed = 0.0
+			accel_value = 0.0
+		else:
+			accel_value -= signf(fwd_speed) * DEAD_ENGINE_DRAG
 
 	fwd_speed += accel_value * delta
+	if is_zero_approx(axes.throttle) and is_zero_approx(axes.brake) and absf(fwd_speed) < 0.01:
+		fwd_speed = 0.0
+		accel_value = 0.0
 	fwd_speed = clampf(fwd_speed, -REVERSE_MAX, stats.max_speed)
 
 	# --- Руление ---
@@ -127,6 +138,8 @@ static func step(motion: Motion, axes: Inp.DriveAxes, surface: Surface,
 	var grip := grip_mul * surface.weather_grip * stats.grip \
 		* (HANDBRAKE_GRIP if axes.handbrake else 1.0)
 	lat_speed *= maxf(0.0, 1.0 - grip * GRIP_DECAY * delta)
+	if absf(lat_speed) < 0.005:
+		lat_speed = 0.0
 
 	motion.slip = absf(lat_speed) / SLIP_DIVISOR
 	if axes.handbrake and absf(fwd_speed) > 5.0:

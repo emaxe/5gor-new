@@ -124,3 +124,17 @@ func test_empty_builder_commits_null() -> void:
 	var b := MeshBuilder.new()
 	assert_bool(b.is_empty()).is_true()
 	assert_object(b.commit()).is_null()
+
+
+func test_prism_normals_point_outward() -> void:
+	var b := MeshBuilder.new()
+	b.prism(Vector3.ZERO, Vector3(2.0, 1.0, 4.0), Color.WHITE)
+	var mesh := b.commit()
+	assert_object(mesh).is_not_null()
+	var arrays := mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	assert_int(verts.size()).is_equal(normals.size())
+	for i in verts.size():
+		# Нормали смотрят наружу от центра призмы (с небольшим допуском)
+		assert_float(normals[i].dot(verts[i])).is_greater_equal(-EPS)

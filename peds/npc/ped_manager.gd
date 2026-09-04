@@ -1,5 +1,8 @@
 class_name PedManager
 extends RefCounted
+
+## Игрок сбил пешехода машиной (не трафик, не удар кулаком).
+signal player_hit_ped
 ## ИИ пешеходов и животных. Порт PedestrianManager (peds.js), пешеходный
 ## обход (pedavoid.js) и правила ПДД поверх готового `PedGraph` (world/city/ped_graph.gd).
 ##
@@ -103,6 +106,14 @@ var flee_vx: PackedFloat32Array = PackedFloat32Array()
 var flee_vz: PackedFloat32Array = PackedFloat32Array()
 var flee_t: PackedFloat32Array = PackedFloat32Array()
 var knock_t: PackedFloat32Array = PackedFloat32Array()
+
+## Одноразовые флаги near-miss (StyleService), см. TrafficManager.nm_passed/nm_hit.
+var nm_passed: PackedByteArray = PackedByteArray()
+var nm_hit: PackedByteArray = PackedByteArray()
+
+var active_crossing_peds: PackedInt32Array = PackedInt32Array()
+var spatial_bucket: Dictionary[int, PackedInt32Array] = {}
+var _tick_counter := 0
 
 ## Сколько новых маршрутов (AStar3D-вызовов) можно посчитать за этот тик —
 ## аналог `routesFrom`-лимита оригинала, хотя причина другая (там — цена
@@ -214,6 +225,8 @@ func _resize(n: int) -> void:
 	flee_vz.resize(n)
 	flee_t.resize(n)
 	knock_t.resize(n)
+	nm_passed.resize(n)
+	nm_hit.resize(n)
 
 
 # --- Размещение -----------------------------------------------------------------
@@ -282,6 +295,8 @@ func _reset_runtime(i: int) -> void:
 	knock_t[i] = 0.0
 	heading[i] = 0.0
 	walk_phase[i] = 0.0
+	nm_passed[i] = 0
+	nm_hit[i] = 0
 
 
 ## Разбирает маршрут — после этого route_points/gates/nodes пусты. Инвариант
@@ -307,6 +322,7 @@ func _deactivate(i: int) -> void:
 func update(delta: float, player_x: float, player_z: float, player_heading: float,
 		player_speed: float, player_vx: float, player_vz: float,
 		is_night: bool) -> void:
+	_tick_counter += 1
 	_route_budget = config.routes_per_tick
 	var bucket := _build_bucket()
 
@@ -354,6 +370,12 @@ func update(delta: float, player_x: float, player_z: float, player_heading: floa
 
 		if MathUtils.dist_2d(x[i], z[i], player_x, player_z) > config.respawn_radius:
 			place_near(i, player_x, player_z)
+
+	active_crossing_peds.clear()
+	for i in count:
+		if is_crossing_or_waiting(i):
+			active_crossing_peds.append(i)
+	spatial_bucket = bucket
 
 
 func _is_fast(i: int) -> bool:
@@ -682,6 +704,8 @@ func _step_lane_off(i: int, delta: float) -> void:
 func _avoid_static(i: int, delta: float) -> void:
 	if route_idx[i] >= route_points[i].size():
 		return
+	if avoid_target[i] == 0.0 and is_zero_approx(lane_off[i]) and (_tick_counter + i) % 3 != 0:
+		return
 	var target := route_points[i][route_idx[i]]
 	var to_target := Vector2(target.x - x[i], target.z - z[i])
 	if to_target.length() < 0.01:
@@ -691,8 +715,11 @@ func _avoid_static(i: int, delta: float) -> void:
 
 	var probe := Vector2(x[i], z[i]) + perp * lane_off[i] + dir * AVOID_PROBE_DIST
 	if not _obstacle_at(probe.x, probe.y):
-		var center := Vector2(x[i], z[i]) + dir * AVOID_PROBE_DIST
-		if not _obstacle_at(center.x, center.y) or absf(lane_off[i]) < 0.02:
+		if not is_zero_approx(lane_off[i]):
+			var center := Vector2(x[i], z[i]) + dir * AVOID_PROBE_DIST
+			if not _obstacle_at(center.x, center.y) or absf(lane_off[i]) < 0.02:
+				avoid_target[i] = 0.0
+		else:
 			avoid_target[i] = 0.0
 		stuck_t[i] = 0.0
 		return
@@ -821,6 +848,7 @@ func _check_player_collision(i: int, player_x: float, player_z: float,
 	if absf(player_speed) > HIT_SPEED_MIN and rel_vel > 1.5:
 		hit_cd[i] = 2.0
 		_knock_down(i, nx, nz, absf(player_speed))
+		player_hit_ped.emit()
 	elif absf(player_speed) > DODGE_SPEED_MIN and rel_vel > 0.2:
 		hit_cd[i] = 1.2
 		_dodge(i, nx, nz, absf(player_speed))
@@ -875,6 +903,102 @@ func dodge_from_traffic(i: int, dx: float, dz: float, car_speed: float) -> void:
 
 func knock_down_from_traffic(i: int, dx: float, dz: float, car_speed: float) -> void:
 	_knock_down(i, dx, dz, car_speed)
+
+
+## Проверяет, является ли пешеход сотрудником полиции.
+func is_police_at(i: int) -> bool:
+	if i < 0 or i >= count:
+		return false
+	return archetype_ref[i] != null and archetype_ref[i].id == &"police"
+
+
+## Ищет ближайшего подходящего пешехода в секторе удара кулаком.
+func punch_at(attacker_x: float, attacker_z: float, attacker_heading: float,
+		punch_radius: float, punch_arc: float) -> int:
+	var best := -1
+	var best_dist := punch_radius
+	var fwd := Heading.forward(attacker_heading)
+	var arc_cos := cos(punch_arc)
+
+	for i in count:
+		if alive[i] == 0 or is_animal[i] == 1:
+			continue
+		if knock_t[i] > 0.0 or mode[i] == Mode.FLEE:
+			continue
+		var dx := x[i] - attacker_x
+		var dz := z[i] - attacker_z
+		var dist := sqrt(dx * dx + dz * dz)
+		if dist > best_dist or dist < 0.0001:
+			continue
+		var dot := (dx * fwd.x + dz * fwd.z) / dist
+		if dot < arc_cos:
+			continue
+		best_dist = dist
+		best = i
+
+	return best
+
+
+## Реакция на полученный удар кулаком: паника свидетелей + сдача (retaliate) или побег (flee).
+## Возвращает true, если пешеход ответил ударом (наносит 1 урон атакующему).
+func react_to_punch(i: int, attacker_x: float, attacker_z: float) -> bool:
+	if i < 0 or i >= count or alive[i] == 0:
+		return false
+
+	var dx := attacker_x - x[i]
+	var dz := attacker_z - z[i]
+
+	# Паника свидетелей в радиусе (config.punch_panic_radius)
+	var panic_r := config.punch_panic_radius if config != null else 8.0
+	for other in count:
+		if other == i or alive[other] == 0 or knock_t[other] > 0.0:
+			continue
+		var odx := x[other] - x[i]
+		var odz := z[other] - z[i]
+		var odist := sqrt(odx * odx + odz * odz)
+		if odist <= panic_r and odist > 0.001:
+			_start_flee(other, odx, odz, 4.0)
+
+	if is_animal[i] == 1:
+		_start_flee(i, -dx, -dz, 4.5)
+		return false
+
+	var will_retaliate := _should_retaliate(i)
+	if will_retaliate:
+		mode[i] = Mode.KICK
+		kick_t[i] = 0.6
+		kick_cd[i] = 3.0
+		anger_t[i] = 1.5
+		speed[i] = 0.0
+		target_angle[i] = atan2(dx, dz)
+		return true
+	else:
+		_start_flee(i, -dx, -dz, 4.0)
+		return false
+
+
+func _should_retaliate(i: int) -> bool:
+	if is_animal[i] == 1:
+		return false
+	var aid := archetype_ref[i].id
+	var roll_val: float = rng.randf()
+	match aid:
+		&"gopnik":
+			return roll_val < 0.8
+		&"worker":
+			return roll_val < 0.7
+		&"businessman":
+			return roll_val < 0.45
+		&"tourist":
+			return roll_val < 0.4
+		&"mom":
+			return roll_val < 0.25
+		&"elder", &"grandma":
+			return roll_val < 0.3
+		&"police":
+			return true
+		_:
+			return roll_val < 0.5
 
 
 func is_crossing_or_waiting(i: int) -> bool:

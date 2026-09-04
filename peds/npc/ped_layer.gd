@@ -165,9 +165,14 @@ func tick(delta: float, player_x: float, player_z: float, player_heading: float,
 			continue
 		var wx := manager.world_x(i)
 		var wz := manager.world_z(i)
-		root.position = Vector3(wx, field.height_at(wx, wz), wz)
+		var wy := 0.0 if wz > -260.0 else field.height_at(wx, wz)
+		root.position = Vector3(wx, wy, wz)
 		root.rotation.y = manager.heading_of(i)
-		_animate(i, delta)
+		var dx := wx - player_x
+		var dz := wz - player_z
+		if dx * dx + dz * dz < 3600.0:
+			_animate(i, delta)
+
 
 
 func _animate(i: int, delta: float) -> void:

@@ -46,6 +46,11 @@ func next() -> float:
 	return float((t ^ (t >> 14)) & MASK32) * INV32
 
 
+## Псевдоним next() для совместимости со стандартным API RandomNumberGenerator.
+func randf() -> float:
+	return next()
+
+
 ## Порт rand(a, b) из utils.js (при одном аргументе — [0, a)).
 func randf_range(a: float, b: float) -> float:
 	return a + next() * (b - a)

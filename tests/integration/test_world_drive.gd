@@ -73,10 +73,21 @@ func test_car_burns_fuel_while_driving() -> void:
 
 
 func test_car_follows_terrain_height() -> void:
-	# Машина стоит ровно на земле, а не парит и не тонет.
+	# Машина стоит ровно на поверхности, а не парит и не тонет.
 	var p := _world.player.global_position
 	assert_float(p.y)\
-		.is_equal_approx(_world.city.field.height_at(p.x, p.z), 0.01)
+		.is_equal_approx(_world.city.field.surface_height_at(p.x, p.z), 0.01)
+	assert_float(p.y).is_equal_approx(0.05, 0.01)
+
+	# При заезде на тротуар колёса поднимаются на уровень тротуара
+	_world.player.place(Vector3(-8.0, 0.0, 20.0), 0.0)
+	assert_float(_world.player.global_position.y).is_equal_approx(0.15, 0.01)
+
+	# На газоне внутри квартала колёса стоят на грунте
+	_world.player.place(Vector3(20.0, 0.0, 20.0), 0.0)
+	assert_float(_world.player.global_position.y).is_equal_approx(-0.02, 0.01)
+
+
 
 
 func test_car_stops_against_a_building() -> void:
@@ -134,6 +145,42 @@ func test_traffic_spawns_and_drives() -> void:
 	assert_float(start.distance_to(moved))\
 		.override_failure_message("машина трафика 0 не сдвинулась за 2 секунды")\
 		.is_greater(0.5)
+
+
+func test_player_ped_exit_and_enter_car() -> void:
+	# Сбрасываем газ от предыдущих тестов и останавливаем машину
+	Input.action_release(&"throttle")
+	_world.player.motion.speed = 0.0
+	_world.player.motion.forward_speed = 0.0
+	_world.player.motion.lateral_speed = 0.0
+	_world.player.motion.velocity = Vector3.ZERO
+	_world.player.velocity = Vector3.ZERO
+	await _runner.simulate_frames(2)
+
+	assert_bool(_world.in_car).is_true()
+	assert_object(_world.camera.target).is_equal(_world.player)
+
+	# Выход из стоящего авто
+	var exited := _world.exit_car()
+	assert_bool(exited).is_true()
+	assert_bool(_world.in_car).is_false()
+	assert_object(_world.player_ped).is_not_null()
+	assert_object(_world.camera.target).is_equal(_world.player_ped)
+	assert_bool(_world.camera.mode == ChaseCamera.Mode.PED).is_true()
+	assert_bool(_world.player.is_active).is_false()
+
+	# Пешеход появился слева от машины
+	var ped_pos := _world.player_ped.global_position
+	var car_pos := _world.player.global_position
+	assert_float(ped_pos.distance_to(car_pos)).is_between(1.0, 3.5)
+
+	# Посадка обратно в авто
+	var entered := _world.enter_car()
+	assert_bool(entered).is_true()
+	assert_bool(_world.in_car).is_true()
+	assert_object(_world.camera.target).is_equal(_world.player)
+	assert_bool(_world.camera.mode == ChaseCamera.Mode.CAR).is_true()
+	assert_bool(_world.player.is_active).is_true()
 
 
 func test_world_unloads_without_leaks() -> void:

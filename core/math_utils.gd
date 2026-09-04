@@ -34,6 +34,11 @@ static func damp_pow(from: float, to: float, k: float, delta: float) -> float:
 	return from + (to - from) * (1.0 - pow(k, delta))
 
 
+static func damp_pow_vec(from: Vector3, to: Vector3, k: float, delta: float) -> Vector3:
+	var t := 1.0 - pow(k, delta)
+	return from + (to - from) * t
+
+
 ## Расстояние в плоскости XZ.
 static func dist_2d(ax: float, az: float, bx: float, bz: float) -> float:
 	var dx := ax - bx

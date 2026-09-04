@@ -87,68 +87,112 @@ static func build_human(spec: Spec) -> HumanRig:
 	return rig
 
 
-# --- Торс + аксессуары торса -------------------------------------------------
+# --- Торс + экипировка --------------------------------------------------------
 
 static func _build_torso(spec: Spec) -> ArrayMesh:
 	var b := MeshBuilder.new()
-	b.box(Vector3(0.0, 1.05, 0.0), Vector3(0.56, 0.68, 0.34), spec.cloth_color)
-	# Полоска куртки — в оригинале 60% шанс, здесь всегда (Spec детерминирован).
-	b.box(Vector3(0.0, 1.05, 0.175), Vector3(0.06, 0.66, 0.02), _WHITE)
+
+	# Анатомичный low-poly торс с сужением к талии
+	# Грудная клетка
+	b.tapered_box(Vector3(0.0, 1.16, 0.0), Vector3(0.54, 0.42, 0.32),
+		spec.cloth_color, Vector2(0.92, 0.94))
+	# Нижняя часть торса / живот
+	b.tapered_box(Vector3(0.0, 0.88, 0.0), Vector3(0.48, 0.28, 0.29),
+		spec.cloth_color, Vector2(1.08, 1.06))
+
+	# Пояс и пряжка
+	var belt_col: Color = spec.pants_color.darkened(0.35).lerp(Color("#1a1a1a"), 0.5)
+	b.box(Vector3(0.0, 0.73, 0.0), Vector3(0.48, 0.08, 0.29), belt_col)
+	b.box(Vector3(0.0, 0.73, 0.15), Vector3(0.09, 0.07, 0.02), Color("#d4af37"))
+
+	# Воротник и лацканы куртки / пальто
+	b.box(Vector3(0.0, 1.37, 0.06), Vector3(0.28, 0.08, 0.12), spec.cloth_color.lightened(0.12))
+	# Центральная планка / молния
+	b.box(Vector3(0.0, 1.08, 0.165), Vector3(0.05, 0.52, 0.02), _WHITE)
 
 	for tag in spec.accessories:
 		match String(tag):
 			"cane":
-				b.cylinder(Vector3(0.4, 0.75, 0.1), 0.03, 0.03, 1.1, Color("#5a3a1a"), 6)
+				# Трость с изогнутой рукоятью
+				b.cylinder(Vector3(0.38, 0.72, 0.1), 0.025, 0.025, 1.05, Color("#4e3218"), 6)
+				b.box(Vector3(0.38, 1.25, 0.14), Vector3(0.05, 0.05, 0.14), Color("#b8860b"))
 			"shoulder_bag":
-				b.box(Vector3(0.0, 1.05, 0.175), Vector3(0.04, 0.58, 0.02), Color("#111111"),
-					Basis(Vector3.BACK, 0.6))
-				b.box(Vector3(0.0, 1.05, -0.175), Vector3(0.04, 0.58, 0.02), Color("#111111"),
-					Basis(Vector3.BACK, -0.6))
-				b.box(Vector3(0.06, 1.1, 0.19), Vector3(0.18, 0.12, 0.06), Color("#111111"))
+				# Ремень через плечо
+				b.box(Vector3(0.0, 1.1, 0.165), Vector3(0.04, 0.58, 0.02), Color("#181818"),
+					Basis(Vector3.BACK, 0.58))
+				b.box(Vector3(0.0, 1.1, -0.165), Vector3(0.04, 0.58, 0.02), Color("#181818"),
+					Basis(Vector3.BACK, -0.58))
+				# Сумка на бедре
+				b.box(Vector3(0.26, 0.82, 0.06), Vector3(0.12, 0.24, 0.26), Color("#3e2616"))
+				b.box(Vector3(0.26, 0.88, 0.06), Vector3(0.13, 0.10, 0.27), Color("#28160c"))
 			"stripes":
-				b.box(Vector3(0.285, 1.05, 0.0), Vector3(0.02, 0.66, 0.35), _WHITE)
-				b.box(Vector3(-0.285, 1.05, 0.0), Vector3(0.02, 0.66, 0.35), _WHITE)
+				# Спортивные лампасы на одежде
+				b.box(Vector3(0.275, 1.12, 0.0), Vector3(0.02, 0.50, 0.18), _WHITE)
+				b.box(Vector3(-0.275, 1.12, 0.0), Vector3(0.02, 0.50, 0.18), _WHITE)
 			"string_bag":
-				b.box(Vector3(0.36, 0.88, 0.1), Vector3(0.22, 0.28, 0.14), Color("#d0c8a0"))
+				# Авоська с покупками
+				b.box(Vector3(0.36, 0.82, 0.1), Vector3(0.20, 0.26, 0.18), Color("#d4cca6"))
+				b.box(Vector3(0.36, 0.96, 0.1), Vector3(0.03, 0.12, 0.03), Color("#a69c76"))
+				b.sphere(Vector3(0.36, 0.88, 0.12), 0.06, Color("#e63946"), 3, 5) # яблоко
+				b.sphere(Vector3(0.34, 0.89, 0.06), 0.05, Color("#ffb703"), 3, 5) # апельсин
 			"stroller":
-				b.box(Vector3(0.0, 0.7, 0.5), Vector3(0.5, 0.4, 0.7), Color("#3a5a8a"))
+				# Детская коляска
+				b.box(Vector3(0.0, 0.72, 0.55), Vector3(0.48, 0.38, 0.68), Color("#2b5c8f"))
+				b.box(Vector3(0.0, 0.94, 0.36), Vector3(0.46, 0.22, 0.34), Color("#1d4069")) # капюшон
+				b.box(Vector3(0.0, 1.05, 0.22), Vector3(0.42, 0.04, 0.44), Color("#4a4a4a")) # ручка
 				var wheel_basis := Basis(Vector3.RIGHT, PI * 0.5)
-				b.cylinder(Vector3(0.0, 0.35, 0.5), 0.12, 0.12, 0.1, Color("#222222"), 8, wheel_basis)
-				b.cylinder(Vector3(0.0, 0.35, 0.9), 0.12, 0.12, 0.1, Color("#222222"), 8, wheel_basis)
+				for sx: float in [-0.24, 0.24]:
+					b.cylinder(Vector3(sx, 0.32, 0.34), 0.12, 0.12, 0.06, Color("#1a1a1a"), 8, wheel_basis)
+					b.cylinder(Vector3(sx, 0.32, 0.76), 0.12, 0.12, 0.06, Color("#1a1a1a"), 8, wheel_basis)
 			"instrument":
-				b.box(Vector3(0.0, 1.1, 0.25), Vector3(0.4, 0.3, 0.2), Color("#8a3a3a"))
-				b.box(Vector3(0.0, 1.1, 0.18), Vector3(0.42, 0.2, 0.1), _WHITE)
+				# Чехол с гитарой/инструментом
+				b.box(Vector3(0.0, 1.08, 0.24), Vector3(0.38, 0.38, 0.16), Color("#7c2828"))
+				b.box(Vector3(0.0, 1.34, 0.24), Vector3(0.14, 0.36, 0.12), Color("#7c2828"))
+				b.box(Vector3(0.0, 1.08, 0.18), Vector3(0.36, 0.24, 0.04), _WHITE)
 			"stethoscope":
-				# Оригинал — Torus вокруг шеи; MeshBuilder тора не строит,
-				# берём плоское кольцо-цилиндр той же общей формы.
-				b.cylinder(Vector3(0.0, 1.35, 0.15), 0.1, 0.1, 0.03, Color("#222222"), 10,
+				# Фонендоскоп на шее
+				b.cylinder(Vector3(0.0, 1.35, 0.14), 0.12, 0.12, 0.04, Color("#1a1a1a"), 10,
+					Basis(Vector3.RIGHT, PI * 0.5))
+				b.box(Vector3(0.0, 1.18, 0.17), Vector3(0.03, 0.20, 0.02), Color("#222222"))
+				b.cylinder(Vector3(0.0, 1.06, 0.18), 0.04, 0.04, 0.02, Color("#c0c0c0"), 8,
 					Basis(Vector3.RIGHT, PI * 0.5))
 			"backpack":
-				var bag := Color("#205080")
-				b.box(Vector3(0.0, 1.1, -0.24), Vector3(0.38, 0.45, 0.2), bag)
-				b.box(Vector3(0.0, 1.0, -0.35), Vector3(0.26, 0.2, 0.08), bag)
-				b.box(Vector3(0.0, 1.11, -0.35), Vector3(0.22, 0.02, 0.09), Color("#cccccc"))
+				# Городской рюкзак с карманами и стропами
+				var bag := Color("#244a72")
+				b.box(Vector3(0.0, 1.12, -0.24), Vector3(0.38, 0.44, 0.18), bag)
+				b.box(Vector3(0.0, 0.98, -0.34), Vector3(0.28, 0.22, 0.08), bag.darkened(0.15))
+				b.box(Vector3(0.0, 1.10, -0.34), Vector3(0.24, 0.02, 0.09), Color("#e0e0e0"))
+				b.box(Vector3(-0.14, 1.18, -0.06), Vector3(0.06, 0.38, 0.22), bag.darkened(0.2))
+				b.box(Vector3(0.14, 1.18, -0.06), Vector3(0.06, 0.38, 0.22), bag.darkened(0.2))
 			"camera":
-				b.box(Vector3(0.0, 1.15, 0.22), Vector3(0.18, 0.14, 0.12), Color("#222222"))
-				b.cylinder(Vector3(0.03, 1.15, 0.29), 0.05, 0.05, 0.05, Color("#444444"), 8,
+				# Фотоаппарат на ремешке
+				b.box(Vector3(0.0, 1.16, 0.22), Vector3(0.20, 0.14, 0.10), Color("#1c1c1e"))
+				b.cylinder(Vector3(0.03, 1.16, 0.28), 0.06, 0.06, 0.06, Color("#44484e"), 8,
 					Basis(Vector3.RIGHT, PI * 0.5))
+				b.box(Vector3(0.0, 1.28, 0.15), Vector3(0.26, 0.18, 0.02), Color("#333333"),
+					Basis(Vector3.FORWARD, 0.2))
 			"hi_vis":
-				var hv := Color("#d4e157")
-				b.box(Vector3(0.0, 1.18, 0.175), Vector3(0.54, 0.04, 0.02), hv)
-				b.box(Vector3(0.0, 0.92, 0.175), Vector3(0.54, 0.04, 0.02), hv)
-				b.box(Vector3(0.0, 1.18, -0.175), Vector3(0.54, 0.04, 0.02), hv)
+				# Сигнальный жилет со светоотражающими полосами
+				var hv := Color("#d8e632")
+				b.box(Vector3(0.0, 1.16, 0.17), Vector3(0.52, 0.42, 0.02), hv)
+				b.box(Vector3(0.0, 1.16, -0.17), Vector3(0.52, 0.42, 0.02), hv)
+				b.box(Vector3(0.0, 1.22, 0.175), Vector3(0.53, 0.05, 0.02), Color("#f0f0f0"))
+				b.box(Vector3(0.0, 0.98, 0.175), Vector3(0.53, 0.05, 0.02), Color("#f0f0f0"))
 			"wrench":
-				b.box(Vector3(0.42, 0.9, 0.1), Vector3(0.05, 0.5, 0.05), Color("#888888"))
+				b.box(Vector3(0.38, 0.92, 0.08), Vector3(0.04, 0.48, 0.04), Color("#888d94"))
+				b.box(Vector3(0.38, 1.16, 0.08), Vector3(0.09, 0.06, 0.04), Color("#888d94"))
 			"briefcase":
-				b.box(Vector3(0.38, 0.85, 0.05), Vector3(0.1, 0.28, 0.36), Color("#1a1410"))
-				b.box(Vector3(0.0, 1.12, 0.175), Vector3(0.06, 0.35, 0.02), Color("#204080"))
-			# "beard", капа/шапка-теги обрабатываются в _build_head — здесь их пропускаем.
+				# Кожаный портфель с замками
+				b.box(Vector3(0.36, 0.82, 0.06), Vector3(0.10, 0.26, 0.36), Color("#241a14"))
+				b.box(Vector3(0.36, 0.96, 0.06), Vector3(0.04, 0.05, 0.12), Color("#18100c"))
+				b.box(Vector3(0.36, 0.85, -0.06), Vector3(0.105, 0.03, 0.03), Color("#d4af37"))
+				b.box(Vector3(0.36, 0.85, 0.06), Vector3(0.105, 0.03, 0.03), Color("#d4af37"))
 			_:
 				pass
 	return b.commit()
 
 
-# --- Голова + аксессуары головы -----------------------------------------------
+# --- Голова + головные уборы и причёски ---------------------------------------
 
 static func _head_y(abs_y: float) -> float:
 	return abs_y - HEAD_PIVOT_Y
@@ -156,67 +200,138 @@ static func _head_y(abs_y: float) -> float:
 
 static func _build_head(spec: Spec) -> ArrayMesh:
 	var b := MeshBuilder.new()
-	b.sphere(Vector3(0.0, _head_y(1.62), 0.0), 0.26, spec.skin_color, 5, 8)
-	b.box(Vector3(0.0, _head_y(1.62), 0.26), Vector3(0.04, 0.04, 0.04), spec.skin_color)
 
-	var covers_head := false
+	var hat_type := ""
+	for tag in spec.accessories:
+		match String(tag):
+			"cap", "headscarf", "beret", "nurse_cap", "panama", "helmet":
+				hat_type = String(tag)
+				break
+
+	var has_hat := hat_type != ""
+
+	# Шея
+	b.cylinder(Vector3(0.0, _head_y(1.44), 0.0), 0.11, 0.13, 0.12, spec.skin_color, 7)
+
+	# Скульптурная low-poly голова
+	if has_hat:
+		# Усечённая снизу/сверху голова под шапкой (лицо и челюсть, верх накрыт шапкой)
+		b.sphere(Vector3(0.0, _head_y(1.54), 0.02), 0.22, spec.skin_color, 5, 8, 0.70)
+	else:
+		# Полная голова
+		b.sphere(Vector3(0.0, _head_y(1.60), 0.0), 0.24, spec.skin_color, 5, 8, 1.0)
+
+	# Нос и подбородок
+	b.box(Vector3(0.0, _head_y(1.58), 0.23), Vector3(0.05, 0.08, 0.07), spec.skin_color)
+	b.box(Vector3(0.0, _head_y(1.49), 0.11), Vector3(0.16, 0.08, 0.14), spec.skin_color)
+
+	# Уши
+	for sx: float in [-1.0, 1.0]:
+		b.box(Vector3(sx * 0.22, _head_y(1.56), 0.0), Vector3(0.03, 0.08, 0.06), spec.skin_color)
+
 	for tag in spec.accessories:
 		match String(tag):
 			"beard":
-				b.sphere(Vector3(0.0, _head_y(1.5), 0.1), 0.2, Color("#d8d8d8"), 4, 6, 0.6)
+				b.sphere(Vector3(0.0, _head_y(1.50), 0.11), 0.19, Color("#dcdcdc"), 4, 6, 0.7)
 			"cap":
-				b.cylinder(Vector3(0.0, _head_y(1.84), 0.02), 0.28, 0.28, 0.1, Color("#1a1a1c"), 8)
-				b.box(Vector3(0.0, _head_y(1.79), 0.24), Vector3(0.24, 0.02, 0.16), Color("#1a1a1c"))
-				covers_head = true
+				# Бейсболка с объемным куполом и козырьком
+				b.cylinder(Vector3(0.0, _head_y(1.66), 0.0), 0.28, 0.28, 0.06, Color("#1f2428"), 12)
+				b.sphere(Vector3(0.0, _head_y(1.69), -0.02), 0.29, Color("#1f2428"), 5, 8, 0.75)
+				b.box(Vector3(0.0, _head_y(1.65), 0.24), Vector3(0.26, 0.025, 0.18), Color("#181c20"),
+					Basis(Vector3.RIGHT, -0.15))
+				b.sphere(Vector3(0.0, _head_y(1.86), -0.02), 0.035, Color("#d4af37"), 3, 5)
 			"headscarf":
-				b.sphere(Vector3(0.0, _head_y(1.63), 0.0), 0.28, Color("#d8a8a8"), 5, 8, 0.75)
-				covers_head = true
+				# Платок / косынка
+				b.sphere(Vector3(0.0, _head_y(1.66), 0.0), 0.29, Color("#d89898"), 5, 8, 0.95)
+				b.box(Vector3(0.0, _head_y(1.46), 0.14), Vector3(0.14, 0.12, 0.08), Color("#b87878"))
 			"beret":
-				b.sphere(Vector3(0.0, _head_y(1.66), 0.0), 0.28, Color("#2a2a2a"), 4, 8, 0.55)
-				b.cylinder(Vector3(0.0, _head_y(1.78), 0.0), 0.3, 0.3, 0.06, Color("#8a3a3a"), 8)
-				covers_head = true
+				# Французский / курортный берет
+				b.cylinder(Vector3(0.0, _head_y(1.66), 0.0), 0.27, 0.27, 0.05, Color("#882424"), 12)
+				b.sphere(Vector3(0.0, _head_y(1.70), -0.02), 0.33, Color("#882424"), 5, 8, 0.70)
+				b.cylinder(Vector3(0.0, _head_y(1.90), -0.02), 0.015, 0.015, 0.04, Color("#882424"), 4)
 			"nurse_cap":
-				b.sphere(Vector3(0.0, _head_y(1.66), 0.0), 0.28, Color("#ffffff"), 4, 8, 0.55)
-				b.box(Vector3(0.0, _head_y(1.78), 0.0), Vector3(0.3, 0.05, 0.3), Color("#ffffff"))
-				b.box(Vector3(0.0, _head_y(1.78), 0.1), Vector3(0.12, 0.04, 0.04), Color("#cc2222"))
-				b.box(Vector3(0.0, _head_y(1.78), 0.1), Vector3(0.04, 0.04, 0.12), Color("#cc2222"))
-				covers_head = true
+				b.cylinder(Vector3(0.0, _head_y(1.66), 0.0), 0.27, 0.27, 0.06, Color("#ffffff"), 12)
+				b.box(Vector3(0.0, _head_y(1.76), 0.04), Vector3(0.28, 0.14, 0.24), Color("#ffffff"))
+				b.box(Vector3(0.0, _head_y(1.76), 0.165), Vector3(0.09, 0.03, 0.02), Color("#cc2222"))
+				b.box(Vector3(0.0, _head_y(1.76), 0.165), Vector3(0.03, 0.09, 0.02), Color("#cc2222"))
 			"headphones":
-				# Оригинал — Torus-повязка через макушку; заменена на два
-				# наушника по бокам головы (тот же силуэт, без примитива тора).
-				b.sphere(Vector3(0.0, _head_y(1.63), 0.0), 0.27, spec.hair_color, 4, 8, 0.55)
+				# Наушники: вертикальная дужка через голову + амбушюры на ушах
+				b.box(Vector3(0.0, _head_y(1.84), 0.0), Vector3(0.38, 0.035, 0.06), Color("#1c1c1e"))
+				b.box(Vector3(-0.22, _head_y(1.73), 0.0), Vector3(0.04, 0.20, 0.05), Color("#1c1c1e"),
+					Basis(Vector3.FORWARD, -0.12))
+				b.box(Vector3(0.22, _head_y(1.73), 0.0), Vector3(0.04, 0.20, 0.05), Color("#1c1c1e"),
+					Basis(Vector3.FORWARD, 0.12))
 				for sx: float in [-1.0, 1.0]:
-					b.cylinder(Vector3(sx * 0.26, _head_y(1.63), 0.0), 0.07, 0.07, 0.05,
-						Color("#222222"), 8, Basis(Vector3.FORWARD, PI * 0.5))
-				covers_head = true
+					b.cylinder(Vector3(sx * 0.25, _head_y(1.60), 0.0), 0.09, 0.09, 0.06,
+						Color("#282c34"), 8, Basis(Vector3.FORWARD, PI * 0.5))
+					b.cylinder(Vector3(sx * 0.26, _head_y(1.60), 0.0), 0.07, 0.07, 0.065,
+						Color("#d4af37"), 6, Basis(Vector3.FORWARD, PI * 0.5))
 			"panama":
-				b.cylinder(Vector3(0.0, _head_y(1.74), 0.0), 0.42, 0.42, 0.02, Color("#ddccaa"), 10)
-				b.cylinder(Vector3(0.0, _head_y(1.83), 0.0), 0.27, 0.26, 0.16, Color("#ddccaa"), 10)
-				covers_head = true
+				# Панама с широкими полями, синей лентой и сплошной закрытой тульей
+				b.cylinder(Vector3(0.0, _head_y(1.65), 0.0), 0.44, 0.44, 0.025, Color("#dcd2b4"), 14)
+				b.cylinder(Vector3(0.0, _head_y(1.70), 0.0), 0.28, 0.28, 0.055, Color("#2b5c8f"), 12)
+				b.cylinder(Vector3(0.0, _head_y(1.76), 0.0), 0.27, 0.28, 0.12, Color("#dcd2b4"), 12)
+				b.sphere(Vector3(0.0, _head_y(1.80), 0.0), 0.265, Color("#dcd2b4"), 5, 8, 0.35)
 			"helmet":
-				b.sphere(Vector3(0.0, _head_y(1.66), 0.0), 0.28, Color("#e8c020"), 4, 8, 0.5)
-				b.cylinder(Vector3(0.0, _head_y(1.78), 0.0), 0.3, 0.3, 0.05, Color("#e8c020"), 8)
-				covers_head = true
+				# Строительная каска
+				b.cylinder(Vector3(0.0, _head_y(1.66), 0.0), 0.33, 0.33, 0.04, Color("#f4c418"), 12)
+				b.sphere(Vector3(0.0, _head_y(1.70), 0.0), 0.31, Color("#f4c418"), 5, 8, 0.75)
+				b.box(Vector3(0.0, _head_y(1.82), 0.0), Vector3(0.07, 0.06, 0.38), Color("#f4c418"))
 			_:
 				pass
 
-	if not covers_head:
-		b.sphere(Vector3(0.0, _head_y(1.63), 0.0), 0.27, spec.hair_color, 4, 8, 0.55)
+	if not has_hat:
+		# Объемная причёска (покрывает весь верх, виски и затылок)
+		b.sphere(Vector3(0.0, _head_y(1.66), -0.03), 0.265, spec.hair_color, 5, 8, 0.95)
+		b.box(Vector3(0.0, _head_y(1.73), 0.10), Vector3(0.25, 0.08, 0.14), spec.hair_color)
+		b.box(Vector3(-0.22, _head_y(1.63), 0.02), Vector3(0.04, 0.14, 0.10), spec.hair_color)
+		b.box(Vector3(0.22, _head_y(1.63), 0.02), Vector3(0.04, 0.14, 0.10), spec.hair_color)
+	else:
+		# Видимые волосы сзади и на висках под шапкой
+		b.sphere(Vector3(0.0, _head_y(1.50), -0.05), 0.23, spec.hair_color, 4, 6, 0.55)
+		b.box(Vector3(-0.21, _head_y(1.54), 0.01), Vector3(0.03, 0.09, 0.06), spec.hair_color)
+		b.box(Vector3(0.21, _head_y(1.54), 0.01), Vector3(0.03, 0.09, 0.06), spec.hair_color)
+
 	return b.commit()
 
 
-# --- Рука/нога (переиспользуются на оба пивота) --------------------------------
+# --- Рука и нога (переиспользуются на оба пивота) ------------------------------
 
 static func _build_arm(spec: Spec) -> ArrayMesh:
 	var b := MeshBuilder.new()
-	b.box(Vector3(0.0, -0.31, 0.0), Vector3(0.15, 0.62, 0.15), spec.cloth_color)
+	# Плечо и рукав (сужение к локтю)
+	b.tapered_box(Vector3(0.0, -0.16, 0.0), Vector3(0.16, 0.30, 0.16),
+		spec.cloth_color, Vector2(0.88, 0.88))
+	# Предплечье
+	b.tapered_box(Vector3(0.0, -0.42, 0.0), Vector3(0.14, 0.26, 0.14),
+		spec.cloth_color, Vector2(0.86, 0.86))
+	# Манжета
+	b.box(Vector3(0.0, -0.54, 0.0), Vector3(0.15, 0.04, 0.15),
+		spec.cloth_color.lightened(0.15))
+	# Кисть руки с пальцами
+	b.box(Vector3(0.0, -0.62, 0.0), Vector3(0.11, 0.13, 0.11), spec.skin_color)
+	b.box(Vector3(0.04, -0.60, 0.04), Vector3(0.04, 0.06, 0.04), spec.skin_color)
 	return b.commit()
 
 
 static func _build_leg(spec: Spec) -> ArrayMesh:
 	var b := MeshBuilder.new()
-	b.box(Vector3(0.0, -0.375, 0.0), Vector3(0.18, 0.75, 0.2), spec.pants_color)
-	b.box(Vector3(0.0, -0.77, 0.04), Vector3(0.2, 0.12, 0.32), spec.shoe_color)
+	# Бедро (сужение к колену)
+	b.tapered_box(Vector3(0.0, -0.20, 0.0), Vector3(0.19, 0.38, 0.21),
+		spec.pants_color, Vector2(0.88, 0.88))
+	# Голень (сужение к щиколотке)
+	b.tapered_box(Vector3(0.0, -0.52, 0.0), Vector3(0.17, 0.34, 0.18),
+		spec.pants_color, Vector2(0.86, 0.86))
+	# Подворот / низ брюк
+	b.box(Vector3(0.0, -0.68, 0.0), Vector3(0.18, 0.04, 0.19),
+		spec.pants_color.darkened(0.2))
+
+	# Обувь с подошвой, носком и каблуком
+	var sole_col: Color = Color("#e8e8e4") if (spec.shoe_color.v < 0.25) else Color("#1a1a1c")
+	b.box(Vector3(0.0, -0.74, 0.04), Vector3(0.19, 0.09, 0.31), spec.shoe_color)
+	b.box(Vector3(0.0, -0.74, 0.15), Vector3(0.18, 0.08, 0.11), spec.shoe_color)
+	b.box(Vector3(0.0, -0.79, 0.04), Vector3(0.20, 0.04, 0.33), sole_col)
+	b.box(Vector3(0.0, -0.81, -0.06), Vector3(0.19, 0.03, 0.12), Color("#141414"))
 	return b.commit()
 
 
@@ -226,26 +341,37 @@ static func build_dog(coat_color: Color, collar_color: Color) -> AnimalRig:
 	var rig := AnimalRig.new()
 
 	var body := MeshBuilder.new()
-	body.box(Vector3(0.0, 0.38, 0.0), Vector3(0.32, 0.35, 0.65), coat_color)
+	# Анатомичное тело: глубокая грудь, поджарый живот, бедра
+	body.tapered_box(Vector3(0.0, 0.40, 0.12), Vector3(0.34, 0.36, 0.40),
+		coat_color, Vector2(0.88, 1.0))
+	body.tapered_box(Vector3(0.0, 0.38, -0.16), Vector3(0.30, 0.32, 0.34),
+		coat_color, Vector2(1.05, 0.9))
 	rig.body_mesh = body.commit()
 
 	var head := MeshBuilder.new()
-	head.box(Vector3(0.0, 0.08, 0.08), Vector3(0.24, 0.24, 0.3), coat_color)
-	head.box(Vector3(0.0, 0.04, 0.26), Vector3(0.14, 0.12, 0.16), coat_color)
-	head.box(Vector3(0.0, 0.08, 0.33), Vector3(0.06, 0.06, 0.06), _NOSE)
-	# Висячие уши (в оригинале 50/50 с торчащими — здесь всегда висячие).
+	# Череп
+	head.box(Vector3(0.0, 0.10, 0.08), Vector3(0.24, 0.22, 0.26), coat_color)
+	# Морда
+	head.tapered_box(Vector3(0.0, 0.06, 0.26), Vector3(0.15, 0.13, 0.18),
+		coat_color, Vector2(0.85, 0.9))
+	head.box(Vector3(0.0, 0.10, 0.35), Vector3(0.06, 0.06, 0.05), _NOSE)
+	# Висячие уши
 	for sx: float in [-1.0, 1.0]:
-		head.box(Vector3(sx * 0.14, 0.12, 0.04), Vector3(0.08, 0.16, 0.1), coat_color)
-	head.box(Vector3(0.0, 0.0, 0.02), Vector3(0.26, 0.06, 0.26), collar_color)
+		head.box(Vector3(sx * 0.15, 0.08, 0.04), Vector3(0.06, 0.18, 0.12), coat_color,
+			Basis(Vector3.FORWARD, -sx * 0.2))
+	# Ошейник с медальоном
+	head.box(Vector3(0.0, 0.01, 0.02), Vector3(0.26, 0.06, 0.26), collar_color)
+	head.cylinder(Vector3(0.0, -0.04, 0.14), 0.03, 0.03, 0.01, Color("#d4af37"), 6)
 	rig.head_mesh = head.commit()
 
 	var tail := MeshBuilder.new()
-	tail.cylinder(Vector3(0.0, 0.15, -0.15), 0.03, 0.05, 0.35, coat_color, 6,
-		Basis(Vector3.RIGHT, PI / 3.0))
+	tail.cylinder(Vector3(0.0, 0.16, -0.14), 0.03, 0.05, 0.36, coat_color, 6,
+		Basis(Vector3.RIGHT, PI * 0.35))
 	rig.tail_mesh = tail.commit()
 
 	var leg := MeshBuilder.new()
-	leg.box(Vector3(0.0, -0.16, 0.0), Vector3(0.1, 0.32, 0.1), coat_color)
+	leg.tapered_box(Vector3(0.0, -0.10, 0.0), Vector3(0.11, 0.20, 0.12), coat_color, Vector2(0.85, 0.85))
+	leg.box(Vector3(0.0, -0.25, 0.02), Vector3(0.09, 0.12, 0.13), coat_color)
 	rig.leg_mesh = leg.commit()
 	return rig
 
@@ -256,24 +382,65 @@ static func build_cat(coat_color: Color, eye_color: Color) -> AnimalRig:
 	var rig := AnimalRig.new()
 
 	var body := MeshBuilder.new()
-	body.box(Vector3(0.0, 0.26, 0.0), Vector3(0.22, 0.24, 0.45), coat_color)
+	# Грациозное тело кошки с изогнутой спиной
+	body.tapered_box(Vector3(0.0, 0.27, 0.08), Vector3(0.22, 0.24, 0.28),
+		coat_color, Vector2(0.9, 1.0))
+	body.tapered_box(Vector3(0.0, 0.26, -0.12), Vector3(0.20, 0.22, 0.26),
+		coat_color, Vector2(1.0, 0.9))
 	rig.body_mesh = body.commit()
 
 	var head := MeshBuilder.new()
-	head.box(Vector3(0.0, 0.06, 0.04), Vector3(0.2, 0.18, 0.2), coat_color)
+	head.sphere(Vector3(0.0, 0.08, 0.04), 0.13, coat_color, 4, 7)
+	# Глаза и ушки
 	for sx: float in [-1.0, 1.0]:
-		head.box(Vector3(sx * 0.06, 0.08, 0.15), Vector3(0.04, 0.04, 0.02), eye_color)
-		head.cone(Vector3(sx * 0.07, 0.19, 0.04), 0.05, 0.1, coat_color, 4,
+		head.box(Vector3(sx * 0.065, 0.10, 0.14), Vector3(0.04, 0.04, 0.02), eye_color)
+		head.cone(Vector3(sx * 0.075, 0.22, 0.04), 0.05, 0.11, coat_color, 3,
 			Basis(Vector3.UP, PI * 0.25))
-	head.box(Vector3(0.0, 0.05, 0.15), Vector3(0.04, 0.03, 0.02), _PINK_NOSE)
+	# Мордочка и носик
+	head.box(Vector3(0.0, 0.05, 0.15), Vector3(0.06, 0.04, 0.04), _WHITE)
+	head.box(Vector3(0.0, 0.06, 0.17), Vector3(0.03, 0.025, 0.02), _PINK_NOSE)
 	rig.head_mesh = head.commit()
 
 	var tail := MeshBuilder.new()
-	tail.cylinder(Vector3(0.0, 0.18, -0.1), 0.02, 0.03, 0.38, coat_color, 5,
-		Basis(Vector3.RIGHT, PI / 4.0))
+	tail.cylinder(Vector3(0.0, 0.18, -0.10), 0.02, 0.03, 0.40, coat_color, 5,
+		Basis(Vector3.RIGHT, PI * 0.28))
 	rig.tail_mesh = tail.commit()
 
 	var leg := MeshBuilder.new()
-	leg.box(Vector3(0.0, -0.11, 0.0), Vector3(0.07, 0.22, 0.07), coat_color)
+	leg.cylinder(Vector3(0.0, -0.11, 0.0), 0.035, 0.045, 0.22, coat_color, 6)
+	leg.box(Vector3(0.0, -0.21, 0.02), Vector3(0.07, 0.04, 0.09), coat_color)
 	rig.leg_mesh = leg.commit()
 	return rig
+
+
+static func build_ped_node(spec: Spec) -> Node3D:
+	var root := Node3D.new()
+	var rig := build_human(spec)
+	var mat := preload("res://fx/materials/mat_palette.tres")
+
+	var torso := MeshInstance3D.new()
+	torso.mesh = rig.torso_mesh
+	torso.material_override = mat
+	root.add_child(torso)
+
+	var head := MeshInstance3D.new()
+	head.mesh = rig.head_mesh
+	head.position = Vector3(0.0, HEAD_PIVOT_Y, 0.0)
+	head.material_override = mat
+	root.add_child(head)
+
+	for sx: float in [-1.0, 1.0]:
+		var leg := MeshInstance3D.new()
+		leg.mesh = rig.leg_mesh
+		leg.position = Vector3(sx * HUMAN_LEG_PIVOT.x, HUMAN_LEG_PIVOT.y, HUMAN_LEG_PIVOT.z)
+		leg.material_override = mat
+		root.add_child(leg)
+
+		var arm := MeshInstance3D.new()
+		arm.mesh = rig.arm_mesh
+		arm.position = Vector3(sx * HUMAN_ARM_PIVOT.x, HUMAN_ARM_PIVOT.y, HUMAN_ARM_PIVOT.z)
+		arm.material_override = mat
+		root.add_child(arm)
+
+	return root
+

@@ -39,7 +39,7 @@ func _ready() -> void:
 		if i > 0:
 			await get_tree().create_timer(_interval).timeout
 			await _wait_frames(2)
-		_capture(_out[i])
+		await _capture(_out[i])
 	get_tree().quit(0)
 
 

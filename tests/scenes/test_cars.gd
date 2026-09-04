@@ -90,12 +90,21 @@ func _place_camera() -> void:
 	if i >= 0 and i + 1 < args.size():
 		idx = args[i + 1].to_int()
 	match idx:
-		1: # такси в три четверти
+		1: # такси в три четверти сзади
 			cam.position = Vector3(-13.5, 1.9, -4.6)
 			cam.look_at(Vector3(-18.0, 0.7, 0.0), Vector3.UP)
 		2: # ряд трафика
 			cam.position = Vector3(0.0, 6.0, 26.0)
 			cam.look_at(Vector3(0.0, 1.0, 11.0), Vector3.UP)
+		3: # такси в три четверти спереди
+			cam.position = Vector3(-13.5, 2.0, 4.8)
+			cam.look_at(Vector3(-18.0, 0.7, 0.0), Vector3.UP)
+		4: # крупный план на автобус в три четверти
+			cam.position = Vector3(14.5, 3.2, 19.0)
+			cam.look_at(Vector3(7.5, 1.5, 11.0), Vector3.UP)
+		5: # крупный план на микроавтобус/газель в три четверти
+			cam.position = Vector3(-14.5, 3.0, 18.0)
+			cam.look_at(Vector3(-7.5, 1.2, 11.0), Vector3.UP)
 		_:
 			cam.position = Vector3(0.0, 9.0, -16.0)
 			cam.look_at(Vector3(0.0, 1.0, 6.0), Vector3.UP)
