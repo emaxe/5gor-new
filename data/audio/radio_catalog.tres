@@ -1,15 +1,2058 @@
 [gd_resource type="Resource" script_class="RadioCatalog" format=3]
 
-[ext_resource type="Script" path="res://schema/radio_station_data.gd" id="1_x8xet"]
-[ext_resource type="Resource" path="res://data/audio/stations/pyatigorsk.tres" id="2_mpvk1"]
-[ext_resource type="Resource" path="res://data/audio/stations/synth.tres" id="3_mxk26"]
-[ext_resource type="Resource" path="res://data/audio/stations/kavkaz.tres" id="4_od055"]
-[ext_resource type="Resource" path="res://data/audio/stations/rock.tres" id="5_grjq1"]
-[ext_resource type="Resource" path="res://data/audio/stations/chanson.tres" id="6_keeuq"]
-[ext_resource type="Resource" path="res://data/audio/stations/chilled.tres" id="7_qdl15"]
-[ext_resource type="Script" path="res://schema/catalog/radio_catalog.gd" id="8_eaj4l"]
-[ext_resource type="Script" path="res://schema/sfx_recipe.gd" id="9_tfqbc"]
+[ext_resource type="Script" path="res://schema/radio_station_data.gd" id="1_mpvk1"]
+[ext_resource type="Resource" path="res://data/audio/stations/pyatigorsk.tres" id="2_mxk26"]
+[ext_resource type="Resource" path="res://data/audio/stations/synth.tres" id="3_od055"]
+[ext_resource type="Resource" path="res://data/audio/stations/kavkaz.tres" id="4_grjq1"]
+[ext_resource type="Resource" path="res://data/audio/stations/rock.tres" id="5_keeuq"]
+[ext_resource type="Resource" path="res://data/audio/stations/chanson.tres" id="6_qdl15"]
+[ext_resource type="Resource" path="res://data/audio/stations/chilled.tres" id="7_eaj4l"]
+[ext_resource type="Script" path="res://schema/catalog/radio_catalog.gd" id="8_tfqbc"]
+[ext_resource type="Script" path="res://schema/sfx_recipe.gd" id="9_vt0fp"]
+[ext_resource type="Script" path="res://schema/sfx_recipe_layer.gd" id="10_qpcyq"]
+
+[sub_resource type="Resource" id="Resource_i28fx"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.65
+freq_start = 293.66
+freq_end = 293.66
+decay = 0.635
+release = 0.001
+gain = 0.16
+
+[sub_resource type="Resource" id="Resource_1hrq7"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.65
+freq_start = 369.99
+freq_end = 369.99
+decay = 0.635
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_v3hoh"]
+script = ExtResource("10_qpcyq")
+duration = 0.65
+freq_start = 146.83
+freq_end = 146.83
+decay = 0.635
+release = 0.001
+gain = 0.22
+
+[sub_resource type="Resource" id="Resource_i22ol"]
+script = ExtResource("10_qpcyq")
+duration = 0.65
+freq_start = 73.415
+freq_end = 73.415
+decay = 0.635
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_6qj5f"]
+script = ExtResource("9_vt0fp")
+id = &"horn_player"
+duration = 0.65
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_i28fx"), SubResource("Resource_1hrq7"), SubResource("Resource_v3hoh"), SubResource("Resource_i22ol")])
+budget_tag = &"horn"
+cooldown_tag = &"horn"
+
+[sub_resource type="Resource" id="Resource_tiadx"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.6
+freq_start = 185.0
+freq_end = 185.0
+decay = 0.585
+release = 0.001
+gain = 0.18
+
+[sub_resource type="Resource" id="Resource_vedlb"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.6
+freq_start = 233.0
+freq_end = 233.0
+decay = 0.585
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_yle7c"]
+script = ExtResource("10_qpcyq")
+duration = 0.6
+freq_start = 92.5
+freq_end = 92.5
+decay = 0.585
+release = 0.001
+gain = 0.22
+
+[sub_resource type="Resource" id="Resource_3vdp5"]
+script = ExtResource("9_vt0fp")
+id = &"horn_truck"
+duration = 0.6
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_tiadx"), SubResource("Resource_vedlb"), SubResource("Resource_yle7c")])
+budget_tag = &"horn"
+cooldown_tag = &"horn"
+
+[sub_resource type="Resource" id="Resource_n2nvj"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.45
+freq_start = 330.0
+freq_end = 330.0
+decay = 0.435
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_wrmb5"]
+script = ExtResource("10_qpcyq")
+wave = 2
+duration = 0.45
+freq_start = 415.0
+freq_end = 415.0
+decay = 0.435
+release = 0.001
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_0kpp2"]
+script = ExtResource("10_qpcyq")
+duration = 0.45
+freq_start = 165.0
+freq_end = 165.0
+decay = 0.435
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_ssgkg"]
+script = ExtResource("9_vt0fp")
+id = &"horn_suv"
+duration = 0.45
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_n2nvj"), SubResource("Resource_wrmb5"), SubResource("Resource_0kpp2")])
+budget_tag = &"horn"
+cooldown_tag = &"horn"
+
+[sub_resource type="Resource" id="Resource_1wkjj"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.45
+freq_start = 370.0
+freq_end = 370.0
+decay = 0.435
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_15tkb"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.45
+freq_start = 293.66
+freq_end = 293.66
+decay = 0.435
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_8kj35"]
+script = ExtResource("10_qpcyq")
+duration = 0.45
+freq_start = 146.83
+freq_end = 146.83
+decay = 0.435
+release = 0.001
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_rkp7e"]
+script = ExtResource("9_vt0fp")
+id = &"horn_classic"
+duration = 0.45
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_1wkjj"), SubResource("Resource_15tkb"), SubResource("Resource_8kj35")])
+budget_tag = &"horn"
+cooldown_tag = &"horn"
+
+[sub_resource type="Resource" id="Resource_0ryuy"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.45
+freq_start = 415.0
+freq_end = 415.0
+decay = 0.435
+release = 0.001
+gain = 0.13
+
+[sub_resource type="Resource" id="Resource_p1ihp"]
+script = ExtResource("10_qpcyq")
+wave = 2
+duration = 0.45
+freq_start = 330.0
+freq_end = 330.0
+decay = 0.435
+release = 0.001
+gain = 0.11
+
+[sub_resource type="Resource" id="Resource_rnalq"]
+script = ExtResource("10_qpcyq")
+duration = 0.45
+freq_start = 165.0
+freq_end = 165.0
+decay = 0.435
+release = 0.001
+gain = 0.1
+
+[sub_resource type="Resource" id="Resource_lhg33"]
+script = ExtResource("9_vt0fp")
+id = &"horn_sedan"
+duration = 0.45
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_0ryuy"), SubResource("Resource_p1ihp"), SubResource("Resource_rnalq")])
+budget_tag = &"horn"
+cooldown_tag = &"horn"
+
+[sub_resource type="Resource" id="Resource_ep78i"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.345
+attack = 0.0
+decay = 0.345
+release = 0.0
+filter = 1
+cutoff_start = 470.0
+cutoff_end = 470.0
+resonance = 1.0
+gain = 0.46
+
+[sub_resource type="Resource" id="Resource_r6n00"]
+script = ExtResource("10_qpcyq")
+duration = 0.4
+freq_start = 70.0
+freq_end = 35.0
+decay = 0.385
+release = 0.001
+gain = 0.38749999999999996
+
+[sub_resource type="Resource" id="Resource_bnnc8"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.25
+freq_start = 160.0
+freq_end = 50.0
+decay = 0.235
+release = 0.001
+gain = 0.1725
+
+[sub_resource type="Resource" id="Resource_lw0v0"]
+script = ExtResource("9_vt0fp")
+id = &"crash_light"
+duration = 0.4
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_ep78i"), SubResource("Resource_r6n00"), SubResource("Resource_bnnc8")])
+budget_tag = &"crash"
+cooldown_tag = &"crash"
+
+[sub_resource type="Resource" id="Resource_ttwfw"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.44999999999999996
+attack = 0.0
+decay = 0.44999999999999996
+release = 0.0
+filter = 1
+cutoff_start = 750.0
+cutoff_end = 750.0
+resonance = 1.0
+gain = 0.6000000000000001
+
+[sub_resource type="Resource" id="Resource_ueo1c"]
+script = ExtResource("10_qpcyq")
+duration = 0.4
+freq_start = 70.0
+freq_end = 35.0
+decay = 0.385
+release = 0.001
+gain = 0.475
+
+[sub_resource type="Resource" id="Resource_vkqfl"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.25
+freq_start = 160.0
+freq_end = 50.0
+decay = 0.235
+release = 0.001
+gain = 0.22499999999999998
+
+[sub_resource type="Resource" id="Resource_b4xmi"]
+script = ExtResource("9_vt0fp")
+id = &"crash_medium"
+duration = 0.44999999999999996
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_ttwfw"), SubResource("Resource_ueo1c"), SubResource("Resource_vkqfl")])
+budget_tag = &"crash"
+cooldown_tag = &"crash"
+
+[sub_resource type="Resource" id="Resource_xtk2v"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.5549999999999999
+attack = 0.0
+decay = 0.5549999999999999
+release = 0.0
+filter = 1
+cutoff_start = 1030.0
+cutoff_end = 1030.0
+resonance = 1.0
+gain = 0.74
+
+[sub_resource type="Resource" id="Resource_mvycq"]
+script = ExtResource("10_qpcyq")
+duration = 0.4
+freq_start = 70.0
+freq_end = 35.0
+decay = 0.385
+release = 0.001
+gain = 0.5625
+
+[sub_resource type="Resource" id="Resource_0i7wv"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.25
+freq_start = 160.0
+freq_end = 50.0
+decay = 0.235
+release = 0.001
+gain = 0.27749999999999997
+
+[sub_resource type="Resource" id="Resource_0lcxn"]
+script = ExtResource("9_vt0fp")
+id = &"crash_heavy"
+duration = 0.5549999999999999
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_xtk2v"), SubResource("Resource_mvycq"), SubResource("Resource_0i7wv")])
+budget_tag = &"crash"
+cooldown_tag = &"crash"
+
+[sub_resource type="Resource" id="Resource_fstfq"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.1
+freq_start = 1046.5
+freq_end = 1318.5
+decay = 0.085
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_lag2p"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.09
+duration = 0.1
+freq_start = 1226.5
+freq_end = 1318.5
+decay = 0.085
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_lrcm3"]
+script = ExtResource("9_vt0fp")
+id = &"cash_small"
+duration = 0.19
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_fstfq"), SubResource("Resource_lag2p")])
+
+[sub_resource type="Resource" id="Resource_dpdyx"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.1
+freq_start = 1046.5
+freq_end = 1318.5
+decay = 0.085
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_hqsue"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.09
+duration = 0.1
+freq_start = 1226.5
+freq_end = 1318.5
+decay = 0.085
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_ormd4"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.18
+duration = 0.1
+freq_start = 1406.5
+freq_end = 1318.5
+decay = 0.085
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_2nplv"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.27
+duration = 0.1
+freq_start = 1586.5
+freq_end = 1318.5
+decay = 0.085
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_sy1sb"]
+script = ExtResource("9_vt0fp")
+id = &"cash_medium"
+duration = 0.37
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_dpdyx"), SubResource("Resource_hqsue"), SubResource("Resource_ormd4"), SubResource("Resource_2nplv")])
+
+[sub_resource type="Resource" id="Resource_012w3"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.1
+freq_start = 1046.5
+freq_end = 1318.5
+decay = 0.085
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_aphrm"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.09
+duration = 0.1
+freq_start = 1226.5
+freq_end = 1318.5
+decay = 0.085
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_ubtwv"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.18
+duration = 0.1
+freq_start = 1406.5
+freq_end = 1318.5
+decay = 0.085
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_tiwqu"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.27
+duration = 0.1
+freq_start = 1586.5
+freq_end = 1318.5
+decay = 0.085
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_yshr5"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.36
+duration = 0.1
+freq_start = 1766.5
+freq_end = 1318.5
+decay = 0.085
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_uy6js"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.44999999999999996
+duration = 0.1
+freq_start = 1946.5
+freq_end = 1318.5
+decay = 0.085
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_nhpnc"]
+script = ExtResource("9_vt0fp")
+id = &"cash_large"
+duration = 0.5499999999999999
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_012w3"), SubResource("Resource_aphrm"), SubResource("Resource_ubtwv"), SubResource("Resource_tiwqu"), SubResource("Resource_yshr5"), SubResource("Resource_uy6js")])
+
+[sub_resource type="Resource" id="Resource_feugu"]
+script = ExtResource("10_qpcyq")
+duration = 0.12
+freq_start = 523.25
+freq_end = 523.25
+decay = 0.105
+release = 0.001
+gain = 0.16
+
+[sub_resource type="Resource" id="Resource_ftkyv"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.08
+duration = 0.12
+freq_start = 659.25
+freq_end = 659.25
+decay = 0.105
+release = 0.001
+gain = 0.16
+
+[sub_resource type="Resource" id="Resource_cg2yl"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.16
+duration = 0.14
+freq_start = 783.99
+freq_end = 783.99
+decay = 0.125
+release = 0.001
+gain = 0.16
+
+[sub_resource type="Resource" id="Resource_r14mn"]
+script = ExtResource("9_vt0fp")
+id = &"pickup"
+duration = 0.30000000000000004
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_feugu"), SubResource("Resource_ftkyv"), SubResource("Resource_cg2yl")])
+
+[sub_resource type="Resource" id="Resource_lqqh1"]
+script = ExtResource("10_qpcyq")
+duration = 0.12
+freq_start = 480.0
+freq_end = 480.0
+decay = 0.105
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_gt5ew"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.05
+duration = 0.12
+freq_start = 640.0
+freq_end = 640.0
+decay = 0.105
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_ia52p"]
+script = ExtResource("9_vt0fp")
+id = &"speak"
+duration = 0.16999999999999998
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_lqqh1"), SubResource("Resource_gt5ew")])
+
+[sub_resource type="Resource" id="Resource_k1toa"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.22
+freq_start = 293.66
+freq_end = 220.0
+decay = 0.20500000000000002
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_w585f"]
+script = ExtResource("10_qpcyq")
+wave = 1
+start_offset = 0.18
+duration = 0.35
+freq_start = 220.0
+freq_end = 140.0
+decay = 0.33499999999999996
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_apekj"]
+script = ExtResource("9_vt0fp")
+id = &"fail"
+duration = 0.53
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_k1toa"), SubResource("Resource_w585f")])
+
+[sub_resource type="Resource" id="Resource_tlr8m"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.35
+attack = 0.0
+decay = 0.35
+release = 0.0
+filter = 1
+cutoff_start = 450.0
+cutoff_end = 450.0
+resonance = 1.0
+gain = 0.4
+
+[sub_resource type="Resource" id="Resource_jj76v"]
+script = ExtResource("10_qpcyq")
+duration = 0.35
+freq_start = 130.0
+freq_end = 60.0
+decay = 0.33499999999999996
+release = 0.001
+gain = 0.25
+
+[sub_resource type="Resource" id="Resource_y4sfr"]
+script = ExtResource("9_vt0fp")
+id = &"ped_hit"
+duration = 0.35
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_tlr8m"), SubResource("Resource_jj76v")])
+budget_tag = &"ped"
+cooldown_tag = &"ped_hit"
+
+[sub_resource type="Resource" id="Resource_i22i5"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.2
+attack = 0.0
+release = 0.0
+filter = 1
+cutoff_start = 300.0
+cutoff_end = 300.0
+resonance = 1.0
+gain = 0.4
+
+[sub_resource type="Resource" id="Resource_xvq8r"]
+script = ExtResource("10_qpcyq")
+duration = 0.2
+freq_start = 90.0
+freq_end = 40.0
+decay = 0.185
+release = 0.001
+gain = 0.3
+
+[sub_resource type="Resource" id="Resource_i5f5j"]
+script = ExtResource("9_vt0fp")
+id = &"thud"
+duration = 0.2
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_i22i5"), SubResource("Resource_xvq8r")])
+budget_tag = &"ped"
+cooldown_tag = &"thud"
+
+[sub_resource type="Resource" id="Resource_syd1w"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.5
+freq_start = 110.0
+freq_end = 35.0
+decay = 0.485
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_0dlse"]
+script = ExtResource("10_qpcyq")
+wave = 4
+start_offset = 0.05
+duration = 0.06
+attack = 0.0
+decay = 0.06
+release = 0.0
+filter = 1
+cutoff_start = 900.0
+cutoff_end = 900.0
+resonance = 1.0
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_7cs8y"]
+script = ExtResource("10_qpcyq")
+wave = 4
+start_offset = 0.18
+duration = 0.06
+attack = 0.0
+decay = 0.06
+release = 0.0
+filter = 1
+cutoff_start = 900.0
+cutoff_end = 900.0
+resonance = 1.0
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_kh85s"]
+script = ExtResource("10_qpcyq")
+wave = 4
+start_offset = 0.31
+duration = 0.06
+attack = 0.0
+decay = 0.06
+release = 0.0
+filter = 1
+cutoff_start = 900.0
+cutoff_end = 900.0
+resonance = 1.0
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_st7k0"]
+script = ExtResource("9_vt0fp")
+id = &"stall"
+duration = 0.5
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_syd1w"), SubResource("Resource_0dlse"), SubResource("Resource_7cs8y"), SubResource("Resource_kh85s")])
+
+[sub_resource type="Resource" id="Resource_lmc1y"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.05
+freq_start = 587.33
+freq_end = 587.33
+decay = 0.035
+release = 0.001
+gain = 0.09
+
+[sub_resource type="Resource" id="Resource_o7lhw"]
+script = ExtResource("9_vt0fp")
+id = &"click"
+bus = &"UI"
+duration = 0.05
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_lmc1y")])
+budget_tag = &"click"
+cooldown_tag = &"click"
+
+[sub_resource type="Resource" id="Resource_y27jy"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 2.6
+attack = 0.0
+decay = 2.6
+release = 0.0
+filter = 1
+cutoff_start = 300.0
+cutoff_end = 300.0
+resonance = 1.0
+gain = 0.05
+
+[sub_resource type="Resource" id="Resource_lfec3"]
+script = ExtResource("10_qpcyq")
+wave = 1
+start_offset = 2.5
+duration = 0.15
+freq_start = 261.63
+freq_end = 880.0
+decay = 0.135
+release = 0.001
+gain = 0.07
+
+[sub_resource type="Resource" id="Resource_sv86v"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 2.75
+duration = 0.05
+freq_start = 1400.0
+freq_end = 1400.0
+decay = 0.035
+release = 0.001
+gain = 0.08
+
+[sub_resource type="Resource" id="Resource_b1264"]
+script = ExtResource("9_vt0fp")
+id = &"refuel"
+duration = 2.8
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_y27jy"), SubResource("Resource_lfec3"), SubResource("Resource_sv86v")])
+
+[sub_resource type="Resource" id="Resource_bhspn"]
+script = ExtResource("10_qpcyq")
+duration = 0.08
+freq_start = 2400.0
+freq_end = 2400.0
+decay = 0.065
+release = 0.001
+gain = 0.03
+
+[sub_resource type="Resource" id="Resource_reqqm"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.09
+duration = 0.07
+freq_start = 2112.0
+freq_end = 2112.0
+decay = 0.05500000000000001
+release = 0.001
+gain = 0.025
+
+[sub_resource type="Resource" id="Resource_6olle"]
+script = ExtResource("9_vt0fp")
+id = &"bird"
+bus = &"Ambient"
+duration = 0.16
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_bhspn"), SubResource("Resource_reqqm")])
+variants = 4
+variant_pitch_spread = 8.6
+
+[sub_resource type="Resource" id="Resource_68wth"]
+script = ExtResource("10_qpcyq")
+wave = 2
+duration = 0.14
+freq_start = 523.25
+freq_end = 523.25
+decay = 0.125
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_c6n1o"]
+script = ExtResource("10_qpcyq")
+wave = 2
+start_offset = 0.18
+duration = 0.18
+freq_start = 659.25
+freq_end = 659.25
+decay = 0.16499999999999998
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_eng0c"]
+script = ExtResource("10_qpcyq")
+wave = 2
+start_offset = 0.36
+duration = 0.28
+freq_start = 783.99
+freq_end = 783.99
+decay = 0.265
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_kwggx"]
+script = ExtResource("9_vt0fp")
+id = &"race_go"
+duration = 0.64
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_68wth"), SubResource("Resource_c6n1o"), SubResource("Resource_eng0c")])
+
+[sub_resource type="Resource" id="Resource_i7ww3"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.15
+attack = 0.0
+decay = 0.15
+release = 0.0
+filter = 1
+cutoff_start = 500.0
+cutoff_end = 500.0
+resonance = 1.0
+gain = 0.25
+
+[sub_resource type="Resource" id="Resource_lxsbp"]
+script = ExtResource("10_qpcyq")
+duration = 0.15
+freq_start = 70.0
+freq_end = 70.0
+decay = 0.135
+release = 0.001
+
+[sub_resource type="Resource" id="Resource_7alhl"]
+script = ExtResource("9_vt0fp")
+id = &"edge_bump"
+duration = 0.15
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_i7ww3"), SubResource("Resource_lxsbp")])
+
+[sub_resource type="Resource" id="Resource_yxwnf"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.14
+attack = 0.0
+decay = 0.14
+release = 0.0
+filter = 1
+cutoff_start = 800.0
+cutoff_end = 800.0
+resonance = 1.0
+
+[sub_resource type="Resource" id="Resource_urynq"]
+script = ExtResource("10_qpcyq")
+duration = 0.14
+freq_start = 550.0
+freq_end = 280.0
+decay = 0.125
+release = 0.001
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_vq10o"]
+script = ExtResource("9_vt0fp")
+id = &"near_miss"
+duration = 0.14
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_yxwnf"), SubResource("Resource_urynq")])
+
+[sub_resource type="Resource" id="Resource_uuow6"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.1
+freq_start = 500.0
+freq_end = 650.0
+decay = 0.085
+release = 0.001
+gain = 0.17
+
+[sub_resource type="Resource" id="Resource_fir2y"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.06
+duration = 0.1
+freq_start = 625.0
+freq_end = 750.0
+decay = 0.085
+release = 0.001
+gain = 0.15300000000000002
+
+[sub_resource type="Resource" id="Resource_oe8mc"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.12
+duration = 0.14
+freq_start = 750.0
+freq_end = 850.0
+decay = 0.125
+release = 0.001
+gain = 0.14450000000000002
+
+[sub_resource type="Resource" id="Resource_qlavg"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.12
+attack = 0.0
+decay = 0.12
+release = 0.0
+filter = 1
+cutoff_start = 1200.0
+cutoff_end = 1200.0
+resonance = 1.0
+gain = 0.068
+
+[sub_resource type="Resource" id="Resource_820q2"]
+script = ExtResource("9_vt0fp")
+id = &"police_escape_1"
+duration = 0.26
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_uuow6"), SubResource("Resource_fir2y"), SubResource("Resource_oe8mc"), SubResource("Resource_qlavg")])
+
+[sub_resource type="Resource" id="Resource_afkb0"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.1
+freq_start = 560.0
+freq_end = 728.0
+decay = 0.085
+release = 0.001
+
+[sub_resource type="Resource" id="Resource_lmng0"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.06
+duration = 0.1
+freq_start = 700.0
+freq_end = 840.0
+decay = 0.085
+release = 0.001
+gain = 0.18000000000000002
+
+[sub_resource type="Resource" id="Resource_iir8d"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.12
+duration = 0.14
+freq_start = 840.0
+freq_end = 952.0
+decay = 0.125
+release = 0.001
+gain = 0.17
+
+[sub_resource type="Resource" id="Resource_kdh5c"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.12
+attack = 0.0
+decay = 0.12
+release = 0.0
+filter = 1
+cutoff_start = 1200.0
+cutoff_end = 1200.0
+resonance = 1.0
+gain = 0.08000000000000002
+
+[sub_resource type="Resource" id="Resource_38b82"]
+script = ExtResource("9_vt0fp")
+id = &"police_escape_2"
+duration = 0.26
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_afkb0"), SubResource("Resource_lmng0"), SubResource("Resource_iir8d"), SubResource("Resource_kdh5c")])
+
+[sub_resource type="Resource" id="Resource_ntipj"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.1
+freq_start = 620.0
+freq_end = 806.0
+decay = 0.085
+release = 0.001
+gain = 0.23
+
+[sub_resource type="Resource" id="Resource_ya1ug"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.06
+duration = 0.1
+freq_start = 775.0
+freq_end = 930.0
+decay = 0.085
+release = 0.001
+gain = 0.20700000000000002
+
+[sub_resource type="Resource" id="Resource_5aye2"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.12
+duration = 0.14
+freq_start = 930.0
+freq_end = 1054.0
+decay = 0.125
+release = 0.001
+gain = 0.1955
+
+[sub_resource type="Resource" id="Resource_bjqu1"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.12
+attack = 0.0
+decay = 0.12
+release = 0.0
+filter = 1
+cutoff_start = 1200.0
+cutoff_end = 1200.0
+resonance = 1.0
+gain = 0.09200000000000001
+
+[sub_resource type="Resource" id="Resource_6hoxj"]
+script = ExtResource("10_qpcyq")
+wave = 1
+start_offset = 0.18
+duration = 0.16
+freq_start = 1240.0
+freq_end = 1178.0
+decay = 0.14500000000000002
+release = 0.001
+gain = 0.115
+
+[sub_resource type="Resource" id="Resource_ugmsu"]
+script = ExtResource("9_vt0fp")
+id = &"police_escape_3"
+duration = 0.33999999999999997
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_ntipj"), SubResource("Resource_ya1ug"), SubResource("Resource_5aye2"), SubResource("Resource_bjqu1"), SubResource("Resource_6hoxj")])
+
+[sub_resource type="Resource" id="Resource_tvxc1"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.16
+attack = 0.0
+decay = 0.16
+release = 0.0
+filter = 1
+cutoff_start = 1150.0
+cutoff_end = 1150.0
+resonance = 1.0
+gain = 0.17
+
+[sub_resource type="Resource" id="Resource_ohsio"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.15
+freq_start = 680.0
+freq_end = 475.99999999999994
+decay = 0.135
+release = 0.001
+gain = 0.17
+
+[sub_resource type="Resource" id="Resource_grel1"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.04
+duration = 0.12
+freq_start = 1020.0
+freq_end = 748.0000000000001
+decay = 0.105
+release = 0.001
+gain = 0.14450000000000002
+
+[sub_resource type="Resource" id="Resource_cr563"]
+script = ExtResource("9_vt0fp")
+id = &"near_miss_streak_1"
+duration = 0.16
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_tvxc1"), SubResource("Resource_ohsio"), SubResource("Resource_grel1")])
+
+[sub_resource type="Resource" id="Resource_7yakw"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.16
+attack = 0.0
+decay = 0.16
+release = 0.0
+filter = 1
+cutoff_start = 1400.0
+cutoff_end = 1400.0
+resonance = 1.0
+
+[sub_resource type="Resource" id="Resource_at7ls"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.15
+freq_start = 840.0
+freq_end = 588.0
+decay = 0.135
+release = 0.001
+
+[sub_resource type="Resource" id="Resource_qifcv"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.04
+duration = 0.12
+freq_start = 1260.0
+freq_end = 924.0000000000001
+decay = 0.105
+release = 0.001
+gain = 0.17
+
+[sub_resource type="Resource" id="Resource_4ge8q"]
+script = ExtResource("9_vt0fp")
+id = &"near_miss_streak_2"
+duration = 0.16
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_7yakw"), SubResource("Resource_at7ls"), SubResource("Resource_qifcv")])
+
+[sub_resource type="Resource" id="Resource_hshlb"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.16
+attack = 0.0
+decay = 0.16
+release = 0.0
+filter = 1
+cutoff_start = 1650.0
+cutoff_end = 1650.0
+resonance = 1.0
+gain = 0.23
+
+[sub_resource type="Resource" id="Resource_d8jm0"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.15
+freq_start = 1000.0
+freq_end = 700.0
+decay = 0.135
+release = 0.001
+gain = 0.23
+
+[sub_resource type="Resource" id="Resource_4dexj"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.04
+duration = 0.12
+freq_start = 1500.0
+freq_end = 1100.0
+decay = 0.105
+release = 0.001
+gain = 0.1955
+
+[sub_resource type="Resource" id="Resource_wf7dq"]
+script = ExtResource("10_qpcyq")
+wave = 1
+start_offset = 0.08
+duration = 0.18
+freq_start = 2000.0
+freq_end = 1300.0
+decay = 0.16499999999999998
+release = 0.001
+gain = 0.138
+
+[sub_resource type="Resource" id="Resource_iaodk"]
+script = ExtResource("9_vt0fp")
+id = &"near_miss_streak_3"
+duration = 0.26
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_hshlb"), SubResource("Resource_d8jm0"), SubResource("Resource_4dexj"), SubResource("Resource_wf7dq")])
+
+[sub_resource type="Resource" id="Resource_vxryy"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.1
+freq_start = 520.0
+freq_end = 676.0
+decay = 0.085
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_eu0b8"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.06
+duration = 0.1
+freq_start = 650.0
+freq_end = 780.0
+decay = 0.085
+release = 0.001
+gain = 0.135
+
+[sub_resource type="Resource" id="Resource_eh8ef"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.12
+duration = 0.14
+freq_start = 780.0
+freq_end = 884.0
+decay = 0.125
+release = 0.001
+gain = 0.1275
+
+[sub_resource type="Resource" id="Resource_1ggm4"]
+script = ExtResource("9_vt0fp")
+id = &"combo_milestone_1"
+duration = 0.26
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_vxryy"), SubResource("Resource_eu0b8"), SubResource("Resource_eh8ef")])
+
+[sub_resource type="Resource" id="Resource_ae832"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.1
+freq_start = 600.0
+freq_end = 780.0
+decay = 0.085
+release = 0.001
+gain = 0.18
+
+[sub_resource type="Resource" id="Resource_lqjjb"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.06
+duration = 0.1
+freq_start = 750.0
+freq_end = 900.0
+decay = 0.085
+release = 0.001
+gain = 0.162
+
+[sub_resource type="Resource" id="Resource_3k7x6"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.12
+duration = 0.14
+freq_start = 900.0
+freq_end = 1020.0
+decay = 0.125
+release = 0.001
+gain = 0.153
+
+[sub_resource type="Resource" id="Resource_d66g4"]
+script = ExtResource("9_vt0fp")
+id = &"combo_milestone_2"
+duration = 0.26
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_ae832"), SubResource("Resource_lqjjb"), SubResource("Resource_3k7x6")])
+
+[sub_resource type="Resource" id="Resource_64sjc"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.1
+freq_start = 680.0
+freq_end = 884.0
+decay = 0.085
+release = 0.001
+gain = 0.21
+
+[sub_resource type="Resource" id="Resource_dhnb7"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.06
+duration = 0.1
+freq_start = 850.0
+freq_end = 1020.0
+decay = 0.085
+release = 0.001
+gain = 0.189
+
+[sub_resource type="Resource" id="Resource_tbi2r"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.12
+duration = 0.14
+freq_start = 1020.0
+freq_end = 1156.0
+decay = 0.125
+release = 0.001
+gain = 0.1785
+
+[sub_resource type="Resource" id="Resource_l47ut"]
+script = ExtResource("10_qpcyq")
+wave = 1
+start_offset = 0.18
+duration = 0.16
+freq_start = 1360.0
+freq_end = 1292.0
+decay = 0.14500000000000002
+release = 0.001
+gain = 0.105
+
+[sub_resource type="Resource" id="Resource_twfso"]
+script = ExtResource("9_vt0fp")
+id = &"combo_milestone_3"
+duration = 0.33999999999999997
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_64sjc"), SubResource("Resource_dhnb7"), SubResource("Resource_tbi2r"), SubResource("Resource_l47ut")])
+
+[sub_resource type="Resource" id="Resource_2no8d"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.02
+attack = 0.0
+decay = 0.02
+release = 0.0
+filter = 1
+cutoff_start = 3000.0
+cutoff_end = 3000.0
+resonance = 1.0
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_iubvk"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.01
+duration = 0.12
+freq_start = 130.0
+freq_end = 80.0
+decay = 0.105
+release = 0.001
+
+[sub_resource type="Resource" id="Resource_mdh3o"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.02
+duration = 0.08
+freq_start = 220.0
+freq_end = 220.0
+decay = 0.065
+release = 0.001
+gain = 0.08
+
+[sub_resource type="Resource" id="Resource_3rrea"]
+script = ExtResource("9_vt0fp")
+id = &"door_close"
+duration = 0.13
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_2no8d"), SubResource("Resource_iubvk"), SubResource("Resource_mdh3o")])
+
+[sub_resource type="Resource" id="Resource_b3b7c"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.25
+freq_start = 190.0
+freq_end = 110.0
+decay = 0.235
+release = 0.001
+gain = 0.06
+
+[sub_resource type="Resource" id="Resource_mfaeq"]
+script = ExtResource("10_qpcyq")
+wave = 4
+start_offset = 0.24
+duration = 0.03
+attack = 0.0
+decay = 0.03
+release = 0.0
+filter = 1
+cutoff_start = 2000.0
+cutoff_end = 2000.0
+resonance = 1.0
+gain = 0.08
+
+[sub_resource type="Resource" id="Resource_m37eq"]
+script = ExtResource("9_vt0fp")
+id = &"door_open"
+duration = 0.27
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_b3b7c"), SubResource("Resource_mfaeq")])
+
+[sub_resource type="Resource" id="Resource_r2sak"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.5
+attack = 0.0
+decay = 0.5
+release = 0.0
+filter = 1
+cutoff_start = 500.0
+cutoff_end = 500.0
+resonance = 1.0
+gain = 0.08
+
+[sub_resource type="Resource" id="Resource_srbjk"]
+script = ExtResource("10_qpcyq")
+wave = 2
+duration = 0.5
+freq_start = 42.0
+freq_end = 50.0
+decay = 0.485
+release = 0.001
+gain = 0.1
+
+[sub_resource type="Resource" id="Resource_of3vj"]
+script = ExtResource("10_qpcyq")
+wave = 1
+start_offset = 0.55
+duration = 0.25
+freq_start = 48.0
+freq_end = 46.0
+decay = 0.235
+release = 0.001
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_5vqx3"]
+script = ExtResource("9_vt0fp")
+id = &"engine_start"
+duration = 0.8
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_r2sak"), SubResource("Resource_srbjk"), SubResource("Resource_of3vj")])
+
+[sub_resource type="Resource" id="Resource_p6saf"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.02
+attack = 0.0
+decay = 0.02
+release = 0.0
+filter = 1
+cutoff_start = 3500.0
+cutoff_end = 3500.0
+resonance = 1.0
+gain = 0.08
+
+[sub_resource type="Resource" id="Resource_rdyu4"]
+script = ExtResource("10_qpcyq")
+wave = 4
+start_offset = 0.032
+duration = 0.02
+attack = 0.0
+decay = 0.02
+release = 0.0
+filter = 1
+cutoff_start = 3500.0
+cutoff_end = 3500.0
+resonance = 1.0
+gain = 0.08
+
+[sub_resource type="Resource" id="Resource_06dop"]
+script = ExtResource("10_qpcyq")
+wave = 4
+start_offset = 0.064
+duration = 0.02
+attack = 0.0
+decay = 0.02
+release = 0.0
+filter = 1
+cutoff_start = 3500.0
+cutoff_end = 3500.0
+resonance = 1.0
+gain = 0.08
+
+[sub_resource type="Resource" id="Resource_775d3"]
+script = ExtResource("10_qpcyq")
+wave = 4
+start_offset = 0.096
+duration = 0.02
+attack = 0.0
+decay = 0.02
+release = 0.0
+filter = 1
+cutoff_start = 3500.0
+cutoff_end = 3500.0
+resonance = 1.0
+gain = 0.08
+
+[sub_resource type="Resource" id="Resource_f1c7g"]
+script = ExtResource("9_vt0fp")
+id = &"handbrake"
+duration = 0.116
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_p6saf"), SubResource("Resource_rdyu4"), SubResource("Resource_06dop"), SubResource("Resource_775d3")])
+
+[sub_resource type="Resource" id="Resource_kvjfq"]
+script = ExtResource("10_qpcyq")
+wave = 1
+duration = 0.1
+freq_start = 110.0
+freq_end = 160.0
+freq_exponential = false
+decay = 0.085
+release = 0.001
+filter = 1
+cutoff_start = 450.0
+cutoff_end = 350.0
+gain = 0.26
+
+[sub_resource type="Resource" id="Resource_g1wxl"]
+script = ExtResource("10_qpcyq")
+wave = 1
+start_offset = 0.1
+duration = 0.18
+freq_start = 160.0
+freq_end = 95.0
+freq_exponential = false
+decay = 0.16499999999999998
+release = 0.001
+filter = 1
+cutoff_start = 450.0
+cutoff_end = 350.0
+gain = 0.26
+
+[sub_resource type="Resource" id="Resource_r055i"]
+script = ExtResource("10_qpcyq")
+wave = 2
+duration = 0.1
+freq_start = 85.0
+freq_end = 130.0
+freq_exponential = false
+decay = 0.085
+release = 0.001
+filter = 1
+cutoff_start = 450.0
+cutoff_end = 350.0
+
+[sub_resource type="Resource" id="Resource_q431n"]
+script = ExtResource("10_qpcyq")
+wave = 2
+start_offset = 0.1
+duration = 0.18
+freq_start = 130.0
+freq_end = 75.0
+freq_exponential = false
+decay = 0.16499999999999998
+release = 0.001
+filter = 1
+cutoff_start = 450.0
+cutoff_end = 350.0
+
+[sub_resource type="Resource" id="Resource_p516o"]
+script = ExtResource("9_vt0fp")
+id = &"voice_angry"
+bus = &"Voice"
+duration = 0.28
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_kvjfq"), SubResource("Resource_g1wxl"), SubResource("Resource_r055i"), SubResource("Resource_q431n")])
+budget_tag = &"voice"
+
+[sub_resource type="Resource" id="Resource_r8wlq"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.12
+freq_start = 480.0
+freq_end = 820.0
+decay = 0.105
+release = 0.001
+gain = 0.22
+
+[sub_resource type="Resource" id="Resource_vs3y1"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.12
+duration = 0.16
+freq_start = 820.0
+freq_end = 350.0
+decay = 0.14500000000000002
+release = 0.001
+gain = 0.22
+
+[sub_resource type="Resource" id="Resource_kqhdb"]
+script = ExtResource("9_vt0fp")
+id = &"voice_scream"
+bus = &"Voice"
+duration = 0.28
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_r8wlq"), SubResource("Resource_vs3y1")])
+budget_tag = &"voice"
+
+[sub_resource type="Resource" id="Resource_uvinb"]
+script = ExtResource("10_qpcyq")
+duration = 0.12
+decay = 0.105
+release = 0.001
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_m2akv"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.06
+duration = 0.12
+freq_start = 554.0
+freq_end = 554.0
+decay = 0.105
+release = 0.001
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_dng6p"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.12
+duration = 0.12
+freq_start = 659.0
+freq_end = 659.0
+decay = 0.105
+release = 0.001
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_hrk5t"]
+script = ExtResource("9_vt0fp")
+id = &"voice_greeting"
+bus = &"Voice"
+duration = 0.24
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_uvinb"), SubResource("Resource_m2akv"), SubResource("Resource_dng6p")])
+budget_tag = &"voice"
+
+[sub_resource type="Resource" id="Resource_uhy54"]
+script = ExtResource("10_qpcyq")
+duration = 0.2
+freq_start = 620.0
+freq_end = 320.0
+decay = 0.185
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_82nm7"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.2
+duration = 0.18
+freq_start = 320.0
+freq_end = 540.0
+decay = 0.16499999999999998
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_lb0qs"]
+script = ExtResource("9_vt0fp")
+id = &"voice_shock"
+bus = &"Voice"
+duration = 0.38
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_uhy54"), SubResource("Resource_82nm7")])
+budget_tag = &"voice"
+
+[sub_resource type="Resource" id="Resource_mass8"]
+script = ExtResource("10_qpcyq")
+duration = 0.09
+freq_start = 340.0
+freq_end = 540.0
+decay = 0.075
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_tsq7q"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.09
+duration = 0.09
+freq_start = 540.0
+freq_end = 420.0
+decay = 0.075
+release = 0.001
+gain = 0.14
+
+[sub_resource type="Resource" id="Resource_t0twj"]
+script = ExtResource("9_vt0fp")
+id = &"voice_default"
+bus = &"Voice"
+duration = 0.18
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_mass8"), SubResource("Resource_tsq7q")])
+budget_tag = &"voice"
+
+[sub_resource type="Resource" id="Resource_8j5mj"]
+script = ExtResource("10_qpcyq")
+duration = 0.2
+freq_start = 392.0
+freq_end = 392.0
+decay = 0.185
+release = 0.001
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_kb0j8"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.22
+duration = 0.2
+freq_start = 493.88
+freq_end = 493.88
+decay = 0.185
+release = 0.001
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_5uxsu"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.44
+duration = 0.5
+freq_start = 587.33
+freq_end = 587.33
+decay = 0.485
+release = 0.001
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_td1mw"]
+script = ExtResource("9_vt0fp")
+id = &"day_night_chime"
+bus = &"Ambient"
+duration = 0.94
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_8j5mj"), SubResource("Resource_kb0j8"), SubResource("Resource_5uxsu")])
+
+[sub_resource type="Resource" id="Resource_w512r"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.9
+attack = 0.0
+decay = 0.9
+release = 0.0
+filter = 1
+cutoff_start = 400.0
+cutoff_end = 400.0
+resonance = 1.0
+gain = 0.22
+
+[sub_resource type="Resource" id="Resource_3iwq8"]
+script = ExtResource("10_qpcyq")
+duration = 0.9
+freq_start = 38.0
+freq_end = 30.0
+decay = 0.885
+release = 0.001
+gain = 0.18
+
+[sub_resource type="Resource" id="Resource_t2fqy"]
+script = ExtResource("9_vt0fp")
+id = &"thunder"
+duration = 0.9
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_w512r"), SubResource("Resource_3iwq8")])
+budget_tag = &"crash"
+cooldown_tag = &"crash"
+
+[sub_resource type="Resource" id="Resource_hbrkr"]
+script = ExtResource("10_qpcyq")
+duration = 0.15
+freq_start = 659.25
+freq_end = 659.25
+decay = 0.135
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_8sbkh"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.15
+duration = 0.15
+freq_start = 587.33
+freq_end = 587.33
+decay = 0.135
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_34gkf"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.3
+duration = 0.15
+freq_start = 523.25
+freq_end = 523.25
+decay = 0.135
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_wdogk"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.45
+duration = 0.35
+freq_start = 392.0
+freq_end = 392.0
+decay = 0.33499999999999996
+release = 0.001
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_hwckq"]
+script = ExtResource("9_vt0fp")
+id = &"shift_end"
+bus = &"UI"
+duration = 0.8
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_hbrkr"), SubResource("Resource_8sbkh"), SubResource("Resource_34gkf"), SubResource("Resource_wdogk")])
+
+[sub_resource type="Resource" id="Resource_7tqpi"]
+script = ExtResource("10_qpcyq")
+duration = 0.1
+freq_start = 800.0
+freq_end = 800.0
+decay = 0.085
+release = 0.001
+gain = 0.07
+
+[sub_resource type="Resource" id="Resource_etqi8"]
+script = ExtResource("9_vt0fp")
+id = &"order_timer_beep"
+bus = &"UI"
+duration = 0.1
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_7tqpi")])
+
+[sub_resource type="Resource" id="Resource_x08vy"]
+script = ExtResource("10_qpcyq")
+wave = 2
+duration = 0.084
+freq_start = 960.0
+freq_end = 680.0
+freq_exponential = false
+decay = 0.069
+release = 0.001
+gain = 0.11
+
+[sub_resource type="Resource" id="Resource_e6iud"]
+script = ExtResource("10_qpcyq")
+wave = 2
+start_offset = 0.17
+duration = 0.084
+freq_start = 960.0
+freq_end = 680.0
+freq_exponential = false
+decay = 0.069
+release = 0.001
+gain = 0.11
+
+[sub_resource type="Resource" id="Resource_0vnj2"]
+script = ExtResource("10_qpcyq")
+wave = 2
+start_offset = 0.34
+duration = 0.084
+freq_start = 960.0
+freq_end = 680.0
+freq_exponential = false
+decay = 0.069
+release = 0.001
+gain = 0.11
+
+[sub_resource type="Resource" id="Resource_841jq"]
+script = ExtResource("10_qpcyq")
+wave = 2
+start_offset = 0.51
+duration = 0.084
+freq_start = 960.0
+freq_end = 680.0
+freq_exponential = false
+decay = 0.069
+release = 0.001
+gain = 0.11
+
+[sub_resource type="Resource" id="Resource_g80bv"]
+script = ExtResource("9_vt0fp")
+id = &"siren_police"
+duration = 0.594
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_x08vy"), SubResource("Resource_e6iud"), SubResource("Resource_0vnj2"), SubResource("Resource_841jq")])
+budget_tag = &"siren"
+
+[sub_resource type="Resource" id="Resource_ffcle"]
+script = ExtResource("10_qpcyq")
+duration = 1.4
+freq_start = 550.0
+freq_end = 950.0
+freq_exponential = false
+decay = 1.385
+release = 0.001
+gain = 0.09
+
+[sub_resource type="Resource" id="Resource_s8ikt"]
+script = ExtResource("9_vt0fp")
+id = &"siren_ambulance"
+duration = 1.4
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_ffcle")])
+budget_tag = &"siren"
+
+[sub_resource type="Resource" id="Resource_4p0va"]
+script = ExtResource("10_qpcyq")
+duration = 0.13
+freq_start = 261.63
+freq_end = 261.63
+decay = 0.115
+release = 0.001
+gain = 0.13
+
+[sub_resource type="Resource" id="Resource_hlefx"]
+script = ExtResource("10_qpcyq")
+wave = 3
+duration = 0.13
+freq_start = 130.815
+freq_end = 130.815
+decay = 0.115
+release = 0.001
+gain = 0.065
+
+[sub_resource type="Resource" id="Resource_ur2v6"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.12
+duration = 0.13
+freq_start = 329.63
+freq_end = 329.63
+decay = 0.115
+release = 0.001
+gain = 0.13
+
+[sub_resource type="Resource" id="Resource_xue6x"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.12
+duration = 0.13
+freq_start = 164.815
+freq_end = 164.815
+decay = 0.115
+release = 0.001
+gain = 0.065
+
+[sub_resource type="Resource" id="Resource_3kob6"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.24
+duration = 0.13
+freq_start = 392.0
+freq_end = 392.0
+decay = 0.115
+release = 0.001
+gain = 0.13
+
+[sub_resource type="Resource" id="Resource_8snrc"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.24
+duration = 0.13
+freq_start = 196.0
+freq_end = 196.0
+decay = 0.115
+release = 0.001
+gain = 0.065
+
+[sub_resource type="Resource" id="Resource_16amg"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.36
+duration = 0.13
+freq_start = 523.25
+freq_end = 523.25
+decay = 0.115
+release = 0.001
+gain = 0.13
+
+[sub_resource type="Resource" id="Resource_supv2"]
+script = ExtResource("10_qpcyq")
+wave = 3
+start_offset = 0.36
+duration = 0.13
+freq_start = 261.625
+freq_end = 261.625
+decay = 0.115
+release = 0.001
+gain = 0.065
+
+[sub_resource type="Resource" id="Resource_ghnk0"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.48
+duration = 0.4
+freq_start = 523.25
+freq_end = 523.25
+decay = 0.385
+release = 0.001
+gain = 0.1
+
+[sub_resource type="Resource" id="Resource_rteyx"]
+script = ExtResource("9_vt0fp")
+id = &"achievement_fanfare"
+bus = &"UI"
+duration = 0.88
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_4p0va"), SubResource("Resource_hlefx"), SubResource("Resource_ur2v6"), SubResource("Resource_xue6x"), SubResource("Resource_3kob6"), SubResource("Resource_8snrc"), SubResource("Resource_16amg"), SubResource("Resource_supv2"), SubResource("Resource_ghnk0")])
+
+[sub_resource type="Resource" id="Resource_ox004"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.05
+attack = 0.0
+decay = 0.05
+release = 0.0
+filter = 1
+cutoff_start = 220.0
+cutoff_end = 220.0
+resonance = 1.0
+gain = 0.05
+
+[sub_resource type="Resource" id="Resource_xcihf"]
+script = ExtResource("9_vt0fp")
+id = &"footstep"
+duration = 0.05
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_ox004")])
+budget_tag = &"voice"
+cooldown_tag = &"step"
+
+[sub_resource type="Resource" id="Resource_ejn4b"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.2
+attack = 0.0
+release = 0.0
+filter = 3
+cutoff_start = 3500.0
+cutoff_end = 3500.0
+resonance = 1.5
+
+[sub_resource type="Resource" id="Resource_0tc1d"]
+script = ExtResource("10_qpcyq")
+wave = 4
+start_offset = 0.2
+duration = 0.15
+attack = 0.0
+decay = 0.15
+release = 0.0
+filter = 3
+cutoff_start = 3750.0
+cutoff_end = 3750.0
+resonance = 1.5
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_jh47n"]
+script = ExtResource("10_qpcyq")
+duration = 0.2
+freq_start = 800.0
+freq_end = 3200.0
+decay = 0.185
+release = 0.001
+gain = 0.05
+
+[sub_resource type="Resource" id="Resource_7ifis"]
+script = ExtResource("10_qpcyq")
+start_offset = 0.2
+duration = 0.15
+freq_start = 3200.0
+freq_end = 1200.0
+decay = 0.135
+release = 0.001
+gain = 0.05
+
+[sub_resource type="Resource" id="Resource_r53yg"]
+script = ExtResource("9_vt0fp")
+id = &"radio_static"
+bus = &"Music"
+duration = 0.35
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_ejn4b"), SubResource("Resource_0tc1d"), SubResource("Resource_jh47n"), SubResource("Resource_7ifis")])
+
+[sub_resource type="Resource" id="Resource_b8w7f"]
+script = ExtResource("10_qpcyq")
+duration = 0.12
+freq_start = 880.0
+freq_end = 880.0
+decay = 0.105
+release = 0.001
+gain = 0.06
+
+[sub_resource type="Resource" id="Resource_ywmxn"]
+script = ExtResource("9_vt0fp")
+id = &"fuel_warning"
+bus = &"UI"
+duration = 0.12
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_b8w7f")])
+
+[sub_resource type="Resource" id="Resource_wwrec"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.1
+attack = 0.0
+decay = 0.1
+release = 0.0
+filter = 1
+cutoff_start = 400.0
+cutoff_end = 400.0
+resonance = 1.0
+gain = 0.15
+
+[sub_resource type="Resource" id="Resource_wmyri"]
+script = ExtResource("10_qpcyq")
+duration = 0.18
+freq_start = 95.0
+freq_end = 55.0
+decay = 0.16499999999999998
+release = 0.001
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_yux48"]
+script = ExtResource("9_vt0fp")
+id = &"suspension_bump"
+bus = &"Engine"
+duration = 0.18
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_wwrec"), SubResource("Resource_wmyri")])
+
+[sub_resource type="Resource" id="Resource_abwu5"]
+script = ExtResource("10_qpcyq")
+wave = 4
+duration = 0.08
+attack = 0.0
+decay = 0.08
+release = 0.0
+filter = 1
+cutoff_start = 1800.0
+cutoff_end = 1800.0
+resonance = 1.0
+gain = 0.12
+
+[sub_resource type="Resource" id="Resource_4v1mr"]
+script = ExtResource("9_vt0fp")
+id = &"rattle_clang"
+bus = &"Engine"
+duration = 0.08
+layers = Array[ExtResource("10_qpcyq")]([SubResource("Resource_abwu5")])
 
 [resource]
-script = ExtResource("8_eaj4l")
-items = Array[ExtResource("1_x8xet")]([ExtResource("2_mpvk1"), ExtResource("3_mxk26"), ExtResource("4_od055"), ExtResource("5_grjq1"), ExtResource("6_keeuq"), ExtResource("7_qdl15")])
+script = ExtResource("8_tfqbc")
+items = Array[ExtResource("1_mpvk1")]([ExtResource("2_mxk26"), ExtResource("3_od055"), ExtResource("4_grjq1"), ExtResource("5_keeuq"), ExtResource("6_qdl15"), ExtResource("7_eaj4l")])
+sfx = Array[ExtResource("9_vt0fp")]([SubResource("Resource_6qj5f"), SubResource("Resource_3vdp5"), SubResource("Resource_ssgkg"), SubResource("Resource_rkp7e"), SubResource("Resource_lhg33"), SubResource("Resource_lw0v0"), SubResource("Resource_b4xmi"), SubResource("Resource_0lcxn"), SubResource("Resource_lrcm3"), SubResource("Resource_sy1sb"), SubResource("Resource_nhpnc"), SubResource("Resource_r14mn"), SubResource("Resource_ia52p"), SubResource("Resource_apekj"), SubResource("Resource_y4sfr"), SubResource("Resource_i5f5j"), SubResource("Resource_st7k0"), SubResource("Resource_o7lhw"), SubResource("Resource_b1264"), SubResource("Resource_6olle"), SubResource("Resource_kwggx"), SubResource("Resource_7alhl"), SubResource("Resource_vq10o"), SubResource("Resource_820q2"), SubResource("Resource_38b82"), SubResource("Resource_ugmsu"), SubResource("Resource_cr563"), SubResource("Resource_4ge8q"), SubResource("Resource_iaodk"), SubResource("Resource_1ggm4"), SubResource("Resource_d66g4"), SubResource("Resource_twfso"), SubResource("Resource_3rrea"), SubResource("Resource_m37eq"), SubResource("Resource_5vqx3"), SubResource("Resource_f1c7g"), SubResource("Resource_p516o"), SubResource("Resource_kqhdb"), SubResource("Resource_hrk5t"), SubResource("Resource_lb0qs"), SubResource("Resource_t0twj"), SubResource("Resource_td1mw"), SubResource("Resource_t2fqy"), SubResource("Resource_hwckq"), SubResource("Resource_etqi8"), SubResource("Resource_g80bv"), SubResource("Resource_s8ikt"), SubResource("Resource_rteyx"), SubResource("Resource_xcihf"), SubResource("Resource_r53yg"), SubResource("Resource_ywmxn"), SubResource("Resource_yux48"), SubResource("Resource_4v1mr")])

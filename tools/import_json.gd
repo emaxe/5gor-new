@@ -1051,6 +1051,11 @@ func _import_audio(aud: Dictionary) -> void:
 
 	var cat := RadioCatalog.new()
 	cat.items = items
+	# Числа функций SfxLibrary.* (audiosfx.js) хранятся буквально в теле
+	# методов, а не в вынесенных top-level константах — извлечь их
+	# balanced-brace дампером (как STATIONS/AU_* выше) невозможно, поэтому
+	# они перенесены вручную в tools/sfx_recipe_data.gd по отчёту сверки.
+	cat.sfx = SfxRecipeData.build_all()
 	_save(cat, "audio/radio_catalog.tres")
 
 
