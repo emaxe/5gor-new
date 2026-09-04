@@ -18,6 +18,10 @@ func _ready() -> void:
 		_selftest()
 		return
 
+	# Мир строится один раз за запуск процесса (см. комментарий World о
+	# жизненном цикле) — сид сохранённого слота нужно применить ДО этого,
+	# иначе «Продолжить» покажет чужой (дефолтный) город.
+	SaveManager.apply_boot_seed(0)
 	await Dir.load_world(self)
 	_build_main_menu()
 	_build_shift_end()
@@ -56,6 +60,7 @@ func _build_main_menu() -> void:
 	Dir.register_screen(&"menu", _menu)
 
 	_menu.start_game_requested.connect(_on_start_game)
+	_menu.continue_requested.connect(_on_continue_game)
 	_menu.garage_requested.connect(func() -> void:
 		Dir.push(&"garage")
 	)
@@ -124,8 +129,33 @@ func _show_main_menu() -> void:
 	Dir.set_state(&"menu")
 
 
+## «Новая игра». Слот 0 уже занят? Прошлая игра перезаписывается со свежим
+## случайным сидом — а раз сид новый, мир (построенный один раз при старте
+## процесса) нужно перестроить, иначе город не будет соответствовать
+## сохранённому сиду. Слота ещё нет (самый первый запуск) — используем уже
+## построенный мир как есть, дефолтный сид совпадёт с тем, что уйдёт в сейв.
 func _on_start_game() -> void:
+	var rebuild := SaveManager.has_slot(0)
+	var world_seed: int = randi() if rebuild else Game.world_seed
+	SaveManager.new_game(0, world_seed)
+	if rebuild:
+		Dir.unload_world()
+		await Dir.load_world(self)
 	Game.start_shift(1)
+	Dir.set_state(&"driving")
+	if Dir.world != null and Dir.world.hud != null:
+		Dir.world.hud.play_shift_intro(Game.day)
+
+
+## «Продолжить». Мир уже построен с правильным сидом (SaveManager.apply_boot_seed()
+## в _ready() выше) — load_slot() восстанавливает только деньги/рейтинг/гараж/
+## lifetime-статистику. Позиция/топливо/урон/активные заказы не сохраняются
+## (как и в оригинале) — смена всегда начинается заново.
+func _on_continue_game() -> void:
+	if not SaveManager.load_slot(0):
+		await _on_start_game()
+		return
+	Game.start_shift(Game.day)
 	Dir.set_state(&"driving")
 	if Dir.world != null and Dir.world.hud != null:
 		Dir.world.hud.play_shift_intro(Game.day)

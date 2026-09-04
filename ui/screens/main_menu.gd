@@ -4,7 +4,10 @@ extends CanvasLayer
 
 const UiTheme = preload("res://ui/theme/ui_theme.gd")
 
+## Новая игра — сбрасывает прогресс (см. main.gd:_on_start_game).
 signal start_game_requested
+## Продолжить с последнего сохранённого слота (см. main.gd:_on_continue_game).
+signal continue_requested
 signal garage_requested
 signal settings_requested
 signal achievements_requested
@@ -15,6 +18,8 @@ var _rating_val: Label
 var _day_val: Label
 var _notice_lbl: Label
 var _notice_timer := 0.0
+var _btn_continue: Button
+var _btn_new_game: Button
 
 
 func _ready() -> void:
@@ -46,6 +51,7 @@ func flash_notice(text: String) -> void:
 func show_screen() -> void:
 	visible = true
 	_update_stats()
+	_refresh_continue()
 	if Dir.world != null:
 		Dir.world.camera.is_cinematic_panorama = true
 		if Dir.world.hud != null:
@@ -65,6 +71,20 @@ func _update_stats() -> void:
 	_money_val.text = "💵 %d ₽" % Game.money
 	_rating_val.text = "⭐ %.1f" % Game.rating
 	_day_val.text = "🗓️ День %d" % Game.day
+
+
+## «Продолжить» показывается, только когда есть сохранённый слот — иначе это
+## кнопка в никуда. «Новая игра» перепрятывается под неё: слот уже есть,
+## явно спрашивать не будем (единственный слот в UI — см. решение об MVP
+## в отчёте по этапу 19), но кнопка есть и подписана как перезапись.
+func _refresh_continue() -> void:
+	var summary := SaveManager.slot_summary(0)
+	var has_save := not summary.is_empty()
+	_btn_continue.visible = has_save
+	if has_save:
+		_btn_continue.text = "▶️  ПРОДОЛЖИТЬ (День %d, %d ₽)" % [summary["day"], summary["money"]]
+	_btn_new_game.text = "🆕  Новая игра" if has_save else "🚕  НАЧАТЬ СМЕНУ"
+	_apply_button_style(_btn_new_game, not has_save)
 
 
 func _build_ui() -> void:
@@ -116,11 +136,18 @@ func _build_ui() -> void:
 	btn_vbox.add_theme_constant_override("separation", 10)
 	main_vbox.add_child(btn_vbox)
 
-	var btn_play := _create_menu_button("🚕  НАЧАТЬ СМЕНУ", true)
-	btn_play.pressed.connect(func() -> void:
+	_btn_continue = _create_menu_button("▶️  ПРОДОЛЖИТЬ", true)
+	_btn_continue.pressed.connect(func() -> void:
+		continue_requested.emit()
+	)
+	_btn_continue.visible = false
+	btn_vbox.add_child(_btn_continue)
+
+	_btn_new_game = _create_menu_button("🚕  НАЧАТЬ СМЕНУ", true)
+	_btn_new_game.pressed.connect(func() -> void:
 		start_game_requested.emit()
 	)
-	btn_vbox.add_child(btn_play)
+	btn_vbox.add_child(_btn_new_game)
 
 	var btn_garage := _create_menu_button("🔧  Гараж и автопарк", false)
 	btn_garage.pressed.connect(func() -> void:
@@ -198,6 +225,16 @@ func _build_ui() -> void:
 func _create_menu_button(text: String, is_primary: bool) -> Button:
 	var b := Button.new()
 	b.text = text
+	b.add_theme_font_size_override("font_size", 16)
+	b.custom_minimum_size = Vector2(0, 48)
+	_apply_button_style(b, is_primary)
+	return b
+
+
+## «Новая игра» — обычно вторичная (акцент на «Продолжить»), но становится
+## первичной, когда слота ещё нет и это единственная кнопка запуска —
+## _refresh_continue() переключает стиль в рантайме.
+func _apply_button_style(b: Button, is_primary: bool) -> void:
 	var style := UiTheme.button_primary_style(&"normal") if is_primary else UiTheme.button_secondary_style(&"normal")
 	var hover := UiTheme.button_primary_style(&"hover") if is_primary else UiTheme.button_secondary_style(&"hover")
 	var pressed := UiTheme.button_primary_style(&"pressed") if is_primary else UiTheme.button_secondary_style(&"pressed")
@@ -207,6 +244,3 @@ func _create_menu_button(text: String, is_primary: bool) -> Button:
 	b.add_theme_stylebox_override("hover", hover)
 	b.add_theme_stylebox_override("pressed", pressed)
 	b.add_theme_color_override("font_color", col)
-	b.add_theme_font_size_override("font_size", 16)
-	b.custom_minimum_size = Vector2(0, 48)
-	return b
