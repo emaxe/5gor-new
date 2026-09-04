@@ -354,8 +354,13 @@ func complete(player_car: PlayerCar, _hour: float, rating: float) -> Dictionary:
 		rew_rating = tdata.rating_reward
 	Game.add_rating(float(rew_rating))
 
+	Game.bump("orders", "total_orders", 1.0)
+	Game.bump("tips", "total_tips", float(tips))
+	if is_night:
+		Game.bump("", "night_orders", 1.0)
 	if o.mission_id != &"":
 		completed_missions.append(o.mission_id)
+		Game.bump("missions", "total_missions", 1.0)
 
 	# Спавним пешехода, уходящего по тротуару
 	_spawn_walker(target_pos, o)

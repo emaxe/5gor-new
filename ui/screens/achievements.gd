@@ -1,8 +1,11 @@
 class_name AchievementsScreen
 extends CanvasLayer
-## Список достижений — статус и прогресс берутся из Game.all_stats() и уже
-## протестированных AchievementData.is_met()/progress() (schema/achievement_
-## data.gd), без отдельной системы разблокировки (та приходит на этапе 16).
+## Список достижений — прогресс берётся из Game.all_stats() и уже
+## протестированных AchievementData.progress() (schema/achievement_data.gd).
+## Статус «выполнено» — Game.achievements.is_unlocked() ИЛИ live is_met():
+## для ачивок со сменными статами (hot_head/clean_shift — shift_*, обнуляются
+## reset_shift()) is_met() иначе гас бы каждую новую смену, а разблокировка
+## (gameplay/achievements/achievement_tracker.gd) уже произошла и не отменяется.
 
 const UiTheme = preload("res://ui/theme/ui_theme.gd")
 
@@ -38,7 +41,7 @@ func _refresh_list() -> void:
 
 
 func _build_row(a: AchievementData, stats: Dictionary) -> PanelContainer:
-	var met := a.is_met(stats)
+	var met := Game.achievements.is_unlocked(a.id) or a.is_met(stats)
 	var row := PanelContainer.new()
 	var border := UiTheme.COLOR_MONEY_GREEN if met else UiTheme.COLOR_BORDER
 	row.add_theme_stylebox_override("panel", UiTheme.panel_style(8, border, UiTheme.COLOR_BG_PANEL))

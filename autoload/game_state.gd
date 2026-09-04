@@ -7,12 +7,16 @@ extends Node
 ## сеттера, из-за чего не эмитился money:changed и не показывался cash-pop.
 
 const GarageScript = preload("res://gameplay/economy/garage.gd")
+const AchievementTrackerScript = preload("res://gameplay/achievements/achievement_tracker.gd")
 
 const RATING_MAX := 100.0
 
 ## Владение машинами и апгрейды — не сбрасывается start_shift(), гараж не
 ## привязан к смене (см. gameplay/economy/garage.gd).
 var garage := GarageScript.new()
+## Разблокированные достижения — мета-прогрессия, как и garage: не
+## сбрасывается start_shift() (см. gameplay/achievements/achievement_tracker.gd).
+var achievements := AchievementTrackerScript.new()
 
 var money: int = 0
 var rating: float = 0.0
@@ -63,6 +67,7 @@ func add_money(delta: int) -> void:
 		shift_stats["earned"] = shift_stats.get("earned", 0) + delta
 		lifetime_stats["total_earned"] = lifetime_stats.get("total_earned", 0) + delta
 	Bus.money_changed.emit(money, delta)
+	achievements.check_unlocks()
 
 
 func set_money(value: int) -> void:
@@ -87,6 +92,7 @@ func add_rating(delta: float) -> void:
 	rating = clampf(rating + delta, 0.0, RATING_MAX)
 	lifetime_stats["max_rating"] = maxf(lifetime_stats.get("max_rating", 0.0), rating)
 	Bus.rating_changed.emit(rating)
+	achievements.check_unlocks()
 
 
 func set_rating(value: float) -> void:
@@ -176,16 +182,19 @@ func bump(shift_key: String, lifetime_key: String, amount: float = 1.0) -> void:
 		shift_stats[shift_key] = shift_stats.get(shift_key, 0) + amount
 	if not lifetime_key.is_empty():
 		lifetime_stats[lifetime_key] = lifetime_stats.get(lifetime_key, 0) + amount
+	achievements.check_unlocks()
 
 
 func track_max(key: String, value: float) -> void:
 	lifetime_stats[key] = maxf(lifetime_stats.get(key, 0.0), value)
+	achievements.check_unlocks()
 
 
 ## Максимум за смену (best_combo, max_near_miss_streak) — симметрично track_max,
 ## но пишет в shift_stats, который каждую смену обнуляется reset_shift().
 func track_shift_max(key: String, value: float) -> void:
 	shift_stats[key] = maxi(shift_stats.get(key, 0), roundi(value))
+	achievements.check_unlocks()
 
 
 ## Слитая статистика для проверки условий достижений.

@@ -171,6 +171,7 @@ func _spawn_police() -> void:
 ## розыск/штраф, если рядом патруль с прямой видимостью (порт game.js ped:hit).
 func _on_player_hit_ped() -> void:
 	var b := Db.balance
+	Game.bump("peds", "total_peds", 1.0)
 	Game.spend(b.hit_ped_fine)
 	Game.add_rating(-float(b.rating_loss_hit_ped))
 	Bus.notify.emit(&"toast",
@@ -281,6 +282,7 @@ func _on_pause_end_shift() -> void:
 
 
 func _on_player_crashed(impact: float, victim: StringName) -> void:
+	Game.bump("crashes", "total_crashes", 1.0)
 	# Тряска пропорциональна удару, но с потолком (game.js:390).
 	camera.shake(0.45, minf(0.6, impact / 40.0))
 	if style != null:
@@ -308,6 +310,7 @@ func _process(delta: float) -> void:
 		var tf := player.get_global_transform_interpolated() if player.is_inside_tree() else player.global_transform
 		camera.target_heading = Heading.from_vector(tf.basis.z)
 		camera.target_ground = tf.origin.y
+		Game.track_max("max_speed_kmh", player.speed_kmh())
 	elif not in_car and player_ped != null:
 		var tf := player_ped.get_global_transform_interpolated() if player_ped.is_inside_tree() else player_ped.global_transform
 		camera.target_heading = Heading.from_vector(-tf.basis.z)
