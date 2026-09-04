@@ -55,7 +55,7 @@ func _ready() -> void:
 	city = CityBuilder.new()
 	city.name = "City"
 	add_child(city)
-	city.build(Db.balance, Db.districts)
+	city.build(Db.balance, Db.districts, Db.balance.world_seed)
 	city.refresh_signal_lenses()
 	collision.build(get_world_3d().space, city.plan, city.field)
 

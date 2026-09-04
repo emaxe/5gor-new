@@ -20,7 +20,7 @@ func _ready() -> void:
 	builder = CityBuilder.new()
 	builder.name = "City"
 	add_child(builder)
-	var stats := builder.build(Db.balance, Db.districts)
+	var stats := builder.build(Db.balance, Db.districts, Db.balance.world_seed)
 	builder.refresh_signal_lenses()
 	_place_camera()
 	_report(stats)

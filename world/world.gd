@@ -53,7 +53,7 @@ func build() -> void:
 	city = CityBuilder.new()
 	city.name = "City"
 	add_child(city)
-	var stats := city.build(Db.balance, Db.districts)
+	var stats := city.build(Db.balance, Db.districts, Game.world_seed)
 	city.refresh_signal_lenses()
 	collision.build(get_world_3d().space, city.plan, city.field)
 	stats["collision_shapes"] = collision.shape_count()
@@ -71,7 +71,7 @@ func build() -> void:
 	pedestrians.manager.traffic = traffic.manager
 	sky.set_time_of_day(Game.hour, Game.night_factor(),
 		Db.weather.get_weather(Game.weather_id))
-	Bus.world_ready.emit(Db.balance.world_seed)
+	Bus.world_ready.emit(Game.world_seed)
 	build_finished.emit(stats)
 
 
@@ -100,7 +100,7 @@ func _spawn_traffic() -> void:
 	traffic = TrafficLayer.new()
 	traffic.name = "Traffic"
 	add_child(traffic)
-	var rng := SeededRng.new(Db.balance.world_seed).fork(TRAFFIC_SEED_SALT)
+	var rng := SeededRng.new(Game.world_seed).fork(TRAFFIC_SEED_SALT)
 	traffic.setup(Db.traffic, city.field, city.lights, rng, Db.balance.traffic_count,
 		get_world_3d().space, player.global_position.x, player.global_position.z)
 	_apply_gfx_traffic_density()
@@ -138,7 +138,7 @@ func _spawn_pedestrians() -> void:
 	pedestrians = PedLayer.new()
 	pedestrians.name = "Pedestrians"
 	add_child(pedestrians)
-	var rng := SeededRng.new(Db.balance.world_seed).fork(PED_SEED_SALT)
+	var rng := SeededRng.new(Game.world_seed).fork(PED_SEED_SALT)
 	pedestrians.setup(Db.peds, city.field, city.graph, city.lights, Db.balance.ped, rng,
 		get_world_3d().space, Db.balance.ped_count,
 		player.global_position.x, player.global_position.z)

@@ -15,7 +15,7 @@ func _ready() -> void:
 	_city = CityBuilder.new()
 	_city.name = "City"
 	add_child(_city)
-	_city.build(Db.balance, Db.districts)
+	_city.build(Db.balance, Db.districts, Db.balance.world_seed)
 	_city.refresh_signal_lenses()
 	_field = _city.field
 	_lights = _city.lights

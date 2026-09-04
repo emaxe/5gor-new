@@ -24,13 +24,16 @@ var _lens_mm: MultiMesh
 var _lens_index: Dictionary[int, int] = {}
 
 
-## Полная сборка города. Возвращает сводку для лога и тестов.
-func build(balance: BalanceData, districts: DistrictCatalog) -> Dictionary:
+## Полная сборка города. world_seed — живой Game.world_seed (сейв/новая игра),
+## а не balance.world_seed напрямую: BalanceData read-only, а сид должен
+## меняться между слотами (см. Game.world_seed). Возвращает сводку для лога
+## и тестов.
+func build(balance: BalanceData, districts: DistrictCatalog, world_seed: int) -> Dictionary:
 	var t_plan := Time.get_ticks_usec()
 	field = CityField.new(balance)
 	graph = PedGraph.new(field)
 	lights = TrafficLightController.new(field)
-	plan = CityPlanner.new(field, graph, districts).plan(balance.world_seed)
+	plan = CityPlanner.new(field, graph, districts).plan(world_seed)
 	var t_mesh := Time.get_ticks_usec()
 
 	var mesher := CityMesher.new(field, plan)
