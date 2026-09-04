@@ -154,6 +154,7 @@ func _process(delta: float) -> void:
 		p + Vector3(0.0, _focus_height, 0.0), LOOK_DAMP, delta)
 	look_at(_look_point, Vector3.UP)
 	_apply_shake(delta)
+	Audio.set_camera_state(distance, mode == Mode.PED)
 
 
 func _desired_position(p: Vector3) -> Vector3:

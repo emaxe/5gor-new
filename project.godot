@@ -21,9 +21,9 @@ config/icon="res://assets/textures/icon.svg"
 
 Bus="*res://autoload/bus.gd"
 Db="*res://autoload/db.gd"
+Audio="*res://autoload/audio_director.gd"
 Prefs="*res://autoload/prefs.gd"
 Game="*res://autoload/game_state.gd"
-Audio="*res://autoload/audio_director.gd"
 Inp="*res://autoload/inp.gd"
 Dir="*res://autoload/scene_director.gd"
 

@@ -198,6 +198,9 @@ func _physics_process(delta: float) -> void:
 
 	runtime.tick(motion, _surface.on_road, delta)
 	_update_visuals(axes, delta)
+	Audio.update_vehicle(motion.forward_speed, axes.throttle, axes.brake, motion.slip,
+		_surface.on_road, runtime.stats.max_speed, runtime.car_id, not runtime.engine_dead(),
+		runtime.fuel_ratio(), runtime.damage, _surface.ground_height)
 
 
 func _sample_surface() -> void:
