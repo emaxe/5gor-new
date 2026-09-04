@@ -355,6 +355,10 @@ static func build_dog(coat_color: Color, collar_color: Color) -> AnimalRig:
 	head.tapered_box(Vector3(0.0, 0.06, 0.26), Vector3(0.15, 0.13, 0.18),
 		coat_color, Vector2(0.85, 0.9))
 	head.box(Vector3(0.0, 0.10, 0.35), Vector3(0.06, 0.06, 0.05), _NOSE)
+	# Глаза (в оригинале у собаки отсутствовали, добавлены для реализма —
+	# у кошки уже были, см. build_cat ниже).
+	for sx: float in [-1.0, 1.0]:
+		head.box(Vector3(sx * 0.10, 0.13, 0.213), Vector3(0.035, 0.035, 0.025), _NOSE)
 	# Висячие уши
 	for sx: float in [-1.0, 1.0]:
 		head.box(Vector3(sx * 0.15, 0.08, 0.04), Vector3(0.06, 0.18, 0.12), coat_color,

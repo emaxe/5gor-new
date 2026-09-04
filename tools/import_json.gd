@@ -883,10 +883,17 @@ func _import_peds(pds: Dictionary, banks: Dictionary) -> void:
 			"cloth": [], "pants": [], "acc": ["beret", "instrument"]},
 		{"id": "nurse", "w": 1.0, "spd": [2.0, 2.6], "sy": [0.92, 1.08], "sxz": [0.92, 1.08],
 			"cloth": [], "pants": [], "acc": ["nurse_cap", "stethoscope"]},
+		# cloth здесь — окрас шерсти (PedLayer._build_animal берёт его как coat
+		# для build_dog/build_cat), не одежда. Раньше был пуст, поэтому
+		# _pick_color откатывалась на человеческую палитру одежды — в городе
+		# бегали синие и розовые собаки. Палитра — buildDogMesh/buildCatMesh
+		# (utils.js:363, 446).
 		{"id": "dog", "w": 2.0, "spd": [3.0, 4.2], "sy": [1.0, 1.0], "sxz": [1.0, 1.0],
-			"cloth": [], "pants": [], "acc": [], "animal": true},
+			"cloth": [0xc89040, 0x3a2e2b, 0x8a5a2a, 0xe0d0b0, 0x222222, 0x908070],
+			"pants": [], "acc": [], "animal": true},
 		{"id": "cat", "w": 2.0, "spd": [2.2, 3.5], "sy": [1.0, 1.0], "sxz": [1.0, 1.0],
-			"cloth": [], "pants": [], "acc": [], "animal": true},
+			"cloth": [0x222222, 0xe8e8e8, 0xee8822, 0x888888, 0x554433, 0xd4a359],
+			"pants": [], "acc": [], "animal": true},
 	]
 	# Шанс ответить ударом вместо бегства — по темпераменту архетипа.
 	var retaliate := {

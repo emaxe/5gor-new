@@ -270,10 +270,24 @@ func place_near(i: int, player_x: float, player_z: float) -> void:
 
 	_reset_runtime(i)
 
+	# Сразу активируем пешехода, чтобы игрок никогда не видел режима ожидания при спавне.
+	# Продвигаем его немного вдоль первого участка маршрута, создавая ощущение уже идущего города.
+	if _try_activate(i, player_x, player_z):
+		if route_points[i].size() >= 2 and mode[i] == Mode.WALK:
+			var target_p := route_points[i][route_idx[i]]
+			var dir_v := Vector2(target_p.x - x[i], target_p.z - z[i])
+			var len_v := dir_v.length()
+			if len_v > 0.5:
+				var advance := rng.randf_range(0.5, minf(len_v - 0.2, 8.0))
+				x[i] += (dir_v.x / len_v) * advance
+				z[i] += (dir_v.y / len_v) * advance
+
 
 func _reset_runtime(i: int) -> void:
 	var a := archetype_ref[i]
-	base_speed[i] = rng.randf_range(a.speed_min, a.speed_max)
+	var min_sp := maxf(1.65, a.speed_min)
+	var max_sp := maxf(min_sp + 0.35, a.speed_max)
+	base_speed[i] = rng.randf_range(min_sp, max_sp)
 	speed[i] = base_speed[i]
 	mode[i] = Mode.IDLE
 	idle_t[i] = 0.0
@@ -294,7 +308,7 @@ func _reset_runtime(i: int) -> void:
 	flee_t[i] = 0.0
 	knock_t[i] = 0.0
 	heading[i] = 0.0
-	walk_phase[i] = 0.0
+	walk_phase[i] = rng.randf_range(0.0, TAU)
 	nm_passed[i] = 0
 	nm_hit[i] = 0
 
@@ -342,7 +356,10 @@ func update(delta: float, player_x: float, player_z: float, player_heading: floa
 				idle_t[i] = 0.0
 				_deactivate(i)
 
-		walk_phase[i] += delta * speed[i] * (6.0 if _is_fast(i) else 4.0)
+		if mode[i] == Mode.WALK or mode[i] == Mode.FLEE:
+			if speed[i] > 0.05:
+				var cadence := (5.0 + speed[i] * 2.2) if not _is_fast(i) else (7.5 + speed[i] * 2.2)
+				walk_phase[i] += delta * cadence
 
 		_check_player_reaction(i, player_x, player_z, player_speed)
 		_check_player_collision(i, player_x, player_z, player_vx, player_vz, player_speed)
@@ -407,12 +424,25 @@ func _update_idle(i: int, delta: float, player_x: float, player_z: float) -> voi
 	if idle_t[i] > 0.0:
 		return
 	if _route_budget <= 0:
-		idle_t[i] = 0.3
+		idle_t[i] = 0.2
 		return
 	if _try_activate(i, player_x, player_z):
 		return
-	# Не нашли цель/путь — короткая пауза и повтор, не сжигаем бюджет впустую.
-	idle_t[i] = 1.0
+	var from_id := graph.nearest_node(x[i], z[i])
+	if from_id >= 0:
+		var fallback_node := _pick_random_node(from_id)
+		if fallback_node >= 0:
+			var allow_jwalk := violator[i] == 1
+			var route: Dictionary = graph.build_route(Vector3(x[i], 0.0, z[i]), fallback_node, allow_jwalk)
+			var points: PackedVector3Array = route["points"]
+			if points.size() >= 2:
+				route_points[i] = points
+				route_gates[i] = route["gates"]
+				route_nodes[i] = route["node_ids"]
+				speed[i] = base_speed[i]
+				_begin_hop(i, 1)
+				return
+	idle_t[i] = 0.5
 
 
 ## Строит маршрут до случайной/POI-цели. Возвращает false, если цель или
@@ -539,8 +569,13 @@ func _pick_random_node(from_id: int) -> int:
 func _update_walk(i: int, delta: float, bucket: Dictionary[int, PackedInt32Array]) -> void:
 	if route_idx[i] >= route_points[i].size():
 		mode[i] = Mode.IDLE
-		idle_t[i] = rng.randf_range(config.idle_time_min, config.idle_time_max)
+		idle_t[i] = 0.2
 		return
+
+	# Восстанавливаем номинальную скорость в начале кадра (порт peds.js:1728).
+	# Без этого любое временное замедление при разъезде или препятствии навсегда
+	# оставляло пешехода со сниженной скоростью.
+	speed[i] = base_speed[i]
 
 	# _avoid_static() может отменить маршрут изнутри (застрял дольше
 	# STUCK_CANCEL_TIME -> _cancel_route() -> mode=IDLE, route_points пуст).
@@ -736,7 +771,7 @@ func _avoid_static(i: int, delta: float) -> void:
 
 	speed[i] = 0.0
 	stuck_t[i] += delta
-	if stuck_t[i] > STUCK_CANCEL_TIME:
+	if stuck_t[i] > 0.6:
 		stuck_t[i] = 0.0
 		_cancel_route(i)
 
@@ -765,16 +800,16 @@ func _avoid_peds(i: int, delta: float, bucket: Dictionary[int, PackedInt32Array]
 			continue
 		var leader_speed: float = 0.0 if mode[o] == Mode.IDLE or mode[o] == Mode.WAIT else speed[o]
 		if speed[i] > leader_speed:
-			speed[i] = maxf(0.3, leader_speed)
-		if leader_speed < base_speed[i] * 0.6:
+			speed[i] = maxf(1.1, leader_speed)
+		if leader_speed < base_speed[i] * 0.8:
 			blocked_t[i] += delta
-			if blocked_t[i] > 1.0 and is_zero_approx(lane_off[i]):
-				var cand: float = 1.2 if signf(lateral) >= 0.0 else -1.2
+			if (blocked_t[i] > 0.25 or leader_speed <= 0.2) and is_zero_approx(lane_off[i]):
+				var cand: float = 1.1 if (i % 2 == 0) else -1.1
 				avoid_target[i] = cand
-				speed[i] = minf(base_speed[i] * 1.25, speed[i] + 0.5)
+				speed[i] = maxf(1.3, minf(base_speed[i] * 1.1, speed[i] + 0.4))
 		else:
 			blocked_t[i] = 0.0
-	if blocked_t[i] > 2.0:
+	if blocked_t[i] > 1.5:
 		blocked_t[i] = 0.0
 
 
@@ -879,6 +914,13 @@ func _start_flee(i: int, dx: float, dz: float, speed_val: float) -> void:
 		len = 1.0
 	flee_vx[i] = (dx / len) * speed_val
 	flee_vz[i] = (dz / len) * speed_val
+	# Регрессия: без этого пешеход, застрявший в обходе (_avoid_static
+	# зануляет speed при stuck_t > STUCK_CANCEL_TIME) или только что
+	# отпустивший драку (react_to_punch зануляет speed на KICK-ветке),
+	# убегал с замороженной фазой шага — walk_phase растёт только при
+	# speed[i] > 0.05 (см. update()), а движение при FLEE идёт через
+	# flee_vx/flee_vz и от speed[i] не зависит вовсе.
+	speed[i] = speed_val
 	_deactivate(i)
 
 
@@ -1035,6 +1077,13 @@ func speed_of(i: int) -> float:
 
 func walk_phase_of(i: int) -> float:
 	return walk_phase[i]
+
+
+## Оставшееся время в Mode.KNOCKED, секунды (2.0 сразу после наезда → 0
+## перед переходом в FLEE). Нужен PedLayer, чтобы поднять лежащего с земли
+## в последний момент, а не телепортировать его обратно на ноги.
+func knock_t_of(i: int) -> float:
+	return knock_t[i]
 
 
 func archetype_of(i: int) -> PedArchetypeData:

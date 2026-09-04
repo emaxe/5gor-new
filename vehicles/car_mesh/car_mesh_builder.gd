@@ -7,13 +7,35 @@ extends RefCounted
 ## low-poly силуэт без единой текстуры.
 ##
 ## Для трафика возвращается ОДИН меш с вершинными цветами — одна машина,
-## один draw call. Для игрока свет и стёкла выделены в отдельные меши:
-## фары и стопы должны зажигаться сменой эмиссии, а не пересборкой геометрии.
+## один draw call. Фары/стопы/поворотники зажигаются сменой ЭМИССИИ, а не
+## пересборкой геометрии: тип поверхности закодирован в альфе вершинного
+## цвета (см. ALPHA_* ниже и fx/shaders/palette_toon.gdshader) и читается
+## общим для всех машин материалом из core/car_lamp_materials.gd — поэтому
+## лампы теперь есть и у build_body() (игрок), не только у build_merged()
+## (трафик).
+
+## Альфа вершинного цвета кодирует тип поверхности для palette_toon.gdshader.
+## Нейтраль — 1.0 (обычная, непомеченная геометрия), поэтому у веток ниже
+## всегда < 1.0. Сравнение в шейдере — с допуском (RGBA8-квантование), не ==.
+const ALPHA_NORMAL := 1.0
+const ALPHA_HEADLIGHT := 0.9
+const ALPHA_BRAKE := 0.8
+## Поворотник борта -X («сторона A» в терминологии оригинала, player.js).
+const ALPHA_TURN_A := 0.7
+## Поворотник борта +X («сторона B»).
+const ALPHA_TURN_B := 0.6
+const ALPHA_REVERSE := 0.4
+## Стекло — не отдельный (прозрачный) материал, а ещё один v_kind: шейдер
+## поднимает ROUGHNESS и добавляет псевдоотражение неба по фронту, не трогая
+## ALPHA (см. .agents/rules/rendering.md).
+const ALPHA_GLASS := 0.5
 
 const DARK := Color("#2a2a2a")
 const CHROME := Color("#c8c8c8")
-const GLASS := Color("#9fd8e8")
-const GLASS_TINT := Color("#1c2836")
+## Тёмный, не светло-голубой: в low-poly без прозрачности стекло читается
+## контрастом с кузовом, а не собственным цветом — светлый оттенок выглядел
+## как непрозрачный пластик, а не остекление.
+const GLASS := Color(Color("#1c2836"), ALPHA_GLASS)
 const TYRE := Color("#1a1a1c")
 const PLATE := Color("#f4f4f4")
 const LAMP_FRONT := Color("#fff8e0")
@@ -134,11 +156,15 @@ static func build_merged(spec: Spec, include_beacon: bool = true) -> ArrayMesh:
 	return b.commit()
 
 
-## Кузов без света и колёс — вариант для машины игрока.
+## Кузов без колёс — вариант для машины игрока. Свет ЕСТЬ (иначе игрок не
+## увидит собственных стопов/поворотников/заднего хода — салона не видно
+## сзади), просто выключен по умолчанию: emission поднимается сменой
+## материала в player_car.gd, не пересборкой этого меша.
 static func build_body(spec: Spec) -> ArrayMesh:
 	var b := MeshBuilder.new()
 	_add_body(b, spec)
 	_add_details(b, spec, true)
+	_add_lights(b, spec, true)
 	return b.commit()
 
 
@@ -189,33 +215,6 @@ static func build_wheel(spec: Spec) -> ArrayMesh:
 					b.box(spoke_center, Vector3(0.02, r * 0.36, r * 0.06), spec.rim_color, rot)
 				b.cylinder(Vector3(side_x * 0.095, 0.0, 0.0), r * 0.22, r * 0.22, 0.02,
 					CHROME, 8, across)
-
-	return b.commit()
-
-
-## Фары, стопы и поворотники — отдельными мешами для машины игрока.
-static func build_lamps(spec: Spec, rear: bool) -> ArrayMesh:
-	var b := MeshBuilder.new()
-	var hw := spec.width * 0.5
-	var hl := spec.length * 0.5
-	var s := shape_of(spec.silhouette)
-	var y: float = s["deck_y"] + s["deck_h"] * 0.12
-
-	if rear:
-		var z := -hl - 0.012
-		for sx: float in [-1.0, 1.0]:
-			b.box(Vector3(sx * hw * 0.68, y, z), Vector3(0.36, 0.16, 0.025), DARK)
-			b.box(Vector3(sx * hw * 0.66, y, z - 0.012), Vector3(0.20, 0.13, 0.025), LAMP_REAR)
-			b.box(Vector3(sx * hw * 0.52, y, z - 0.012), Vector3(0.08, 0.11, 0.025), Color("#f4f4f8"))
-			b.box(Vector3(sx * hw * 0.82, y, z - 0.012), Vector3(0.08, 0.13, 0.025), LAMP_TURN)
-	else:
-		var z := hl + 0.012
-		for sx: float in [-1.0, 1.0]:
-			b.box(Vector3(sx * hw * 0.68, y, z), Vector3(0.36, 0.16, 0.025), DARK)
-			b.box(Vector3(sx * hw * 0.64, y, z + 0.012), Vector3(0.22, 0.13, 0.025), LAMP_FRONT)
-			b.cylinder(Vector3(sx * hw * 0.64, y, z + 0.025), 0.045, 0.045, 0.015, Color.WHITE, 8,
-				Basis(Vector3.RIGHT, PI * 0.5))
-			b.box(Vector3(sx * hw * 0.82, y, z + 0.012), Vector3(0.08, 0.13, 0.025), LAMP_TURN)
 
 	return b.commit()
 
@@ -777,6 +776,9 @@ static func _add_wheels(b: MeshBuilder, spec: Spec) -> void:
 				CHROME, 8, across)
 
 
+## Строит геометрию фонарей с типом поверхности в альфе вершинного цвета
+## (см. ALPHA_* выше) — свет включается сменой материала
+## (core/car_lamp_materials.gd), геометрия не пересобирается.
 static func _add_lights(b: MeshBuilder, spec: Spec, _unlit: bool) -> void:
 	var s := shape_of(spec.silhouette)
 	var hw := spec.width * 0.5
@@ -786,16 +788,23 @@ static func _add_lights(b: MeshBuilder, spec: Spec, _unlit: bool) -> void:
 	# Передние фары
 	var z_f := hl + 0.012
 	for sx: float in [-1.0, 1.0]:
+		var turn_alpha := ALPHA_TURN_A if sx < 0.0 else ALPHA_TURN_B
 		b.box(Vector3(sx * hw * 0.68, y, z_f), Vector3(0.36, 0.16, 0.025), DARK)
-		b.box(Vector3(sx * hw * 0.64, y, z_f + 0.012), Vector3(0.22, 0.13, 0.025), LAMP_FRONT)
-		b.cylinder(Vector3(sx * hw * 0.64, y, z_f + 0.025), 0.045, 0.045, 0.015, Color.WHITE, 8,
-			Basis(Vector3.RIGHT, PI * 0.5))
-		b.box(Vector3(sx * hw * 0.82, y, z_f + 0.012), Vector3(0.08, 0.13, 0.025), LAMP_TURN)
+		b.box(Vector3(sx * hw * 0.64, y, z_f + 0.012), Vector3(0.22, 0.13, 0.025),
+			Color(LAMP_FRONT, ALPHA_HEADLIGHT))
+		b.cylinder(Vector3(sx * hw * 0.64, y, z_f + 0.025), 0.045, 0.045, 0.015,
+			Color(Color.WHITE, ALPHA_HEADLIGHT), 8, Basis(Vector3.RIGHT, PI * 0.5))
+		b.box(Vector3(sx * hw * 0.82, y, z_f + 0.012), Vector3(0.08, 0.13, 0.025),
+			Color(LAMP_TURN, turn_alpha))
 
-	# Задние фонари
+	# Задние фонари: стоп/габарит, задний ход, поворотник.
 	var z_r := -hl - 0.012
 	for sx: float in [-1.0, 1.0]:
+		var turn_alpha := ALPHA_TURN_A if sx < 0.0 else ALPHA_TURN_B
 		b.box(Vector3(sx * hw * 0.68, y, z_r), Vector3(0.36, 0.16, 0.025), DARK)
-		b.box(Vector3(sx * hw * 0.66, y, z_r - 0.012), Vector3(0.20, 0.13, 0.025), LAMP_REAR)
-		b.box(Vector3(sx * hw * 0.52, y, z_r - 0.012), Vector3(0.08, 0.11, 0.025), Color("#f4f4f8"))
-		b.box(Vector3(sx * hw * 0.82, y, z_r - 0.012), Vector3(0.08, 0.13, 0.025), LAMP_TURN)
+		b.box(Vector3(sx * hw * 0.66, y, z_r - 0.012), Vector3(0.20, 0.13, 0.025),
+			Color(LAMP_REAR, ALPHA_BRAKE))
+		b.box(Vector3(sx * hw * 0.52, y, z_r - 0.012), Vector3(0.08, 0.11, 0.025),
+			Color("#f4f4f8", ALPHA_REVERSE))
+		b.box(Vector3(sx * hw * 0.82, y, z_r - 0.012), Vector3(0.08, 0.13, 0.025),
+			Color(LAMP_TURN, turn_alpha))

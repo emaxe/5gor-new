@@ -16,6 +16,15 @@ const PALETTE_MAT := preload("res://fx/materials/mat_palette.tres")
 const SHAPE_QUANT := 0.1
 const COLLIDER_HEIGHT := 1.4
 
+## Контактная тень (RenderCaps.needs_contact_shadows()) — единственная опора
+## машины на асфальт на Compatibility, где направленных теней нет вовсе.
+## Эллипс несколько шире кузова — мягкий силуэт, а не точный контур.
+const SHADOW_WIDTH_MARGIN := 0.58
+const SHADOW_LENGTH_MARGIN := 0.56
+const SHADOW_CENTER_COLOR := Color(0.06, 0.06, 0.07)
+const SHADOW_EDGE_COLOR := Color(0.28, 0.27, 0.26)
+const SHADOW_Y_OFFSET := 0.02 # см. Y_MARKING - Y_ROAD в city_mesher.gd
+
 var manager := TrafficManager.new()
 
 var _bodies: Array[RID] = []
@@ -26,6 +35,9 @@ var _beacon_blue: Array[MeshInstance3D] = []
 var _visible_count := 0
 var _space: RID
 var _field: CityField
+var _roll: PackedFloat32Array = PackedFloat32Array()
+var _pitch: PackedFloat32Array = PackedFloat32Array()
+var _shadow_mm: MultiMeshInstance3D
 
 
 ## Строит SoA-состояние, узлы и коллайдеры. space — get_world_3d().space,
@@ -37,9 +49,32 @@ func setup(catalog: TrafficCatalog, field: CityField, lights: TrafficLightContro
 	_field = field
 	manager.setup(catalog, field, lights, rng, traffic_count)
 	manager.place_all_near(player_x, player_z)
+	_roll.resize(manager.count)
+	_roll.fill(0.0)
+	_pitch.resize(manager.count)
+	_pitch.fill(0.0)
 	_build_nodes()
 	_build_bodies()
+	_build_shadows()
 	set_visible_count(traffic_count)
+
+
+## Один MultiMeshInstance3D на весь трафик — эллипс тени растягивается под
+## габарит каждой машины через нестандартный масштаб инстанс-трансформа,
+## поэтому одного юнит-меша хватает на все 11 силуэтов разом.
+func _build_shadows() -> void:
+	var disc := MeshBuilder.new()
+	disc.shadow_disc(Vector3.ZERO, 1.0, SHADOW_CENTER_COLOR, SHADOW_EDGE_COLOR, 10)
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = disc.commit()
+	mm.instance_count = manager.count
+	_shadow_mm = MultiMeshInstance3D.new()
+	_shadow_mm.name = "TrafficShadows"
+	_shadow_mm.multimesh = mm
+	_shadow_mm.material_override = PALETTE_MAT
+	_shadow_mm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_shadow_mm)
 
 
 func _build_nodes() -> void:
@@ -117,6 +152,8 @@ func set_visible_count(n: int) -> void:
 		var visible := i < _visible_count
 		PhysicsServer3D.body_set_collision_layer(_bodies[i],
 			TrafficManager.COLLISION_LAYER if visible else 0)
+	if _shadow_mm != null:
+		_shadow_mm.multimesh.visible_instance_count = _visible_count
 
 
 ## Вызывается миром раз в кадр (не в физическом тике: трафик едет «на
@@ -126,6 +163,9 @@ func tick(delta: float, player_x: float, player_z: float, density: float) -> voi
 	if manager.count == 0:
 		return
 	manager.update(delta, player_x, player_z, density)
+	# Раз на весь тик, не на машину: Game.is_night() читает Game.hour один
+	# и тот же способ для всех 40 машин.
+	var headlights_on := Game.is_night()
 	for i in manager.count:
 		var visible := i < _visible_count
 		var node := _nodes[i]
@@ -135,12 +175,41 @@ func tick(delta: float, player_x: float, player_z: float, density: float) -> voi
 		var wx: float = manager.world_x(i)
 		var wz: float = manager.world_z(i)
 		var wy: float = ((_field.height_at(wx, wz) if wz <= -260.0 else 0.0) if _field != null else 0.0) + CityMesher.Y_ROAD
-		var xform := Transform3D(Heading.basis_of(manager.heading_of(i)), Vector3(wx, wy, wz))
-		node.transform = xform
-		PhysicsServer3D.body_set_state(_bodies[i], PhysicsServer3D.BODY_STATE_TRANSFORM, xform)
+		var ang_vel := manager.angular_vel_of(i)
+		var spd := manager.speed_of(i)
+		var acc := manager.accel_of(i)
+
+		# Целевой крен от центробежной силы: при повороте направо (ang_vel > 0)
+		# кузов кренится влево (roll < 0).
+		var target_roll := clampf(-spd * ang_vel * 0.012, -0.07, 0.07)
+		# Целевой клевок: при торможении (acc < 0) нос опускается (pitch > 0),
+		# при разгоне — приподнимается.
+		var target_pitch := clampf(-acc * 0.006, -0.06, 0.06)
+
+		var blend := minf(1.0, 10.0 * delta)
+		_roll[i] = lerpf(_roll[i], target_roll, blend)
+		_pitch[i] = lerpf(_pitch[i], target_pitch, blend)
+
+		var base_xform := Transform3D(Heading.basis_of(manager.heading_of(i)), Vector3(wx, wy, wz))
+		var visual_basis := base_xform.basis * Basis.from_euler(Vector3(_pitch[i], 0.0, _roll[i]))
+		node.transform = Transform3D(visual_basis, Vector3(wx, wy, wz))
+		PhysicsServer3D.body_set_state(_bodies[i], PhysicsServer3D.BODY_STATE_TRANSFORM, base_xform)
 		if _beacon_red[i] != null:
 			_beacon_red[i].visible = manager.beacon_red_on
 			_beacon_blue[i].visible = not manager.beacon_red_on
+
+		# Свет: фары по времени суток (у трафика нет ручного тумблера, как
+		# у игрока), стоп/поворотники — из кинематики. Задний ход у трафика
+		# невозможен (едет только вперёд по полосе), reverse всегда false.
+		node.material_override = CarLampMaterials.get_material(
+			headlights_on, manager.is_braking(i),
+			manager.turn_a_on(i), manager.turn_b_on(i), false)
+
+		var t := manager.type_of(i)
+		var shadow_scale := Basis().scaled(
+			Vector3(t.width * SHADOW_WIDTH_MARGIN, 1.0, t.length * SHADOW_LENGTH_MARGIN))
+		_shadow_mm.multimesh.set_instance_transform(i, Transform3D(
+			base_xform.basis * shadow_scale, Vector3(wx, wy + SHADOW_Y_OFFSET, wz)))
 
 
 

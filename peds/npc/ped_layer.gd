@@ -12,6 +12,33 @@ extends Node3D
 
 const PALETTE_MAT := preload("res://fx/materials/mat_palette.tres")
 
+## Золотой угол (рад) — детерминированный сдвиг idle-фазы по индексу
+## пешехода. Без него все idle-синусы читают один и тот же Time.get_ticks_msec()
+## и толпа оглядывается/дышит синхронно. Не трогаем SeededRng ради этого:
+## новый randf() переразметил бы архетипы/цвета/скорости всех пешеходов
+## и сбил бы детерминированные тесты/снимки.
+const IDLE_SEED_STEP := 2.399963
+
+## Сколько секунд перед концом Mode.KNOCKED пешеход поднимается с земли —
+## интерполяция лежачей позы обратно в стоячую, а не телепорт (порт
+## peds.js:2071-2086, здесь дополнительно плавный подъём).
+const KNOCKED_STAND_UP_TIME := 0.4
+## Подъём по Y на половину ширины тела, чтобы нижний бок лежал на асфальте —
+## точные числа оригинала (peds.js:2078-2080): человек 0.28 (торс 0.56),
+## собака 0.18 (0.32×DOG_SCALE), кошка 0.11 (0.22×CAT_SCALE).
+const KNOCKED_LIFT_HUMAN := 0.28
+const KNOCKED_LIFT_DOG := 0.18
+const KNOCKED_LIFT_CAT := 0.11
+
+## Контактная тень (RenderCaps.needs_contact_shadows()) — как у трафика:
+## один MultiMeshInstance3D, эллипс под ноги/лапы через масштаб инстанса.
+const SHADOW_HUMAN_HALF := Vector2(0.28, 0.28)
+const SHADOW_DOG_HALF := Vector2(0.20, 0.38)
+const SHADOW_CAT_HALF := Vector2(0.14, 0.26)
+const SHADOW_CENTER_COLOR := Color(0.08, 0.08, 0.09)
+const SHADOW_EDGE_COLOR := Color(0.3, 0.29, 0.28)
+const SHADOW_Y_OFFSET := 0.02
+
 var manager := PedManager.new()
 var field: CityField
 
@@ -22,6 +49,7 @@ var _arm_pivot: Array[Array] = []
 var _leg_pivot: Array[Array] = []
 var _tail_pivot: Array[Node3D] = []
 var _visible_count := 0
+var _shadow_mm: MultiMeshInstance3D
 
 
 func setup(catalog: PedCatalog, field_: CityField, graph: PedGraph,
@@ -31,7 +59,30 @@ func setup(catalog: PedCatalog, field_: CityField, graph: PedGraph,
 	manager.setup(catalog, field, graph, lights, config, rng, space, ped_count)
 	manager.place_all_near(player_x, player_z)
 	_build_nodes()
+	_build_shadows()
 	set_visible_count(ped_count)
+
+
+func _build_shadows() -> void:
+	var disc := MeshBuilder.new()
+	disc.shadow_disc(Vector3.ZERO, 1.0, SHADOW_CENTER_COLOR, SHADOW_EDGE_COLOR, 8)
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = disc.commit()
+	mm.instance_count = manager.count
+	_shadow_mm = MultiMeshInstance3D.new()
+	_shadow_mm.name = "PedShadows"
+	_shadow_mm.multimesh = mm
+	_shadow_mm.material_override = PALETTE_MAT
+	_shadow_mm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_shadow_mm)
+
+
+func _shadow_half_extent(i: int) -> Vector2:
+	if not manager.is_animal_at(i):
+		return SHADOW_HUMAN_HALF * manager.body_scale[i].y
+	var is_dog := manager.archetype_of(i).id == &"dog"
+	return (SHADOW_DOG_HALF if is_dog else SHADOW_CAT_HALF)
 
 
 func _build_nodes() -> void:
@@ -147,6 +198,8 @@ func _add_mesh(parent: Node3D, mesh: ArrayMesh) -> void:
 
 func set_visible_count(n: int) -> void:
 	_visible_count = clampi(n, 0, manager.count)
+	if _shadow_mm != null:
+		_shadow_mm.multimesh.visible_instance_count = _visible_count
 
 
 ## Вызывается миром раз в кадр — как трафик, пешеходы «на ногах», не в
@@ -165,34 +218,87 @@ func tick(delta: float, player_x: float, player_z: float, player_heading: float,
 			continue
 		var wx := manager.world_x(i)
 		var wz := manager.world_z(i)
-		var wy := 0.0 if wz > -260.0 else field.height_at(wx, wz)
-		root.position = Vector3(wx, wy, wz)
-		root.rotation.y = manager.heading_of(i)
+		var ground_y := 0.0 if wz > -260.0 else field.height_at(wx, wz)
+
+		if manager.mode_of(i) == PedManager.Mode.KNOCKED:
+			_pose_knocked(i, root, wx, wz, ground_y)
+		else:
+			root.position = Vector3(wx, ground_y, wz)
+			# Плавный доворот, а не мгновенный снап — иначе корпус телепортом
+			# щёлкает на месте при каждой смене курса (было: root.rotation.y =
+			# manager.heading_of(i)). turn_rate — из PedConfig, тот же, что у
+			# игрока-пешехода (player_ped_logic.gd:189).
+			root.rotation.y = Heading.turn_toward(root.rotation.y,
+				manager.heading_of(i), delta * manager.config.turn_rate)
+
+		var half := _shadow_half_extent(i)
+		var shadow_basis := Heading.basis_of(manager.heading_of(i)) * Basis().scaled(
+			Vector3(half.x, 1.0, half.y))
+		_shadow_mm.multimesh.set_instance_transform(i, Transform3D(
+			shadow_basis, Vector3(wx, ground_y + SHADOW_Y_OFFSET, wz)))
+
 		var dx := wx - player_x
 		var dz := wz - player_z
-		if dx * dx + dz * dz < 3600.0:
+		if dx * dx + dz * dz < 25600.0:
 			_animate(i, delta)
 
+
+## Лежачая поза сбитого пешехода — порт peds.js:2071-2086. root.rotation.z —
+## «крен» на бок (PI/2 = плашмя на асфальте), интерполируется к 0 в
+## последние KNOCKED_STAND_UP_TIME секунд перед переходом в FLEE, чтобы
+## пешеход вставал, а не телепортировался обратно в бег.
+func _pose_knocked(i: int, root: Node3D, wx: float, wz: float, ground_y: float) -> void:
+	var kv := manager.knocked_velocity(i)
+	var yaw := atan2(kv.x, kv.y)
+	var stand_up := clampf(1.0 - manager.knock_t_of(i) / KNOCKED_STAND_UP_TIME, 0.0, 1.0)
+	var lift := KNOCKED_LIFT_HUMAN
+	if manager.is_animal_at(i):
+		lift = KNOCKED_LIFT_DOG if manager.archetype_of(i).id == &"dog" else KNOCKED_LIFT_CAT
+	root.position = Vector3(wx, ground_y + lerpf(lift, 0.0, stand_up), wz)
+	root.rotation = Vector3(0.0, yaw, lerpf(PI * 0.5, 0.0, stand_up))
 
 
 func _animate(i: int, delta: float) -> void:
 	var mode := manager.mode_of(i)
-	var moving := mode == PedManager.Mode.WALK and manager.speed_of(i) > 0.05
+	# FLEE — тоже полноценное движение (было: только WALK, поэтому убегающие
+	# люди и животные скользили с застывшими ногами; сам walk_phase уже
+	# считался — см. PedManager._start_flee).
+	var moving := (mode == PedManager.Mode.WALK or mode == PedManager.Mode.FLEE) \
+		and manager.speed_of(i) > 0.05
 	var phase := manager.walk_phase_of(i)
+	# Детерминированный сдвиг idle-фазы по индексу — золотой угол, не rng.
+	var idle_seed := float(i) * IDLE_SEED_STEP
 
 	if manager.is_animal_at(i):
 		var legs := _leg_pivot[i]
 		if moving:
-			var sw := sin(phase * 1.4)
-			legs[0].rotation.x = sw * 0.6
-			legs[1].rotation.x = -sw * 0.6
-			legs[2].rotation.x = -sw * 0.6
-			legs[3].rotation.x = sw * 0.6
-			_tail_pivot[i].rotation.y = sin(phase * 2.0) * 0.35
-			_head_pivot[i].rotation.x = sin(phase * 1.4) * 0.08
+			if mode == PedManager.Mode.FLEE:
+				# Галоп: передняя пара лап в фазе, задняя в фазе, со сдвигом
+				# между парами — не диагональная рысь. Плюс вертикальный
+				# подскок корпуса и прижатые от страха уши/хвост.
+				var front := sin(phase * 1.8)
+				var back := sin(phase * 1.8 - PI * 0.35)
+				legs[0].rotation.x = front * 0.9
+				legs[1].rotation.x = front * 0.9
+				legs[2].rotation.x = -back * 0.9
+				legs[3].rotation.x = -back * 0.9
+				_roots[i].position.y += absf(sin(phase * 1.8)) * 0.05
+				_tail_pivot[i].rotation.x = -0.5
+				_tail_pivot[i].rotation.y = sin(phase * 3.0) * 0.15
+				_head_pivot[i].rotation.x = 0.15
+			else:
+				var sw := sin(phase * 1.4)
+				legs[0].rotation.x = sw * 0.6
+				legs[1].rotation.x = -sw * 0.6
+				legs[2].rotation.x = -sw * 0.6
+				legs[3].rotation.x = sw * 0.6
+				_tail_pivot[i].rotation.x = 0.0
+				_tail_pivot[i].rotation.y = sin(phase * 2.0) * 0.35
+				_head_pivot[i].rotation.x = sin(phase * 1.4) * 0.08
 		else:
 			for l in legs:
 				l.rotation.x = 0.0
+			_tail_pivot[i].rotation.x = 0.0
 			_tail_pivot[i].rotation.y = 0.0
 			_head_pivot[i].rotation.x = 0.0
 		return
@@ -210,12 +316,12 @@ func _animate(i: int, delta: float) -> void:
 		arms[0].rotation.x = -0.8
 		arms[1].rotation.x = 0.8
 	elif manager.is_angry(i) and not moving:
-		var sw := sin(Time.get_ticks_msec() * 0.012)
+		var sw := sin(Time.get_ticks_msec() * 0.012 + idle_seed)
 		arms[0].rotation.x = -1.2 + sw * 0.3
 		arms[1].rotation.x = -1.2 - sw * 0.3
 		legs[0].rotation.x = 0.0
 		legs[1].rotation.x = 0.0
-		head.rotation.y = sin(Time.get_ticks_msec() * 0.02) * 0.25
+		head.rotation.y = sin(Time.get_ticks_msec() * 0.02 + idle_seed) * 0.25
 	elif moving:
 		var amp := 0.75 if mode == PedManager.Mode.FLEE else 0.55
 		var sw := sin(phase)
@@ -232,14 +338,18 @@ func _animate(i: int, delta: float) -> void:
 	if not manager.is_angry(i) or moving:
 		if moving:
 			head.rotation.x = sin(phase * 2.0) * 0.05
-			head.rotation.y = sin(phase * 0.5) * 0.12
+			head.rotation.y = sin(phase * 0.5 + idle_seed) * 0.12
 		else:
 			var t := Time.get_ticks_msec() * 0.001
-			head.rotation.x = sin(t * 0.7) * 0.04
-			head.rotation.y = sin(t * 0.55) * 0.35
+			head.rotation.x = sin(t * 0.7 + idle_seed) * 0.04
+			head.rotation.y = sin(t * 0.55 + idle_seed) * 0.35
 
 	if upper != null:
 		if moving:
 			upper.position.y = absf(sin(phase)) * 0.035
+			# Крен корпуса в такт шагам — был в оригинале (peds.js:722),
+			# утерян при порте.
+			upper.rotation.z = sin(phase) * 0.045
 		else:
-			upper.position.y = sin(Time.get_ticks_msec() * 0.0016) * 0.008
+			upper.position.y = sin(Time.get_ticks_msec() * 0.0016 + idle_seed) * 0.008
+			upper.rotation.z = lerpf(upper.rotation.z, 0.0, 0.1)

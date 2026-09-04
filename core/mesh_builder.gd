@@ -79,6 +79,23 @@ func quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, color: Color) -> void:
 	tri(a, c, d, color)
 
 
+## Треугольник a-b-c с ОТДЕЛЬНЫМ цветом на каждой вершине (радиальные
+## градиенты вроде контактной тени — без ALPHA, эффект целиком в COLOR.rgb).
+## Намотка/порядок вершин — как в tri().
+func tri_gradient(a: Vector3, b: Vector3, c: Vector3,
+		color_a: Color, color_b: Color, color_c: Color) -> void:
+	_st.set_color(color_c)
+	_st.set_uv(Vector2(0.5, 1.0))
+	_st.add_vertex(c)
+	_st.set_color(color_b)
+	_st.set_uv(Vector2(1.0, 0.0))
+	_st.add_vertex(b)
+	_st.set_color(color_a)
+	_st.set_uv(Vector2.ZERO)
+	_st.add_vertex(a)
+	vertex_count += 3
+
+
 ## Параллелепипед с центром в `center` и размерами `size`.
 func box(center: Vector3, size: Vector3, color: Color,
 		basis_rot: Basis = Basis.IDENTITY) -> void:
@@ -202,6 +219,21 @@ func sphere(center: Vector3, radius: float, color: Color,
 				tri(a, b, c, color)
 			else:
 				quad(a, b, c, d, color)
+
+
+## Плоский диск с радиальным затемнением к центру — контактная тень под
+## ногами/колёсами. Не альфа-блендинг (правило проекта: ALPHA не пишем,
+## прозрачные материалы не принимают тени и не пишут глубину) — центр
+## темнее вершинным цветом, край сливается с землёй через тот же цвет,
+## что уже лежит на асфальте/тротуаре в этой точке.
+func shadow_disc(center: Vector3, radius: float, center_color: Color,
+		edge_color: Color, segments: int = 8) -> void:
+	var prev := center + Vector3(radius, 0.0, 0.0)
+	for i in segments:
+		var a := TAU * float(i + 1) / float(segments)
+		var p := center + Vector3(cos(a) * radius, 0.0, sin(a) * radius)
+		tri_gradient(center, p, prev, center_color, edge_color, edge_color)
+		prev = p
 
 
 ## Горизонтальная плоскость (пол, крыша, дорожное полотно).

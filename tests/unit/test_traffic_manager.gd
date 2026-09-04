@@ -184,3 +184,42 @@ func test_update_fits_frame_budget_at_triple_density() -> void:
 		.override_failure_message("апдейт трафика (%d машин) занял %.3f мс/тик"
 			% [triple, per_tick_ms])\
 		.is_less(10.0)
+
+
+## Свет машин зажигается сменой материала по этим accessor'ам
+## (world/traffic/traffic_layer.gd:tick) — стоп-сигнал от торможения,
+## поворотники от знака угловой скорости на общем таймере мигания.
+func test_lamp_accessors_derive_from_kinematics() -> void:
+	var field := _default_field()
+	var lights := TrafficLightController.new(field)
+	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 3, field, lights)
+	mgr.place_all_near(0.0, 0.0)
+
+	mgr.accel_val[0] = -2.0
+	assert_bool(mgr.is_braking(0))\
+		.override_failure_message("заметное замедление обязано зажечь стоп")\
+		.is_true()
+	mgr.accel_val[0] = 0.0
+	assert_bool(mgr.is_braking(0)).is_false()
+
+	mgr.turning[0] = 1
+	mgr.turn_blink_on = true
+	mgr.angular_vel[0] = -1.0
+	assert_bool(mgr.turn_a_on(0)).is_true()
+	assert_bool(mgr.turn_b_on(0)).is_false()
+
+	mgr.angular_vel[0] = 1.0
+	assert_bool(mgr.turn_a_on(0)).is_false()
+	assert_bool(mgr.turn_b_on(0)).is_true()
+
+	mgr.turning[0] = 0
+	assert_bool(mgr.turn_a_on(0))\
+		.override_failure_message("вне манёвра поворотник обязан гаснуть")\
+		.is_false()
+	assert_bool(mgr.turn_b_on(0)).is_false()
+
+	mgr.turning[0] = 1
+	mgr.turn_blink_on = false
+	assert_bool(mgr.turn_b_on(0))\
+		.override_failure_message("на выключенной фазе мигания поворотник обязан гаснуть")\
+		.is_false()

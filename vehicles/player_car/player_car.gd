@@ -24,6 +24,10 @@ const BODY_DAMP := 0.14
 const STEER_DAMP := 0.15
 ## Максимальный угол поворота передних колёс, рад.
 const WHEEL_STEER := 0.5
+## Период мигания поворотников, с — порт player.js:_updateLamps (`% 0.9`).
+const TURN_BLINK_PERIOD := 0.9
+## Порог отклонения руля для поворотника — порт player.js (`steer > 0.15`).
+const TURN_STEER_THRESHOLD := 0.15
 
 var runtime := CarRuntime.new()
 var motion := CarPhysics.Motion.new()
@@ -42,6 +46,8 @@ var _steer_visual := 0.0
 var _wheel_spin := 0.0
 var _headlights: Array[SpotLight3D] = []
 var _lights_on := false
+var _chassis: MeshInstance3D
+var _blink_t := 0.0
 
 
 func _ready() -> void:
@@ -129,11 +135,11 @@ func _build_visuals(data: CarData) -> void:
 	_body.name = "Body"
 	add_child(_body)
 
-	var chassis := MeshInstance3D.new()
-	chassis.name = "Chassis"
-	chassis.mesh = CarMeshBuilder.build_body(spec)
-	chassis.material_override = PALETTE_MAT
-	_body.add_child(chassis)
+	_chassis = MeshInstance3D.new()
+	_chassis.name = "Chassis"
+	_chassis.mesh = CarMeshBuilder.build_body(spec)
+	_chassis.material_override = PALETTE_MAT
+	_body.add_child(_chassis)
 
 	var wheel_mesh := CarMeshBuilder.build_wheel(spec)
 	var s := CarMeshBuilder.shape_of(spec.silhouette)
@@ -246,6 +252,21 @@ func _update_visuals(axes: Inp.DriveAxes, delta: float) -> void:
 	_wheel_spin -= motion.forward_speed / maxf(r, 0.01) * delta
 	for wheel in _wheels:
 		wheel.rotation.x = _wheel_spin
+
+	_update_lamps(axes, delta)
+
+
+## Свет кузова — порт player.js:_updateLamps, сменой материала вместо
+## пересборки меша (см. core/car_lamp_materials.gd).
+func _update_lamps(axes: Inp.DriveAxes, delta: float) -> void:
+	_blink_t = fmod(_blink_t + delta, TURN_BLINK_PERIOD)
+	var blink_on := _blink_t < TURN_BLINK_PERIOD * 0.5
+	var braking := axes.brake > 0.0 and absf(motion.speed) > 0.05
+	var reverse := motion.forward_speed < -0.1
+	var turn_a := axes.steer > TURN_STEER_THRESHOLD and blink_on
+	var turn_b := axes.steer < -TURN_STEER_THRESHOLD and blink_on
+	_chassis.material_override = CarLampMaterials.get_material(
+		_lights_on, braking, turn_a, turn_b, reverse)
 
 
 func set_lights(on: bool) -> void:

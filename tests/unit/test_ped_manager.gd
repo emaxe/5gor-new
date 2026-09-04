@@ -151,6 +151,42 @@ func test_player_car_knocks_down_pedestrian_at_speed() -> void:
 		.is_equal(PedManager.Mode.KNOCKED)
 
 
+## Регрессия: _start_flee() не восстанавливал speed[i], поэтому пешеход,
+## застрявший в обходе (_avoid_static зануляет speed при stuck_t > STUCK)
+## и затем испугавшийся, убегал с замороженной фазой шага — ноги не
+## двигались, хотя позиция реально смещалась через flee_vx/flee_vz.
+func test_flee_restores_speed_so_walk_phase_animates() -> void:
+	var field := _field()
+	var graph := PedGraph.new(field)
+	var lights := TrafficLightController.new(field)
+	var mgr := _manager(field, graph, lights, 1, 13)
+	mgr.place_all_near(0.0, 0.0)
+	mgr.is_animal[0] = 1
+	mgr.x[0] = 0.0
+	mgr.z[0] = 0.0
+	mgr.speed[0] = 0.0
+
+	mgr.react_to_punch(0, 1.0, 0.0) # животные всегда убегают, не отвечают
+
+	assert_int(mgr.mode_of(0)).is_equal(PedManager.Mode.FLEE)
+	assert_float(mgr.speed_of(0))\
+		.override_failure_message("_start_flee не восстановил speed — анимация ног при побеге не пойдёт")\
+		.is_greater(0.05)
+
+	# Игрок должен быть достаточно далеко, чтобы не переактивировать реакцию
+	# (config.anger_dist/animal_flee_dist ~12 м), но внутри respawn_radius
+	# (210 м) — иначе update() посчитает пешехода потерянным и переставит
+	# его через place_near(), которая сбрасывает и mode, и walk_phase.
+	var phase_before := mgr.walk_phase_of(0)
+	mgr.update(DT, 50.0, 50.0, 0.0, 0.0, 0.0, 0.0, false)
+	assert_int(mgr.mode_of(0))\
+		.override_failure_message("пешеход должен остаться в FLEE, а не быть переставлен респавном")\
+		.is_equal(PedManager.Mode.FLEE)
+	assert_float(mgr.walk_phase_of(0))\
+		.override_failure_message("walk_phase не растёт во время FLEE")\
+		.is_greater(phase_before)
+
+
 func test_update_fits_frame_budget_at_triple_density() -> void:
 	var field := _field()
 	var graph := PedGraph.new(field)

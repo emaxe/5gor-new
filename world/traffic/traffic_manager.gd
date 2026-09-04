@@ -46,6 +46,13 @@ const CHOOSE_STRAIGHT_P := 0.58
 const CHOOSE_RIGHT_P := 0.8
 const TURN_EXIT_OFFSET := 4.5
 const TURN_SPEED := 7.0
+const TURN_SPEED_RIGHT := 5.2
+const TURN_SPEED_LEFT := 6.8
+const WHEELBASE_DEFAULT := 2.5
+const MAX_STEER := 0.62
+const STEER_RATE := 3.5
+const LOOKAHEAD_STRAIGHT := 7.0
+const LOOKAHEAD_TURN := 4.5
 const TURN_T_COOLDOWN := 0.3
 const INTERSECTION_CHOOSE_TOL := 2.5
 const INTERSECTION_STOP_TOL := 7.0
@@ -75,6 +82,14 @@ const LIGHT_LOOKAHEAD := 30.0
 const RED_OVERSHOOT := 3.0
 
 const BEACON_PERIOD := 0.6
+## Период мигания поворотников — общий таймер на весь трафик, тот же
+## компромисс, что и у маячка полиции/скорой (BEACON_PERIOD).
+const TURN_BLINK_PERIOD := 0.6
+## Порог угловой скорости для включения поворотника, рад/с — отсекает шум
+## прямолинейной езды (руление на неровностях, а не реальный поворот).
+const TURN_ANGVEL_THRESHOLD := 0.15
+## Продольное замедление, при котором зажигается стоп-сигнал, м/с².
+const BRAKE_ACCEL_THRESHOLD := 1.0
 
 ## Ближайший светофор впереди — переиспользуемый буфер (аналог
 ## _tempLightRet оригинала), чтобы не аллоцировать объект 40-120 раз в кадр.
@@ -112,6 +127,7 @@ var target: PackedFloat32Array = PackedFloat32Array()
 var aggressive: PackedByteArray = PackedByteArray()
 var turn_t: PackedFloat32Array = PackedFloat32Array()
 var turn_around_t: PackedFloat32Array = PackedFloat32Array()
+var stuck_t: PackedFloat32Array = PackedFloat32Array()
 ## 0 — решение не принято, 1 — не проезжать на красный, 2 — проехать.
 var run_red: PackedByteArray = PackedByteArray()
 
@@ -144,9 +160,19 @@ var render_x: PackedFloat32Array = PackedFloat32Array()
 var render_z: PackedFloat32Array = PackedFloat32Array()
 var render_h: PackedFloat32Array = PackedFloat32Array()
 
+## Кинематическое состояние автомобиля (Bicycle Model)
+var steer_angle: PackedFloat32Array = PackedFloat32Array()
+var target_steer: PackedFloat32Array = PackedFloat32Array()
+var angular_vel: PackedFloat32Array = PackedFloat32Array()
+var accel_val: PackedFloat32Array = PackedFloat32Array()
+
 ## Маячок полиции/скорой: единый таймер на все машины, читается TrafficLayer.
 var beacon_red_on := true
 var _beacon_t := 0.0
+## Мигание поворотников — как маячок, общий таймер на весь трафик читается
+## TrafficLayer при выборе материала лампы (core/car_lamp_materials.gd).
+var turn_blink_on := true
+var _turn_blink_t := 0.0
 
 var _light_buf := LightInfo.new()
 var _turning_cars: PackedInt32Array = PackedInt32Array()
@@ -214,6 +240,7 @@ func _resize(n: int) -> void:
 	aggressive.resize(n)
 	turn_t.resize(n)
 	turn_around_t.resize(n)
+	stuck_t.resize(n)
 	run_red.resize(n)
 	nm_passed.resize(n)
 	nm_hit.resize(n)
@@ -237,6 +264,10 @@ func _resize(n: int) -> void:
 	render_x.resize(n)
 	render_z.resize(n)
 	render_h.resize(n)
+	steer_angle.resize(n)
+	target_steer.resize(n)
+	angular_vel.resize(n)
+	accel_val.resize(n)
 
 
 # --- Размещение ---------------------------------------------------------------
@@ -263,6 +294,11 @@ func place_near(i: int, player_x: float, player_z: float) -> void:
 	aggressive[i] = 1 if rng.chance(catalog.aggressive_ratio) else 0
 	nm_passed[i] = 0
 	nm_hit[i] = 0
+	stuck_t[i] = 0.0
+	steer_angle[i] = 0.0
+	target_steer[i] = 0.0
+	angular_vel[i] = 0.0
+	accel_val[i] = 0.0
 	_sync_render(i)
 
 
@@ -316,10 +352,14 @@ func _lane_world_pos(i: int) -> Vector2:
 	return _world_pos_for(axis[i], coord[i], pos[i], dir[i])
 
 
+static func lane_heading_for(car_axis: int, car_dir: float) -> float:
+	if car_axis == Z_ROAD:
+		return 0.0 if car_dir > 0.0 else PI
+	return PI * 0.5 if car_dir > 0.0 else -PI * 0.5
+
+
 func lane_heading(i: int) -> float:
-	if axis[i] == Z_ROAD:
-		return 0.0 if dir[i] > 0.0 else PI
-	return PI * 0.5 if dir[i] > 0.0 else -PI * 0.5
+	return lane_heading_for(axis[i], dir[i])
 
 
 func _sync_render(i: int) -> void:
@@ -327,6 +367,10 @@ func _sync_render(i: int) -> void:
 	render_x[i] = wp.x
 	render_z[i] = wp.y
 	render_h[i] = lane_heading(i)
+	steer_angle[i] = 0.0
+	target_steer[i] = 0.0
+	angular_vel[i] = 0.0
+	accel_val[i] = 0.0
 
 
 func _axis_index(v: float) -> int:
@@ -345,6 +389,8 @@ func _nearest_axis_value(v: float) -> float:
 func update(delta: float, player_x: float, player_z: float, density: float) -> void:
 	_beacon_t = fmod(_beacon_t + delta, BEACON_PERIOD)
 	beacon_red_on = _beacon_t < BEACON_PERIOD * 0.5
+	_turn_blink_t = fmod(_turn_blink_t + delta, TURN_BLINK_PERIOD)
+	turn_blink_on = _turn_blink_t < TURN_BLINK_PERIOD * 0.5
 
 	_turning_cars.clear()
 	for i in count:
@@ -384,23 +430,28 @@ func update(delta: float, player_x: float, player_z: float, density: float) -> v
 			_rule_intersection_priority(i)
 		_rule_player_ahead(i, player_x, player_z)
 		_rule_traffic_light(i)
+		_update_deadlock_watchdog(i, delta, player_x, player_z)
 
+		if turning[i] == 1:
+			target[i] = minf(target[i], t_speed[i])
 		_integrate_speed(i, delta)
 
 		if turning[i] == 1:
 			_advance_turn(i, delta)
-			continue
-
-		pos[i] += speed[i] * delta * dir[i]
-		if turn_t[i] > 0.0:
-			turn_t[i] -= delta
 		else:
-			var nv := _nearest_axis_value(pos[i])
-			if absf(pos[i] - nv) < INTERSECTION_CHOOSE_TOL:
-				var isec_x := coord[i] if axis[i] == Z_ROAD else nv
-				var isec_z := nv if axis[i] == Z_ROAD else coord[i]
-				_choose_direction(i, isec_x, isec_z)
-		_sync_render(i)
+			_advance_straight(i, delta)
+
+		_step_kinematics(i, delta)
+
+		if turning[i] == 0:
+			if turn_t[i] > 0.0:
+				turn_t[i] -= delta
+			else:
+				var nv := _nearest_axis_value(pos[i])
+				if absf(pos[i] - nv) < INTERSECTION_CHOOSE_TOL:
+					var isec_x := coord[i] if axis[i] == Z_ROAD else nv
+					var isec_z := nv if axis[i] == Z_ROAD else coord[i]
+					_choose_direction(i, isec_x, isec_z)
 
 
 func _bucket_key(car_axis: int, c: float) -> int:
@@ -479,7 +530,10 @@ func _rule_yield_crossing_ped(i: int) -> void:
 		var px := peds.world_x(p)
 		var pz := peds.world_z(p)
 		var lateral := absf(px - coord[i]) if axis[i] == Z_ROAD else absf(pz - coord[i])
-		if lateral > PED_YIELD_LATERAL:
+		# Уступаем только если пешеход реально находится на проезжей части
+		# (в пределах ширины дороги). Пешеход, ожидающий на тротуаре (lateral > road_half),
+		# не должен вызывать остановку трафика.
+		if lateral > field.road_half:
 			continue
 		var ped_along := pz if axis[i] == Z_ROAD else px
 		var d := (ped_along - pos[i]) * dir[i]
@@ -530,8 +584,10 @@ func _rule_hit_pedestrian(i: int) -> void:
 ## Правило 6: уступить пешеходам на зебре при активном повороте — порт
 ## traffic.js:441-452.
 func _rule_yield_turning_ped(i: int) -> void:
-	var yield_dist := TURN_YIELD_PED_DIST_AGGR if aggressive[i] == 1 else TURN_YIELD_PED_DIST_NORMAL
+	var yield_dist := 4.0 if aggressive[i] == 1 else 6.0
 	for p: int in peds.active_crossing_peds:
+		if peds.mode_of(p) != PedManager.Mode.WALK:
+			continue
 		var d := MathUtils.dist_2d(render_x[i], render_z[i], peds.world_x(p), peds.world_z(p))
 		if d < yield_dist:
 			target[i] = 0.0
@@ -565,20 +621,25 @@ func _rule_hit_player_ped(i: int) -> void:
 
 
 ## Правило 8: машина без поворота уступает уже поворачивающей рядом
-## с тем же перекрёстком.
+## с тем же перекрёстком, а также поперечной машине, уже находящейся на перекрёстке.
 func _rule_intersection_priority(i: int) -> void:
-	if _turning_cars.is_empty():
-		return
 	var nv := _nearest_axis_value(pos[i])
 	if absf(pos[i] - nv) >= INTERSECTION_STOP_TOL:
 		return
 	var isec_x := coord[i] if axis[i] == Z_ROAD else nv
 	var isec_z := nv if axis[i] == Z_ROAD else coord[i]
-	for j: int in _turning_cars:
-		if j == i:
+	if not _turning_cars.is_empty():
+		for j: int in _turning_cars:
+			if j == i:
+				continue
+			if MathUtils.dist_2d(render_x[j], render_z[j], isec_x, isec_z) \
+					< INTERSECTION_TURN_YIELD_DIST:
+				target[i] = 0.0
+				return
+	for j in count:
+		if j == i or axis[j] == axis[i]:
 			continue
-		if MathUtils.dist_2d(render_x[j], render_z[j], isec_x, isec_z) \
-				< INTERSECTION_TURN_YIELD_DIST:
+		if absf(render_x[j] - isec_x) < 5.0 and absf(render_z[j] - isec_z) < 5.0:
 			target[i] = 0.0
 			return
 
@@ -602,6 +663,10 @@ func _rule_player_ahead(i: int, player_x: float, player_z: float) -> void:
 ## перебором списка стоек, как в оригинале — тот же результат дешевле
 ## и без риска расхождения разметки с логикой.
 func _rule_traffic_light(i: int) -> void:
+	# Машина в процессе поворота уже выехала на перекрёсток и обязана его
+	# освободить, не останавливаясь посреди проезжей части на красный свет.
+	if turning[i] == 1:
+		return
 	var l := _light_ahead(i)
 	if not l.found or l.state == TrafficLightController.State.GREEN:
 		run_red[i] = 0
@@ -673,9 +738,11 @@ func _is_intersection_clear(isec_x: float, isec_z: float, self_index: int) -> bo
 
 
 func _integrate_speed(i: int, delta: float) -> void:
+	var old_speed := speed[i]
 	var diff := target[i] - speed[i]
 	speed[i] = clampf(speed[i] + clampf(diff, SPEED_DECEL * delta, SPEED_ACCEL * delta),
 		0.0, SPEED_MAX)
+	accel_val[i] = (speed[i] - old_speed) / maxf(delta, 0.0001)
 
 
 # --- Погоня ----------------------------------------------------------------------
@@ -685,31 +752,33 @@ func _integrate_speed(i: int, delta: float) -> void:
 ## выбирает ход, который сильнее сокращает дистанцию до цели. Повороты — тот же
 ## Безье-механизм, что и обычный трафик, поэтому машина не срезает углы.
 func _update_chasing(i: int, px: float, pz: float, delta: float) -> void:
-	if turning[i] == 1:
-		_advance_turn(i, delta)
-		return
-
 	target[i] = SPEED_MAX * 1.15
+	if turning[i] == 1:
+		target[i] = minf(target[i], t_speed[i])
 	_integrate_speed(i, delta)
 
-	pos[i] += speed[i] * delta * dir[i]
-	if pos[i] < -EDGE_LIMIT - 20.0:
-		pos[i] = -EDGE_LIMIT - 20.0
-		dir[i] = -dir[i]
-	elif pos[i] > EDGE_LIMIT + 20.0:
-		pos[i] = EDGE_LIMIT + 20.0
-		dir[i] = -dir[i]
-
-	# На перекрёстке выбираем ход к цели.
-	if turn_t[i] > 0.0:
-		turn_t[i] -= delta
+	if turning[i] == 1:
+		_advance_turn(i, delta)
 	else:
-		var nv := _nearest_axis_value(pos[i])
-		if absf(pos[i] - nv) < INTERSECTION_CHOOSE_TOL:
-			var isec_x := coord[i] if axis[i] == Z_ROAD else nv
-			var isec_z := nv if axis[i] == Z_ROAD else coord[i]
-			_turn_toward_player(i, isec_x, isec_z, px, pz)
-	_sync_render(i)
+		_advance_straight(i, delta)
+		if pos[i] < -EDGE_LIMIT - 20.0:
+			pos[i] = -EDGE_LIMIT - 20.0
+			dir[i] = -dir[i]
+		elif pos[i] > EDGE_LIMIT + 20.0:
+			pos[i] = EDGE_LIMIT + 20.0
+			dir[i] = -dir[i]
+
+		# На перекрёстке выбираем ход к цели.
+		if turn_t[i] > 0.0:
+			turn_t[i] -= delta
+		else:
+			var nv := _nearest_axis_value(pos[i])
+			if absf(pos[i] - nv) < INTERSECTION_CHOOSE_TOL:
+				var isec_x := coord[i] if axis[i] == Z_ROAD else nv
+				var isec_z := nv if axis[i] == Z_ROAD else coord[i]
+				_turn_toward_player(i, isec_x, isec_z, px, pz)
+
+	_step_kinematics(i, delta)
 
 
 ## На перекрёстке выбирает из трёх ходов (прямо/два поворота) тот, что даёт
@@ -746,18 +815,19 @@ func _turn_toward_player(i: int, isec_x: float, isec_z: float, px: float, pz: fl
 	var new_coord := isec_z if new_axis == X_ROAD else isec_x
 	var new_dir := best_dir
 	var exit_pos := (isec_x if axis[i] == Z_ROAD else isec_z) + new_dir * TURN_EXIT_OFFSET
-	var sdx := 0.0 if axis[i] == Z_ROAD else dir[i]
-	var sdz := dir[i] if axis[i] == Z_ROAD else 0.0
 	var edx := 0.0 if new_axis == Z_ROAD else new_dir
 	var edz := new_dir if new_axis == Z_ROAD else 0.0
-	_begin_turn(i, _lane_world_pos(i), _world_pos_for(new_axis, new_coord, exit_pos, new_dir),
-		Vector2(sdx, sdz), Vector2(edx, edz), TURN_SPEED)
+	var cur_pos := Vector2(render_x[i], render_z[i])
+	var cur_fwd := Heading.forward(render_h[i])
+	var start_tangent := Vector2(cur_fwd.x, cur_fwd.z)
+
+	_begin_turn(i, cur_pos, _world_pos_for(new_axis, new_coord, exit_pos, new_dir),
+		start_tangent, Vector2(edx, edz), TURN_SPEED)
 	t_new_axis[i] = new_axis
 	t_new_coord[i] = new_coord
 	t_new_pos[i] = exit_pos
 	t_new_dir[i] = new_dir
 	turn_t[i] = t_arc[i] / maxf(speed[i], 4.0) + TURN_T_COOLDOWN
-	_sync_render(i)
 
 
 ## Расстояние до цели после выезда с перекрёстка на новую ось/направление.
@@ -768,12 +838,77 @@ func _after_turn_dist(i: int, new_axis: int, new_dir: float,
 	return MathUtils.dist_2d(isec_x, isec_z + new_dir * 6.0, px, pz)
 
 
-# --- Повороты --------------------------------------------------------------------
+func _update_deadlock_watchdog(i: int, delta: float, player_x: float, player_z: float) -> void:
+	if speed[i] < 0.5:
+		stuck_t[i] += delta
+		if stuck_t[i] > 5.5:
+			# Машина застряла дольше 5.5 сек:
+			if turning[i] == 1:
+				# Если в повороте — принудительно завершаем маневр, освобождая перекрёсток
+				speed[i] = maxf(speed[i], 5.0)
+				target[i] = maxf(target[i], 5.0)
+			else:
+				var nv := _nearest_axis_value(pos[i])
+				if absf(pos[i] - nv) < INTERSECTION_STOP_TOL + 3.0:
+					# В заторе на перекрёстке: если затор длится > 8 сек — респавним за пределами видимости
+					if stuck_t[i] > 8.0:
+						place_near(i, player_x, player_z)
+						stuck_t[i] = 0.0
+					else:
+						target[i] = maxf(target[i], 4.0)
+	else:
+		stuck_t[i] = 0.0
 
-## Порт _chooseDirection() (traffic.js:589-640): кубическая Безье, касательные
-## на концах равны курсу до/после поворота, поэтому нос машины всегда смотрит
-## по ходу движения.
+
+# --- Продвижение и повороты (Bicycle Model + Pure Pursuit) -----------------------
+
+## Продвижение по прямой с удержанием центра полосы через Pure Pursuit.
+func _advance_straight(i: int, _delta: float) -> void:
+	var lane_pt := _lane_world_pos(i)
+	var cur_pt := Vector2(render_x[i], render_z[i])
+	# Защита от телепортации (сброс в тестах или спавне без вызова _sync_render)
+	if cur_pt.distance_squared_to(lane_pt) > 16.0:
+		render_x[i] = lane_pt.x
+		render_z[i] = lane_pt.y
+		render_h[i] = lane_heading(i)
+		steer_angle[i] = 0.0
+		target_steer[i] = 0.0
+
+	var target_pt: Vector2
+	if axis[i] == Z_ROAD:
+		var cx := coord[i] - dir[i] * LANE_OFFSET
+		var tz := render_z[i] + dir[i] * LOOKAHEAD_STRAIGHT
+		target_pt = Vector2(cx, tz)
+	else:
+		var tx := render_x[i] + dir[i] * LOOKAHEAD_STRAIGHT
+		var cz := coord[i] + dir[i] * LANE_OFFSET
+		target_pt = Vector2(tx, cz)
+
+	var dx := target_pt.x - render_x[i]
+	var dz := target_pt.y - render_z[i]
+	var ld := sqrt(dx * dx + dz * dz)
+	if ld > 0.01:
+		var target_h := atan2(dx, dz)
+		var alpha := Heading.delta(render_h[i], target_h)
+		var wb := WHEELBASE_DEFAULT
+		if type_ref[i] != null and type_ref[i].length > 1.0:
+			wb = maxf(type_ref[i].length * 0.55, 2.0)
+		var steer := atan2(2.0 * wb * sin(alpha), ld)
+		target_steer[i] = clampf(steer, -MAX_STEER, MAX_STEER)
+
+
+## Порт _chooseDirection() (traffic.js:589-640): кубическая кривая с касательными,
+## равными курсу входа и выхода полос перекрёстка. Траектория отслеживается
+## через Pure Pursuit без принудительной телепортации по осям.
 func _choose_direction(i: int, isec_x: float, isec_z: float) -> void:
+	# Не начинаем поворот, если на этом перекрёстке уже выполняет поворот другая машина
+	for j: int in _turning_cars:
+		if j == i:
+			continue
+		if MathUtils.dist_2d(render_x[j], render_z[j], isec_x, isec_z) < INTERSECTION_TURN_YIELD_DIST:
+			turn_t[i] = TURN_T_COOLDOWN
+			return
+
 	var roll := rng.next()
 	if roll < CHOOSE_STRAIGHT_P:
 		turn_t[i] = TURN_T_COOLDOWN
@@ -793,13 +928,26 @@ func _choose_direction(i: int, isec_x: float, isec_z: float) -> void:
 		new_dir = dir[i] if right else -dir[i]
 
 	var exit_pos := (isec_x if axis[i] == Z_ROAD else isec_z) + new_dir * TURN_EXIT_OFFSET
-	var sdx := 0.0 if axis[i] == Z_ROAD else dir[i]
-	var sdz := dir[i] if axis[i] == Z_ROAD else 0.0
-	var edx := 0.0 if new_axis == Z_ROAD else new_dir
-	var edz := new_dir if new_axis == Z_ROAD else 0.0
+	var exit_wp := _world_pos_for(new_axis, new_coord, exit_pos, new_dir)
 
-	_begin_turn(i, _lane_world_pos(i), _world_pos_for(new_axis, new_coord, exit_pos, new_dir),
-		Vector2(sdx, sdz), Vector2(edx, edz), TURN_SPEED)
+	# Не поворачиваем, если выходная полоса сразу за перекрёстком заблокирована
+	for j in count:
+		if j == i:
+			continue
+		var wp := _lane_world_pos(j)
+		if MathUtils.dist_2d(wp.x, wp.y, exit_wp.x, exit_wp.y) < 5.0 and speed[j] < 1.0:
+			turn_t[i] = TURN_T_COOLDOWN
+			return
+
+	var cur_pos := Vector2(render_x[i], render_z[i])
+	var cur_fwd := Heading.forward(render_h[i])
+	var start_tangent := Vector2(cur_fwd.x, cur_fwd.z)
+	var exit_fwd := Heading.forward(lane_heading_for(new_axis, new_dir))
+	var end_tangent := Vector2(exit_fwd.x, exit_fwd.z)
+
+	var turn_speed := TURN_SPEED_RIGHT if right else TURN_SPEED_LEFT
+	_begin_turn(i, cur_pos, exit_wp,
+		start_tangent, end_tangent, turn_speed)
 	t_new_axis[i] = new_axis
 	t_new_coord[i] = new_coord
 	t_new_pos[i] = exit_pos
@@ -808,24 +956,27 @@ func _choose_direction(i: int, isec_x: float, isec_z: float) -> void:
 
 
 ## Порт _startUTurn() (traffic.js:643-674): разворот на границе карты по той
-## же схеме Безье, с касательными, развёрнутыми на 180°.
+## же траекторной схеме с разворотом курса на 180°.
 func _start_uturn(i: int) -> void:
 	var new_dir := -dir[i]
 	var new_pos := clampf(pos[i] - dir[i] * UTURN_BACK_OFFSET,
 		-UTURN_NEW_POS_LIMIT, UTURN_NEW_POS_LIMIT)
-	var sdx := 0.0 if axis[i] == Z_ROAD else dir[i]
-	var sdz := dir[i] if axis[i] == Z_ROAD else 0.0
+	var cur_pos := Vector2(render_x[i], render_z[i])
+	var cur_fwd := Heading.forward(render_h[i])
+	var start_tangent := Vector2(cur_fwd.x, cur_fwd.z)
+	var exit_fwd := Heading.forward(lane_heading_for(axis[i], new_dir))
+	var end_tangent := Vector2(exit_fwd.x, exit_fwd.z)
+	var target_wp := _world_pos_for(axis[i], coord[i], new_pos, new_dir)
 
-	_begin_turn(i, _lane_world_pos(i), _world_pos_for(axis[i], coord[i], new_pos, new_dir),
-		Vector2(sdx, sdz), Vector2(-sdx, -sdz), UTURN_TURN_SPEED)
+	_begin_turn(i, cur_pos, target_wp,
+		start_tangent, end_tangent, UTURN_TURN_SPEED)
 	t_new_axis[i] = axis[i]
 	t_new_coord[i] = coord[i]
 	t_new_pos[i] = new_pos
 	t_new_dir[i] = new_dir
 
 
-## Общая часть: контрольные точки кубической Безье от касательных на концах
-## (traffic.js:619-629 / 654-662, курс в начале = start_tangent, в конце = end_tangent).
+## Общая часть подготовки траектории поворота (start_tangent -> end_tangent).
 func _begin_turn(i: int, from: Vector2, to: Vector2, start_tangent: Vector2,
 		end_tangent: Vector2, turn_speed: float) -> void:
 	var chord := from.distance_to(to)
@@ -845,43 +996,104 @@ func _begin_turn(i: int, from: Vector2, to: Vector2, start_tangent: Vector2,
 	t_p1z[i] = p1.y
 	t_p2x[i] = p2.x
 	t_p2z[i] = p2.y
-	t_from_h[i] = lane_heading(i)
+	t_from_h[i] = render_h[i]
 	t_speed[i] = turn_speed
 
 
-## Продвижение по кривой Безье и завершение поворота (traffic.js:536-563).
-func _advance_turn(i: int, delta: float) -> void:
-	t_dist[i] += speed[i] * delta
-	var k := clampf(t_dist[i] / maxf(t_arc[i], 0.0001), 0.0, 1.0)
+## Вычисление точки на направляющей кривой поворота для параметра k in [0, 1].
+func _eval_turn_pos(i: int, k_val: float) -> Vector2:
+	var k := clampf(k_val, 0.0, 1.0)
 	var u := 1.0 - k
-
 	var bx := u * u * u * t_from_x[i] + 3.0 * u * u * k * t_p1x[i] \
 		+ 3.0 * u * k * k * t_p2x[i] + k * k * k * t_to_x[i]
 	var bz := u * u * u * t_from_z[i] + 3.0 * u * u * k * t_p1z[i] \
 		+ 3.0 * u * k * k * t_p2z[i] + k * k * k * t_to_z[i]
-	render_x[i] = bx
-	render_z[i] = bz
+	return Vector2(bx, bz)
 
-	var dx := 3.0 * u * u * (t_p1x[i] - t_from_x[i]) + 6.0 * u * k * (t_p2x[i] - t_p1x[i]) \
-		+ 3.0 * k * k * (t_to_x[i] - t_p2x[i])
-	var dz := 3.0 * u * u * (t_p1z[i] - t_from_z[i]) + 6.0 * u * k * (t_p2z[i] - t_p1z[i]) \
-		+ 3.0 * k * k * (t_to_z[i] - t_p2z[i])
-	var h := t_from_h[i] if is_zero_approx(dx) and is_zero_approx(dz) \
-		else Heading.from_vector(Vector3(dx, 0.0, dz))
-	render_h[i] = t_from_h[i] + Heading.delta(t_from_h[i], h)
 
-	target[i] = minf(target[i], t_speed[i])
-	_integrate_speed(i, delta)
+## Отслеживание траектории поворота через Pure Pursuit и гладкий сход в новую полосу.
+func _advance_turn(i: int, delta: float) -> void:
+	t_dist[i] += speed[i] * delta
+	var arc := maxf(t_arc[i], 0.0001)
+	var k := t_dist[i] / arc
 
-	if k >= 1.0:
+	# Точка упреждения на направляющей траектории поворота
+	var lookahead_dist := LOOKAHEAD_TURN
+	var k_look := clampf((t_dist[i] + lookahead_dist) / arc, 0.0, 1.0)
+	var target_pt: Vector2
+	if (t_dist[i] + lookahead_dist) <= arc:
+		target_pt = _eval_turn_pos(i, k_look)
+	else:
+		# Экстраполяция по выходу из поворота в целевую полосу
+		var exit_pt := Vector2(t_to_x[i], t_to_z[i])
+		var exit_fwd := Heading.forward(lane_heading_for(t_new_axis[i], t_new_dir[i]))
+		var overshoot := (t_dist[i] + lookahead_dist) - arc
+		target_pt = exit_pt + Vector2(exit_fwd.x, exit_fwd.z) * overshoot
+
+	# Pure Pursuit рулёжка к target_pt
+	var dx := target_pt.x - render_x[i]
+	var dz := target_pt.y - render_z[i]
+	var ld := sqrt(dx * dx + dz * dz)
+	if ld > 0.01:
+		var target_h := atan2(dx, dz)
+		var alpha := Heading.delta(render_h[i], target_h)
+		var wb := WHEELBASE_DEFAULT
+		if type_ref[i] != null and type_ref[i].length > 1.0:
+			wb = maxf(type_ref[i].length * 0.55, 2.0)
+		var steer := atan2(2.0 * wb * sin(alpha), ld)
+		target_steer[i] = clampf(steer, -MAX_STEER, MAX_STEER)
+
+	# Завершение поворота при достижении конца дуги или совмещении с полосой
+	var edx := render_x[i] - t_to_x[i]
+	var edz := render_z[i] - t_to_z[i]
+	var exit_dist_sq := edx * edx + edz * edz
+	var exit_h := lane_heading_for(t_new_axis[i], t_new_dir[i])
+	var h_diff := absf(Heading.delta(render_h[i], exit_h))
+
+	if k >= 1.0 or (k > 0.8 and exit_dist_sq < 4.0 and h_diff < 0.25):
 		axis[i] = t_new_axis[i]
 		coord[i] = t_new_coord[i]
-		pos[i] = t_new_pos[i]
 		dir[i] = t_new_dir[i]
 		turning[i] = 0
+		if axis[i] == Z_ROAD:
+			pos[i] = render_z[i]
+		else:
+			pos[i] = render_x[i]
 
 
-# --- Запросы для рендера --------------------------------------------------------
+## Интегрирование кинематики (Bicycle Model) и синхронизация положения с дорогой.
+func _step_kinematics(i: int, delta: float) -> void:
+	# 1. Плавный поворот управляемых колёс с ограничением угловой скорости
+	var steer_diff := target_steer[i] - steer_angle[i]
+	var max_steer_step := STEER_RATE * delta
+	steer_angle[i] += clampf(steer_diff, -max_steer_step, max_steer_step)
+
+	# 2. Угловая скорость (yaw rate) по модели велосипеда: dHeading/dt = (v / L) * tan(steer)
+	var wb := WHEELBASE_DEFAULT
+	if type_ref[i] != null and type_ref[i].length > 1.0:
+		wb = maxf(type_ref[i].length * 0.55, 2.0)
+	var v := speed[i]
+	var yaw_rate := (v / wb) * tan(steer_angle[i])
+	angular_vel[i] = yaw_rate
+
+	# Интегрирование курсового угла
+	render_h[i] = wrapf(render_h[i] + yaw_rate * delta, -PI, PI)
+
+	# 3. Перемещение строго по фактическому курсу автомобиля (без бокового скольжения)
+	var fwd := Heading.forward(render_h[i])
+	var dist_step := v * delta
+	render_x[i] += fwd.x * dist_step
+	render_z[i] += fwd.z * dist_step
+
+	# 4. Проекция логической координаты pos[i] вдоль оси для правил ПДД
+	if turning[i] == 0:
+		if axis[i] == Z_ROAD:
+			pos[i] = render_z[i]
+		else:
+			pos[i] = render_x[i]
+
+
+# --- Запросы для рендера и физики -----------------------------------------------
 
 func world_x(i: int) -> float:
 	return render_x[i]
@@ -895,6 +1107,18 @@ func heading_of(i: int) -> float:
 	return render_h[i]
 
 
+func angular_vel_of(i: int) -> float:
+	return angular_vel[i]
+
+
+func accel_of(i: int) -> float:
+	return accel_val[i]
+
+
+func steer_of(i: int) -> float:
+	return steer_angle[i]
+
+
 func type_of(i: int) -> TrafficTypeData:
 	return type_ref[i]
 
@@ -905,6 +1129,23 @@ func color_of(i: int) -> Color:
 
 func is_turning(i: int) -> bool:
 	return turning[i] == 1
+
+
+## Стоп-сигнал — заметное продольное замедление (BRAKE_ACCEL_THRESHOLD).
+func is_braking(i: int) -> bool:
+	return accel_val[i] < -BRAKE_ACCEL_THRESHOLD
+
+
+## Поворотник борта -X («сторона A») — горит, пока машина реально в повороте
+## (turning[i]) и угловая скорость направлена в эту сторону, промодулировано
+## общим таймером мигания.
+func turn_a_on(i: int) -> bool:
+	return turning[i] == 1 and turn_blink_on and angular_vel[i] < -TURN_ANGVEL_THRESHOLD
+
+
+## Поворотник борта +X («сторона B»).
+func turn_b_on(i: int) -> bool:
+	return turning[i] == 1 and turn_blink_on and angular_vel[i] > TURN_ANGVEL_THRESHOLD
 
 
 func speed_of(i: int) -> float:
