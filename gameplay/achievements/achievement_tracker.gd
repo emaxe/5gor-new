@@ -27,3 +27,20 @@ func check_unlocks() -> void:
 		if a.is_met(stats):
 			unlocked.append(a.id)
 			Bus.achievement_unlocked.emit(a.id)
+
+
+# --- Сериализация (SaveManager) ------------------------------------------------
+# Профиль-глобальный файл (user://achievements.cfg), отдельно от слотов —
+# удаление/перезапись слота не должно стирать разблокированные ачивки.
+
+func to_save_dict() -> Dictionary:
+	var out: Array[String] = []
+	for id in unlocked:
+		out.append(String(id))
+	return {"unlocked": out}
+
+
+func apply_save_dict(dict: Dictionary) -> void:
+	unlocked.clear()
+	for id in dict.get("unlocked", []):
+		unlocked.append(StringName(String(id)))

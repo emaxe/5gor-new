@@ -24,6 +24,7 @@ Db="*res://autoload/db.gd"
 Audio="*res://autoload/audio_director.gd"
 Prefs="*res://autoload/prefs.gd"
 Game="*res://autoload/game_state.gd"
+SaveManager="*res://autoload/save_manager.gd"
 Inp="*res://autoload/inp.gd"
 Dir="*res://autoload/scene_director.gd"
 

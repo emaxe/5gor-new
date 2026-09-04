@@ -53,6 +53,10 @@ const LIFETIME_KEYS: PackedStringArray = [
 
 
 func _ready() -> void:
+	# Дефолт до первой загрузки слота/новой игры — совпадает с константой
+	# Db.balance.world_seed, поэтому поведение без сейва (бенчмарк, автопрогон,
+	# тесты) не меняется этапом 19.
+	world_seed = _balance().world_seed
 	reset_lifetime()
 	reset_shift()
 
@@ -206,6 +210,48 @@ func all_stats() -> Dictionary:
 	out["money"] = money
 	out["day"] = day
 	return out
+
+
+# --- Сохранения (SaveManager) -------------------------------------------------
+# SaveManager не пишет в money/rating/day/world_seed/lifetime_stats напрямую —
+# тот же принцип единственного владельца, что и для add_money()/add_rating().
+
+## Снимок для записи в слот.
+func save_snapshot() -> Dictionary:
+	return {
+		"money": money,
+		"rating": rating,
+		"day": day,
+		"world_seed": world_seed,
+		"lifetime_stats": lifetime_stats.duplicate(),
+	}
+
+
+## Восстанавливает снимок из слота. Не эмитит money_changed/rating_changed —
+## это не игровое событие, а восстановление состояния до его начала.
+func apply_save_snapshot(dict: Dictionary) -> void:
+	money = int(dict.get("money", 0))
+	rating = clampf(float(dict.get("rating", 0.0)), 0.0, RATING_MAX)
+	day = int(dict.get("day", 1))
+	world_seed = int(dict.get("world_seed", _balance().world_seed))
+	var loaded: Dictionary = dict.get("lifetime_stats", {})
+	reset_lifetime()
+	for k: String in LIFETIME_KEYS:
+		if loaded.has(k):
+			lifetime_stats[k] = loaded[k]
+
+
+## Сброс прогресса для новой игры: свежий гараж, обнулённая lifetime-
+## статистика, стартовые деньги. Достижения НЕ трогает — они профиль-
+## глобальные (SaveManager.ACHIEVEMENTS_PATH), не привязаны к слоту.
+func reset_progress(new_world_seed: int) -> void:
+	garage = GarageScript.new()
+	reset_lifetime()
+	day = 1
+	world_seed = new_world_seed
+	rating = 0.0
+	money = 0
+	add_money(_balance().start_money)
 
 
 func _balance() -> BalanceData:

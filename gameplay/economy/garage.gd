@@ -131,3 +131,40 @@ func wash(runtime: CarRuntime) -> bool:
 		return false
 	runtime.wash()
 	return true
+
+
+# --- Сериализация (SaveManager) ------------------------------------------------
+
+## Снимок для слота сохранения. _upgrade_levels/_tuning остаются приватными —
+## SaveManager не должен трогать внутреннее представление гаража напрямую.
+func to_save_dict() -> Dictionary:
+	var owned: Array[String] = []
+	for c in owned_cars:
+		owned.append(String(c))
+	return {
+		"owned_cars": owned,
+		"active_car_id": String(active_car_id),
+		"upgrade_levels": _upgrade_levels.duplicate(),
+		"tuning": _tuning.duplicate(),
+	}
+
+
+## Восстанавливает состояние из dict, произведённого to_save_dict(). Отсутствующие
+## ключи берут дефолт — старый формат сейва не должен падать при загрузке.
+func apply_save_dict(dict: Dictionary) -> void:
+	var owned: Array = dict.get("owned_cars", [])
+	var next_owned: Array[StringName] = []
+	for c in owned:
+		next_owned.append(StringName(String(c)))
+	if next_owned.is_empty():
+		next_owned.append(&"taxi")
+	owned_cars = next_owned
+	active_car_id = StringName(String(dict.get("active_car_id", "taxi")))
+	_upgrade_levels.clear()
+	var levels: Dictionary = dict.get("upgrade_levels", {})
+	for k: Variant in levels:
+		_upgrade_levels[String(k)] = int(levels[k])
+	_tuning.clear()
+	var tuning: Dictionary = dict.get("tuning", {})
+	for k: Variant in tuning:
+		_tuning[String(k)] = tuning[k]
