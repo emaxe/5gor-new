@@ -62,6 +62,33 @@ func setup(data: CarData, upgrades: UpgradeCatalog, city_field: CityField) -> vo
 	_build_visuals(data)
 
 
+## Пересобирает только визуал (без коллайдера) — вызывается при смене
+## тюнинга в гараже, когда сама машина не меняется.
+func refresh_visuals(data: CarData) -> void:
+	_build_visuals(data)
+
+
+## -1 у color/decal в tuning значит «заводское значение машины» (уже
+## записано в spec.body_color/spec.decal из CarData) — CarData.body_color
+## совпадает с одним из TuningCatalog.colors, поэтому по умолчанию машины
+## в гараже выглядят как в оригинале, а не все перекрашиваются в цвет 0.
+func _apply_tuning(spec: CarMeshBuilder.Spec, tuning: Dictionary) -> void:
+	var tc: TuningCatalog = Db.cars.tuning
+	if tc == null:
+		return
+	var color_idx: int = int(tuning.get(&"color", -1))
+	if color_idx >= 0:
+		spec.body_color = tc.color_at(color_idx)
+	var decal_idx: int = int(tuning.get(&"decal", -1))
+	if decal_idx >= 0:
+		spec.decal = tc.decal_at(decal_idx)
+	var rim_idx: int = int(tuning.get(&"rims", 0))
+	spec.rim_style = tc.rim_style_at(rim_idx)
+	spec.rim_color = tc.rim_color_at(rim_idx)
+	spec.body_kit = tc.body_kit_at(int(tuning.get(&"body_kit", 0)))
+	spec.spoiler = bool(tuning.get(&"spoiler", false))
+
+
 func _build_collider(shape: CarShapeData) -> void:
 	for c in _shapes:
 		c.queue_free()
@@ -92,7 +119,9 @@ func _build_visuals(data: CarData) -> void:
 	spec.width = data.shape.width
 	spec.length = data.shape.length
 	spec.body_color = data.body_color
+	spec.decal = data.default_decal
 	spec.taxi_livery = data.is_taxi
+	_apply_tuning(spec, runtime.tuning)
 
 	# Крены применяются к этому узлу, а не к телу: иначе вместе с кузовом
 	# наклонялся бы коллайдер и машина цеплялась бы за бордюры.

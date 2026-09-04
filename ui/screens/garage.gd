@@ -1,9 +1,8 @@
 class_name GarageScreen
 extends CanvasLayer
-## Гараж (этап 15 MVP): владение/покупка/переключение машин + апгрейды с
-## реальным списанием денег и применением к физике (Game.garage,
-## gameplay/economy/garage.gd). Без вкладки «обслуживание» и «тюнинга» —
-## CarRuntime.tuning пока ничем не читается, показывать его в UI нечего.
+## Гараж: владение/покупка/переключение машин, апгрейды, тюнинг-косметика
+## и обслуживание — реальное списание денег и применение к активной машине
+## (Game.garage, gameplay/economy/garage.gd).
 
 const UiTheme = preload("res://ui/theme/ui_theme.gd")
 
@@ -13,6 +12,8 @@ var _root: Control
 var _money_lbl: Label
 var _cars_vbox: VBoxContainer
 var _upgrades_vbox: VBoxContainer
+var _tuning_vbox: VBoxContainer
+var _maint_vbox: VBoxContainer
 
 
 func _ready() -> void:
@@ -34,6 +35,8 @@ func _refresh() -> void:
 	_money_lbl.text = "💵 %d ₽ · ⭐ %.1f" % [Game.money, Game.rating]
 	_refresh_cars()
 	_refresh_upgrades()
+	_refresh_tuning()
+	_refresh_maintenance()
 
 
 # --- Вкладка «Машины» --------------------------------------------------------
@@ -111,6 +114,7 @@ func _select_car(car_id: StringName) -> void:
 	var w: World = Dir.world
 	if w != null and w.player != null and w.city != null:
 		w.player.runtime.upgrade_levels = Game.garage.upgrade_levels_for(car_id)
+		w.player.runtime.tuning = Game.garage.tuning_for(car_id)
 		w.player.setup(Db.cars.get_car(car_id), Db.upgrades, w.city.field)
 	_refresh()
 
@@ -178,6 +182,224 @@ func _buy_upgrade(car_id: StringName, upgrade_id: StringName) -> void:
 	if w != null and w.player != null and w.player.runtime.car_id == car_id:
 		w.player.runtime.upgrade_levels = Game.garage.upgrade_levels_for(car_id)
 		w.player.runtime.setup(Db.cars.get_car(car_id), Db.upgrades)
+	_refresh()
+
+
+# --- Вкладка «Тюнинг» (косметика активной машины, бесплатно) ----------------
+
+func _refresh_tuning() -> void:
+	for child in _tuning_vbox.get_children():
+		child.queue_free()
+	var tc: TuningCatalog = Db.cars.tuning
+	if tc == null:
+		return
+	var car_id: StringName = Game.garage.active_car_id
+	var car_data: CarData = Db.cars.get_car(car_id)
+
+	var color_names: Array[String] = ["Заводской"]
+	for n in tc.color_names:
+		color_names.append(tr(n))
+	var swatches: Array[Color] = [car_data.body_color if car_data != null else Color.WHITE]
+	swatches.append_array(Array(tc.colors))
+	_tuning_vbox.add_child(_build_color_row("Цвет", color_names, swatches,
+		int(Game.garage.tuning_value(car_id, &"color")) + 1,
+		func(i: int) -> void: _set_tuning(&"color", i - 1)))
+
+	var rim_names: Array[String] = []
+	for n in tc.rim_names:
+		rim_names.append(tr(n))
+	_tuning_vbox.add_child(_build_tuning_row("Диски", rim_names,
+		int(Game.garage.tuning_value(car_id, &"rims")),
+		func(i: int) -> void: _set_tuning(&"rims", i)))
+
+	var kit_names: Array[String] = []
+	for n in tc.body_kit_names:
+		kit_names.append(tr(n))
+	_tuning_vbox.add_child(_build_tuning_row("Боди-кит", kit_names,
+		int(Game.garage.tuning_value(car_id, &"body_kit")),
+		func(i: int) -> void: _set_tuning(&"body_kit", i)))
+
+	var decal_names: Array[String] = ["Заводская"]
+	for n in tc.decal_names:
+		decal_names.append(tr(n))
+	_tuning_vbox.add_child(_build_tuning_row("Декаль", decal_names,
+		int(Game.garage.tuning_value(car_id, &"decal")) + 1,
+		func(i: int) -> void: _set_tuning(&"decal", i - 1)))
+
+	var spoiler := bool(Game.garage.tuning_value(car_id, &"spoiler"))
+	_tuning_vbox.add_child(_build_tuning_row("Спойлер",
+		["Нет", "Есть"], 1 if spoiler else 0,
+		func(_i: int) -> void: _set_tuning(&"spoiler", not spoiler)))
+
+
+func _build_tuning_row(label: String, option_names: Array[String], selected: int,
+		on_pick: Callable) -> PanelContainer:
+	var row := PanelContainer.new()
+	row.add_theme_stylebox_override("panel", UiTheme.panel_style(8, UiTheme.COLOR_BORDER, UiTheme.COLOR_BG_PANEL))
+
+	var vbox := VBoxContainer.new()
+	row.add_child(vbox)
+
+	var title := Label.new()
+	title.text = label
+	title.add_theme_color_override("font_color", UiTheme.COLOR_TEXT_PRIMARY)
+	title.add_theme_font_size_override("font_size", 14)
+	vbox.add_child(title)
+
+	var options := HBoxContainer.new()
+	options.add_theme_constant_override("separation", 6)
+	vbox.add_child(options)
+
+	for i in option_names.size():
+		var active := i == selected
+		var btn := Button.new()
+		btn.text = option_names[i]
+		btn.add_theme_stylebox_override("normal",
+			UiTheme.button_primary_style(&"normal") if active else UiTheme.button_secondary_style(&"normal"))
+		btn.add_theme_stylebox_override("hover",
+			UiTheme.button_primary_style(&"hover") if active else UiTheme.button_secondary_style(&"hover"))
+		btn.add_theme_color_override("font_color",
+			Color("#111115") if active else UiTheme.COLOR_TEXT_PRIMARY)
+		var idx := i
+		btn.pressed.connect(func() -> void: on_pick.call(idx))
+		options.add_child(btn)
+
+	return row
+
+
+## Как _build_tuning_row, но кнопки — цветные квадраты-образцы вместо текста.
+func _build_color_row(label: String, names: Array[String], swatches: Array[Color],
+		selected: int, on_pick: Callable) -> PanelContainer:
+	var row := PanelContainer.new()
+	row.add_theme_stylebox_override("panel", UiTheme.panel_style(8, UiTheme.COLOR_BORDER, UiTheme.COLOR_BG_PANEL))
+
+	var vbox := VBoxContainer.new()
+	row.add_child(vbox)
+
+	var title := Label.new()
+	title.text = label
+	title.add_theme_color_override("font_color", UiTheme.COLOR_TEXT_PRIMARY)
+	title.add_theme_font_size_override("font_size", 14)
+	vbox.add_child(title)
+
+	var options := HBoxContainer.new()
+	options.add_theme_constant_override("separation", 6)
+	vbox.add_child(options)
+
+	for i in swatches.size():
+		var active := i == selected
+		var btn := Button.new()
+		btn.custom_minimum_size = Vector2(30, 30)
+		btn.tooltip_text = names[i] if i < names.size() else ""
+		var style := StyleBoxFlat.new()
+		style.bg_color = swatches[i]
+		style.set_corner_radius_all(6)
+		style.border_color = UiTheme.COLOR_TAXI_YELLOW if active else UiTheme.COLOR_BORDER
+		style.set_border_width_all(3 if active else 1)
+		btn.add_theme_stylebox_override("normal", style)
+		btn.add_theme_stylebox_override("hover", style)
+		var idx := i
+		btn.pressed.connect(func() -> void: on_pick.call(idx))
+		options.add_child(btn)
+
+	return row
+
+
+func _set_tuning(field: StringName, value: Variant) -> void:
+	var car_id: StringName = Game.garage.active_car_id
+	Game.garage.set_tuning(car_id, field, value)
+	var w: World = Dir.world
+	if w != null and w.player != null and w.player.runtime.car_id == car_id:
+		w.player.runtime.tuning = Game.garage.tuning_for(car_id)
+		w.player.refresh_visuals(Db.cars.get_car(car_id))
+	_refresh()
+
+
+# --- Вкладка «Обслуживание» (активная машина) --------------------------------
+
+func _refresh_maintenance() -> void:
+	for child in _maint_vbox.get_children():
+		child.queue_free()
+	var w: World = Dir.world
+	if w == null or w.player == null:
+		var empty := Label.new()
+		empty.text = "Недоступно вне заезда."
+		empty.add_theme_color_override("font_color", UiTheme.COLOR_TEXT_MUTED)
+		_maint_vbox.add_child(empty)
+		return
+	var runtime: CarRuntime = w.player.runtime
+
+	_maint_vbox.add_child(_build_status_row("Топливо",
+		"%d%%" % roundi(runtime.fuel_ratio() * 100.0), UiTheme.COLOR_INFO_BLUE))
+	_maint_vbox.add_child(_build_status_row("Повреждения",
+		"%d%%" % roundi(runtime.damage), UiTheme.COLOR_DANGER_RED))
+	_maint_vbox.add_child(_build_status_row("Загрязнение",
+		"%d%%" % roundi(runtime.dirt * 100.0), UiTheme.COLOR_TEXT_MUTED))
+
+	var repair_cost := Game.garage.repair_cost(runtime)
+	_maint_vbox.add_child(_build_service_row("Ремонт кузова",
+		"%d ₽" % repair_cost if repair_cost > 0 else "Не требуется",
+		repair_cost > 0, func() -> void: _do_repair()))
+
+	_maint_vbox.add_child(_build_service_row("Мойка",
+		"%d ₽" % Db.balance.wash_cost if runtime.dirt > 0.0 else "Машина чистая",
+		runtime.dirt > 0.0, func() -> void: _do_wash()))
+
+
+func _build_status_row(label: String, value: String, color: Color) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	var lbl := Label.new()
+	lbl.text = label
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.add_theme_color_override("font_color", UiTheme.COLOR_TEXT_MUTED)
+	row.add_child(lbl)
+	var val := Label.new()
+	val.text = value
+	val.add_theme_color_override("font_color", color)
+	row.add_child(val)
+	return row
+
+
+func _build_service_row(label: String, action_text: String, enabled: bool,
+		on_pressed: Callable) -> PanelContainer:
+	var row := PanelContainer.new()
+	row.add_theme_stylebox_override("panel", UiTheme.panel_style(8, UiTheme.COLOR_BORDER, UiTheme.COLOR_BG_PANEL))
+
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 10)
+	row.add_child(hbox)
+
+	var lbl := Label.new()
+	lbl.text = label
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.add_theme_color_override("font_color", UiTheme.COLOR_TEXT_PRIMARY)
+	lbl.add_theme_font_size_override("font_size", 15)
+	hbox.add_child(lbl)
+
+	var btn := Button.new()
+	btn.text = action_text
+	btn.disabled = not enabled
+	btn.add_theme_stylebox_override("normal", UiTheme.button_primary_style(&"normal"))
+	btn.add_theme_stylebox_override("hover", UiTheme.button_primary_style(&"hover"))
+	btn.add_theme_color_override("font_color", Color("#111115"))
+	if enabled:
+		btn.pressed.connect(on_pressed)
+	hbox.add_child(btn)
+
+	return row
+
+
+func _do_repair() -> void:
+	var w: World = Dir.world
+	if w != null and w.player != null:
+		Game.garage.repair(w.player.runtime)
+	_refresh()
+
+
+func _do_wash() -> void:
+	var w: World = Dir.world
+	if w != null and w.player != null:
+		Game.garage.wash(w.player.runtime)
 	_refresh()
 
 
@@ -252,3 +474,19 @@ func _build_ui() -> void:
 	_upgrades_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_upgrades_vbox.add_theme_constant_override("separation", 6)
 	upgrades_scroll.add_child(_upgrades_vbox)
+
+	var tuning_scroll := ScrollContainer.new()
+	tuning_scroll.name = "Тюнинг"
+	tabs.add_child(tuning_scroll)
+	_tuning_vbox = VBoxContainer.new()
+	_tuning_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_tuning_vbox.add_theme_constant_override("separation", 6)
+	tuning_scroll.add_child(_tuning_vbox)
+
+	var maint_scroll := ScrollContainer.new()
+	maint_scroll.name = "Обслуживание"
+	tabs.add_child(maint_scroll)
+	_maint_vbox = VBoxContainer.new()
+	_maint_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_maint_vbox.add_theme_constant_override("separation", 6)
+	maint_scroll.add_child(_maint_vbox)

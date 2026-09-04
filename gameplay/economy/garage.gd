@@ -1,10 +1,9 @@
 class_name Garage
 extends RefCounted
-## Владение машинами и уровни апгрейдов по каждой из них.
+## Владение машинами, уровни апгрейдов и тюнинг-косметика по каждой из них.
 ##
 ## Живёт в Game.garage (не сбрасывается start_shift() — гараж не привязан
-## к смене, как и lifetime_stats). MVP этапа 15: покупка/переключение машин
-## и апгрейды с реальным списанием денег; тюнинг и обслуживание — позже.
+## к смене, как и lifetime_stats).
 
 var owned_cars: Array[StringName] = [&"taxi"]
 var active_car_id: StringName = &"taxi"
@@ -13,6 +12,16 @@ var active_car_id: StringName = &"taxi"
 ## типизацию значения (Dictionary[StringName, int]), которую ждёт
 ## CarRuntime.upgrade_levels, и присваивание падает рантайм-ошибкой.
 var _upgrade_levels: Dictionary[String, int] = {}
+
+## Тюнинг — за каждой машиной свой, а не один общий набор: заводская
+## окраска у каждой модели своя (CarData.body_color уже совпадает с одним
+## из TuningCatalog.colors), и глобальный выбор цвета перекрасил бы разом
+## весь парк при первом же клике. -1 у color/decal значит «заводское
+## значение машины» (CarData.body_color / CarData.default_decal).
+const TUNING_DEFAULTS := {
+	&"color": -1, &"rims": 0, &"spoiler": false, &"body_kit": 0, &"decal": -1,
+}
+var _tuning: Dictionary[String, Variant] = {}
 
 
 func owns(car_id: StringName) -> bool:
@@ -75,4 +84,50 @@ func buy_upgrade(car_id: StringName, upgrade_id: StringName) -> bool:
 	if not Game.spend(cost):
 		return false
 	_upgrade_levels[_key(car_id, upgrade_id)] = level + 1
+	return true
+
+
+# --- Тюнинг-косметика (бесплатно — только внешний вид) ------------------------
+
+func tuning_value(car_id: StringName, field: StringName) -> Variant:
+	return _tuning.get(_key(car_id, field), TUNING_DEFAULTS[field])
+
+
+func set_tuning(car_id: StringName, field: StringName, value: Variant) -> void:
+	_tuning[_key(car_id, field)] = value
+
+
+## Полный набор тюнинга машины — то, что читает PlayerCar._apply_tuning().
+func tuning_for(car_id: StringName) -> Dictionary:
+	var out := {}
+	for field: StringName in TUNING_DEFAULTS:
+		out[field] = tuning_value(car_id, field)
+	return out
+
+
+# --- Обслуживание -------------------------------------------------------------
+
+## Стоимость ремонта текущего повреждения активной машины; 0, если нечего чинить.
+func repair_cost(runtime: CarRuntime) -> int:
+	return ceili(runtime.damage * Db.balance.repair_cost_per_damage)
+
+
+## Списывает деньги и чинит кузов. false — нечего чинить или не хватает денег.
+func repair(runtime: CarRuntime) -> bool:
+	var cost := repair_cost(runtime)
+	if cost <= 0:
+		return false
+	if not Game.spend(cost):
+		return false
+	runtime.repair()
+	return true
+
+
+## false — машина уже чистая или не хватает денег.
+func wash(runtime: CarRuntime) -> bool:
+	if runtime.dirt <= 0.0:
+		return false
+	if not Game.spend(Db.balance.wash_cost):
+		return false
+	runtime.wash()
 	return true

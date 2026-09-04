@@ -89,3 +89,89 @@ func test_upgrade_levels_are_independent_per_car() -> void:
 
 	assert_that(_garage.upgrade_level(&"taxi", &"engine")).is_equal(1)
 	assert_that(_garage.upgrade_level(&"classic", &"engine")).is_equal(0)
+
+
+func test_tuning_defaults_to_factory_values() -> void:
+	var tuning: Dictionary = _garage.tuning_for(&"taxi")
+	assert_that(tuning[&"color"]).is_equal(-1)
+	assert_that(tuning[&"rims"]).is_equal(0)
+	assert_that(tuning[&"spoiler"]).is_false()
+	assert_that(tuning[&"body_kit"]).is_equal(0)
+	assert_that(tuning[&"decal"]).is_equal(-1)
+
+
+func test_set_tuning_is_free_and_independent_per_car() -> void:
+	_garage.buy_car(&"classic")
+	var before := Game.money
+
+	_garage.set_tuning(&"taxi", &"color", 2)
+	_garage.set_tuning(&"taxi", &"spoiler", true)
+
+	assert_that(Game.money).is_equal(before)
+	assert_that(_garage.tuning_value(&"taxi", &"color")).is_equal(2)
+	assert_that(_garage.tuning_value(&"taxi", &"spoiler")).is_true()
+	assert_that(_garage.tuning_value(&"classic", &"color")).is_equal(-1)
+
+
+func test_repair_charges_by_damage_and_resets_it() -> void:
+	var runtime := CarRuntime.new()
+	runtime.setup(Db.cars.get_car(&"taxi"), Db.upgrades)
+	runtime.damage = 10.0
+	var expected_cost := ceili(10.0 * Db.balance.repair_cost_per_damage)
+	var before := Game.money
+
+	assert_that(_garage.repair(runtime)).is_true()
+	assert_that(runtime.damage).is_equal(0.0)
+	assert_that(Game.money).is_equal(before - expected_cost)
+
+
+func test_repair_does_nothing_when_undamaged() -> void:
+	var runtime := CarRuntime.new()
+	runtime.setup(Db.cars.get_car(&"taxi"), Db.upgrades)
+	var before := Game.money
+
+	assert_that(_garage.repair(runtime)).is_false()
+	assert_that(Game.money).is_equal(before)
+
+
+func test_wash_charges_flat_cost_and_resets_dirt() -> void:
+	var runtime := CarRuntime.new()
+	runtime.setup(Db.cars.get_car(&"taxi"), Db.upgrades)
+	runtime.dirt = 0.5
+	var before := Game.money
+
+	assert_that(_garage.wash(runtime)).is_true()
+	assert_that(runtime.dirt).is_equal(0.0)
+	assert_that(Game.money).is_equal(before - Db.balance.wash_cost)
+
+
+func test_wash_does_nothing_when_clean() -> void:
+	var runtime := CarRuntime.new()
+	runtime.setup(Db.cars.get_car(&"taxi"), Db.upgrades)
+	var before := Game.money
+
+	assert_that(_garage.wash(runtime)).is_false()
+	assert_that(Game.money).is_equal(before)
+
+
+## Сквозная проверка гараж → PlayerCar: выбор цвета в тюнинге должен
+## действительно перекрашивать кузов, а не только менять число в словаре.
+func test_tuning_color_repaints_chassis() -> void:
+	_garage.set_tuning(&"taxi", &"color", 2)
+
+	var car := PlayerCar.new()
+	car.runtime.tuning = _garage.tuning_for(&"taxi")
+	car.setup(Db.cars.get_car(&"taxi"), Db.upgrades, CityField.new(Db.balance))
+
+	var chassis := car.get_node("Body/Chassis") as MeshInstance3D
+	var colors: PackedColorArray = chassis.mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
+	var expected := Db.cars.tuning.color_at(2)
+	var found := false
+	for c in colors:
+		if c.is_equal_approx(expected):
+			found = true
+			break
+	assert_bool(found)\
+		.override_failure_message("кузов не перекрашен в цвет тюнинга %s" % expected)\
+		.is_true()
+	car.free()

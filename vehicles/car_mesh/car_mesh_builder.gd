@@ -101,6 +101,8 @@ class Spec extends RefCounted:
 	var rim_color := Color("#c4c6ca")
 	var body_kit: StringName = &"stock"
 	var spoiler := false
+	## none | stripe | checker | racing (TuningCatalog.decal_ids).
+	var decal: StringName = &"none"
 	## Ливрея такси: шашечки по борту и плафон на крыше.
 	var taxi_livery := false
 	## Синяя полоса полиции.
@@ -309,6 +311,16 @@ static func _add_car_body(b: MeshBuilder, spec: Spec, s: Dictionary) -> void:
 		Vector3(0.34, 0.018, 0.018), DARK, Basis(Vector3.FORWARD, 0.16))
 	b.box(Vector3(0.18, deck_top + 0.025, cab_z + cab_len * 0.48),
 		Vector3(0.34, 0.018, 0.018), DARK, Basis(Vector3.FORWARD, 0.16))
+
+	if spec.body_kit == &"sport":
+		# Спортивный обвес: передний сплиттер, задний диффузор, боковые пороги.
+		b.box(Vector3(0.0, deck_y - deck_h * 0.52, hl - 0.05),
+			Vector3(w * 0.92, 0.05, 0.10), DARK)
+		b.box(Vector3(0.0, deck_y - deck_h * 0.52, -hl + 0.06),
+			Vector3(w * 0.88, 0.05, 0.12), DARK)
+		for sx: float in [-1.0, 1.0]:
+			b.box(Vector3(sx * (hw - 0.01), deck_y - deck_h * 0.5, 0.0),
+				Vector3(0.05, 0.05, l * 0.68), DARK)
 
 
 ## Городской автобус (ПАЗ / курортный автолайн): цельный кузов,
@@ -570,6 +582,37 @@ static func _add_details(b: MeshBuilder, spec: Spec, include_beacon: bool = true
 
 	if spec.beacon != &"" and include_beacon:
 		_add_beacon(b, spec, s)
+
+	_add_decal(b, spec, s)
+
+
+## Декаль тюнинга — рисуется по верху кузова (капот-крыша-багажник), чтобы не
+## конфликтовать с шашечками такси на бортах (_add_taxi_livery). Цвет —
+## контрастный к body_color, чтобы декаль было видно на любой окраске.
+static func _add_decal(b: MeshBuilder, spec: Spec, s: Dictionary) -> void:
+	if spec.decal == &"none":
+		return
+	var w := spec.width
+	var l := spec.length
+	var hl := l * 0.5
+	var top_y: float = roof_height(s) + 0.006
+	var accent := Color.BLACK if spec.body_color.get_luminance() > 0.5 else Color.WHITE
+
+	match spec.decal:
+		&"stripe":
+			b.box(Vector3(0.0, top_y, 0.0), Vector3(w * 0.22, 0.008, l * 0.86), accent)
+		&"racing":
+			for sx: float in [-0.16, 0.16]:
+				b.box(Vector3(sx * w, top_y, 0.0), Vector3(w * 0.09, 0.008, l * 0.86), accent)
+		&"checker":
+			var hood_len: float = float(s.get("hood", 0.3)) * l
+			var cells := 6
+			var cell_len := hood_len * 0.86 / cells
+			for k in cells:
+				if k % 2 == 1:
+					continue
+				var z := hl - hood_len * 0.07 - k * cell_len - cell_len * 0.5
+				b.box(Vector3(0.0, top_y, z), Vector3(w * 0.5, 0.006, cell_len), accent)
 
 
 ## Фирменный световой короб «ТАКСИ» и шашечки на бортах.

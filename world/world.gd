@@ -88,6 +88,7 @@ func _spawn_player() -> void:
 	add_child(player)
 	var active_id: StringName = Game.garage.active_car_id
 	player.runtime.upgrade_levels = Game.garage.upgrade_levels_for(active_id)
+	player.runtime.tuning = Game.garage.tuning_for(active_id)
 	player.setup(Db.cars.get_car(active_id), Db.upgrades, city.field)
 	player.place(SPAWN, 0.0)
 	player.crashed.connect(_on_player_crashed)
