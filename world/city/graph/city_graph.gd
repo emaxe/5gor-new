@@ -95,6 +95,11 @@ var _edge_b: PackedInt32Array = PackedInt32Array()
 var _edge_width: PackedFloat32Array = PackedFloat32Array()
 var _edge_kind: PackedByteArray = PackedByteArray()
 var _edge_level: PackedInt32Array = PackedInt32Array()
+## Название улицы, к которой относится ребро; "" — безымянный проезд.
+## Обычная строка, а не ключ локализации: сегодня ни один экран названия
+## улиц не показывает. Как только покажет (вывеска, подпись на карте) —
+## переводить в `_tr_key()`/CSV, см. `.agents/rules/data-pipeline.md`.
+var _edge_name: PackedStringArray = PackedStringArray()
 ## CSR полилиний: точки ребра e — это `_points[_edge_point_start[e] ..
 ## _edge_point_start[e + 1])`. Одна общая PackedVector3Array вместо массива
 ## массивов — чтобы граф оставался плоским набором Packed*Array.
@@ -172,8 +177,12 @@ func add_node(position: Vector3, level: int = 0,
 ##
 ## Ширина по умолчанию — 12 м, полотно проспекта оригинала
 ## (2 * `BalanceData.road_half` = 2 * 6, city_field.gd:40).
+##
+## `street_name` — название улицы, которой принадлежит ребро; цепочка рёбер
+## одной улицы несёт одно и то же имя. Пусто для безымянных проездов.
 func add_edge(a: int, b: int, polyline: PackedVector3Array = PackedVector3Array(),
-		width: float = 12.0, kind: int = EdgeKind.STREET, level: int = 0) -> int:
+		width: float = 12.0, kind: int = EdgeKind.STREET, level: int = 0,
+		street_name: String = "") -> int:
 	if _built:
 		push_error("CityGraph: add_edge после build() — граф read-only")
 		return -1
@@ -183,6 +192,7 @@ func add_edge(a: int, b: int, polyline: PackedVector3Array = PackedVector3Array(
 	_edge_width.append(width)
 	_edge_kind.append(kind)
 	_edge_level.append(level)
+	_edge_name.append(street_name)
 	_edge_point_start.append(_points.size())
 	if polyline.size() < 2:
 		_points.append(_node_pos[a])
@@ -367,6 +377,10 @@ func edge_kind(id: int) -> int:
 
 func edge_level(id: int) -> int:
 	return _edge_level[id]
+
+
+func edge_name(id: int) -> String:
+	return _edge_name[id]
 
 
 func edge_length(id: int) -> float:
