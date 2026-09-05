@@ -17,20 +17,39 @@ signal escaped(peak_level: int)
 
 ## Статический хеш зданий для проверки видимости. Обёртка над SpatialHash2D
 ## с дополнительным запросом «отрезок- AABB».
+##
+## Здание может быть повёрнуто (`CityPlan.building_yaw`, этап 5), поэтому в
+## хеш кладётся мировой AABB вокруг повёрнутого габарита — он только
+## отсеивает кандидатов, — а решает точный тест: отрезок переводится в
+## собственные оси здания, и там работает тот же слэб-метод. Запаса на AABB
+## вместо честного OBB не делается: приближение «толще» дома на его диагональ
+## (у корпуса 22x12 это лишние 8 м с угла), и патруль засчитывал бы нарушение
+## сквозь двор — а видимость это правило игры, а не косметика.
 class BuildingHash extends RefCounted:
 	var _hash: SpatialHash2D
+	## Параллельно хешу: центр, полугабарит и поворот. Индексы совпадают —
+	## `SpatialHash2D` возвращает индексы в порядке добавления.
+	var _center: PackedVector2Array = PackedVector2Array()
+	var _half: PackedVector2Array = PackedVector2Array()
+	var _yaw: PackedFloat32Array = PackedFloat32Array()
 
 	func _init() -> void:
 		_hash = SpatialHash2D.new(16.0)
 
 	func build(plan: CityPlan) -> void:
 		_hash.clear()
+		_center = PackedVector2Array()
+		_half = PackedVector2Array()
+		_yaw = PackedFloat32Array()
 		for i in plan.building_count():
-			var r: Vector4 = plan.building_rect[i]
-			_hash.add_rect(r.x, r.y, r.z, r.w)
+			var box := plan.building_world_aabb(i)
+			_hash.add_rect(box.position.x, box.position.y, box.end.x, box.end.y)
+			_center.append(plan.building_center(i))
+			_half.append(plan.building_size(i) * 0.5)
+			_yaw.append(plan.building_yaw[i])
 
 	## Пересекает ли отрезок (x0,z0)→(x1,z1) хотя бы одно здание.
-	## Использует bounding-circle кандидатов + точный segment-AABB тест.
+	## Использует bounding-circle кандидатов + точный segment-OBB тест.
 	func segment_hits(x0: float, z0: float, x1: float, z1: float) -> bool:
 		var cx := (x0 + x1) * 0.5
 		var cz := (z0 + z1) * 0.5
@@ -38,10 +57,31 @@ class BuildingHash extends RefCounted:
 		var dz := z1 - z0
 		var r := sqrt(dx * dx + dz * dz) * 0.5 + 0.5
 		for idx: int in _hash.query_circle(cx, cz, r):
-			var b: Vector4 = _hash.rect_of(idx)
-			if _seg_hits_aabb(x0, z0, x1, z1, b.x, b.y, b.z, b.w):
+			var c := _center[idx]
+			var h := _half[idx]
+			var yaw := _yaw[idx]
+			if is_zero_approx(yaw):
+				if _seg_hits_aabb(x0, z0, x1, z1,
+						c.x - h.x, c.y - h.y, c.x + h.x, c.y + h.y):
+					return true
+				continue
+			# Поворот отрезка на -yaw вокруг центра дома: в его осях коробка
+			# снова осеаксиальная, и годится тот же слэб-метод.
+			var a := _to_local(x0, z0, c, yaw)
+			var b := _to_local(x1, z1, c, yaw)
+			if _seg_hits_aabb(a.x, a.y, b.x, b.y, -h.x, -h.y, h.x, h.y):
 				return true
 		return false
+
+	## Точка в осях здания: обратный поворот к `CityPlan.building_corners()`,
+	## где локальный +X уходит в мир как (cos yaw, -sin yaw).
+	static func _to_local(x: float, z: float, center: Vector2,
+			yaw: float) -> Vector2:
+		var dx := x - center.x
+		var dz := z - center.y
+		var cs := cos(yaw)
+		var sn := sin(yaw)
+		return Vector2(dx * cs - dz * sn, dx * sn + dz * cs)
 
 	## 2D segment-AABB intersection (Slab method, port segmentIntersectsAABB).
 	static func _seg_hits_aabb(x0: float, z0: float, x1: float, z1: float,

@@ -618,6 +618,42 @@ func surface_y_at(pos: Vector3) -> float:
 	return hit_point.y
 
 
+## Запас от точки до КРОМКИ ближайшего полотна своего яруса, м:
+## `dist - width / 2`, минимум по всем рёбрам в радиусе `radius`.
+## Отрицательное значение — точка на проезжей части, INF — рядом дорог нет.
+##
+## Это не `nearest_edge`, у которого другая задача: тот отдаёт ближайшую ОСЬ
+## и на равном удалении от узкого проезда и широкого проспекта выберет
+## проезд, хотя точка лежит внутри полотна проспекта. Застройке нужен
+## именно минимум запаса по всем соседям — «ни один дом не стоит на
+## проезжей части» иначе не проверить.
+##
+## `radius` задаёт и полосу поиска, и границу точности: ответ точен для
+## точек не дальше `radius` от оси сегмента, дальше вернётся INF.
+func road_clearance(pos: Vector3, radius: float) -> float:
+	var best := INF
+	for i in _edge_hash.query_circle(pos.x, pos.z, radius):
+		var p0 := _points[_seg_point[i]]
+		var p1 := _points[_seg_point[i] + 1]
+		var dx := p1.x - p0.x
+		var dz := p1.z - p0.z
+		var denom := dx * dx + dz * dz
+		var t := 0.0 if denom < 1e-9 \
+			else ((pos.x - p0.x) * dx + (pos.z - p0.z) * dz) / denom
+		var proj := p0.lerp(p1, clampf(t, 0.0, 1.0))
+		# Ярус разводит полотна так же, как в query_nearest_edge: улица под
+		# эстакадой не мешает строить рядом с опорой, и наоборот.
+		if absf(pos.y - proj.y) > LEVEL_TOLERANCE:
+			continue
+		var ddx := pos.x - proj.x
+		var ddz := pos.z - proj.z
+		if ddx * ddx + ddz * ddz > radius * radius:
+			continue
+		best = minf(best,
+			sqrt(ddx * ddx + ddz * ddz) - _edge_width[_seg_edge[i]] * 0.5)
+	return best
+
+
 ## Проезжая часть под точкой — замена `CityField.on_road()`.
 ## Именно на своём уровне: под мостом остаётся улица, а не полотно моста.
 func on_road(pos: Vector3) -> bool:

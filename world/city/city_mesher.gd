@@ -120,8 +120,7 @@ func build_ground() -> ArrayMesh:
 func build_building_chunks() -> Dictionary[Vector2i, ArrayMesh]:
 	var builders: Dictionary[Vector2i, MeshBuilder] = {}
 	for i in plan.building_count():
-		var r := plan.building_rect[i]
-		var center := Vector2((r.x + r.z) * 0.5, (r.y + r.w) * 0.5)
+		var center := plan.building_center(i)
 		var key := Vector2i(floori(center.x / CHUNK), floori(center.y / CHUNK))
 		if not builders.has(key):
 			builders[key] = MeshBuilder.new()
@@ -135,23 +134,48 @@ func build_building_chunks() -> Dictionary[Vector2i, ArrayMesh]:
 	return out
 
 
+## Здание строится в СОБСТВЕННЫХ осях (центр в нуле, фасад вдоль X), а место
+## в городе и поворот вдоль улицы задаёт модельный трансформ билдера. Иначе
+## `basis_rot` пришлось бы передавать в каждую из полутора сотен коробок,
+## поясков и окон и вручную поворачивать их смещения.
+##
+## Отметка земли уходит в Y начала координат: на плоском квартале она нулевая
+## и геометрия та же, что была, а на квартале с уклоном весь дом поднимается
+## вместе с землёй, а не остаётся на нулевой отметке.
 func _add_building(b: MeshBuilder, i: int) -> void:
-	var r := plan.building_rect[i]
 	var h := plan.building_height[i]
 	var facade := plan.building_facade[i]
 	var roof := plan.building_roof[i]
-	var w := r.z - r.x
-	var dep := r.w - r.y
-	var cx := (r.x + r.z) * 0.5
-	var cz := (r.y + r.w) * 0.5
-	var seed_hash: int = (i * 7919 + int(cx * 13.0) + int(cz * 17.0)) & 0x7fffffff
+	var size := plan.building_size(i)
+	var w := size.x
+	var dep := size.y
+	var center := plan.building_center(i)
+	var ground := plan.building_ground[i]
+	var ground_top: float = maxf(maxf(ground.x, ground.y), maxf(ground.z, ground.w))
+	var ground_low: float = minf(minf(ground.x, ground.y), minf(ground.z, ground.w))
+	b.set_model(Transform3D(Basis(Vector3.UP, plan.building_yaw[i]),
+		Vector3(center.x, ground_top, center.y)))
+	# Локальный габарит: тот же прямоугольник, но с началом в центре дома.
+	var r := Vector4(-w * 0.5, -dep * 0.5, w * 0.5, dep * 0.5)
+	var cx := 0.0
+	var cz := 0.0
+	var seed_hash: int = (i * 7919 + int(center.x * 13.0)
+		+ int(center.y * 17.0)) & 0x7fffffff
 	var archetype := (seed_hash % 4)
 
 	# 1. Цоколь здания (Массивный машукский камень / гранит)
 	var base_h: float = clampf(h * 0.08, 0.50, 1.1)
 	var plinth_color := facade.darkened(0.42).lerp(Color("#282a2e"), 0.4)
-	b.box(Vector3(cx, Y_SIDEWALK + base_h * 0.5, cz),
-		Vector3(w + 0.22, base_h, dep + 0.22), plinth_color)
+	# На уклоне цоколь опускается до САМОГО НИЗКОГО угла: пол остаётся
+	# горизонтальным (дом не строят с наклонным перекрытием), а низ уходит в
+	# землю там, где она ниже, — иначе верхний угол стоял бы на земле, а
+	# нижний висел в воздухе. Настоящая юбка с четырьмя разными отметками
+	# углов не заводится: на нынешней топологии разброс под каждым домом
+	# ровно 0 (весь город южнее z = -260 плоский, `test_block_planner.gd`),
+	# и примитив под данные, которых нет, — это геометрия впустую.
+	var drop := ground_top - ground_low
+	b.box(Vector3(cx, Y_SIDEWALK + (base_h - drop) * 0.5, cz),
+		Vector3(w + 0.22, base_h + drop, dep + 0.22), plinth_color)
 	# Пояс цокольного отлива
 	b.box(Vector3(cx, Y_SIDEWALK + base_h, cz),
 		Vector3(w + 0.28, 0.08, dep + 0.28), plinth_color.lightened(0.15))
@@ -271,7 +295,9 @@ func _add_building(b: MeshBuilder, i: int) -> void:
 		_add_balconies(b, r, h, w, dep, facade, seed_hash)
 
 	# 8. Окна, витрины и маркизы
-	_add_windows(b, i, seed_hash, archetype)
+	_add_windows(b, i, r, seed_hash, archetype)
+
+	b.clear_model()
 
 
 func _add_entrance(b: MeshBuilder, r: Vector4, cx: float, cz: float,
@@ -364,8 +390,10 @@ func _single_balcony(b: MeshBuilder, wall_pos: Vector3, bw: float,
 		Vector3(0.08, bh, bdepth), rail_col)
 
 
-func _add_windows(b: MeshBuilder, i: int, seed_hash: int, archetype: int = 0) -> void:
-	var r := plan.building_rect[i]
+## `r` — габарит в осях здания (как у `_add_entrance`/`_add_balconies`):
+## окна раскладываются по фасаду, а не по мировым координатам.
+func _add_windows(b: MeshBuilder, i: int, r: Vector4, seed_hash: int,
+		archetype: int = 0) -> void:
 	var h := plan.building_height[i]
 	var w := r.z - r.x
 	var dep := r.w - r.y

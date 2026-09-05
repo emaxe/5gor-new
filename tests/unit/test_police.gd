@@ -164,3 +164,51 @@ func test_no_chase_below_chase_level() -> void:
 	assert_int(p.chase_idx)\
 		.override_failure_message("ниже порога погони патруль не преследует")\
 		.is_equal(-1)
+
+
+# --- Видимость сквозь повёрнутые здания -------------------------------------
+#
+# Периметральная застройка по графу (этап 5) ставит дома вдоль улицы, а не по
+# осям X/Z, поэтому проверка видимости работает с OBB, а не с AABB. Разница
+# видна ровно в углах описанного прямоугольника: у корпуса 20x8, развёрнутого
+# на 45°, они отстоят от дома на 6 м, и патруль «видел» бы сквозь двор.
+
+## Корпус 20x8 с центром в нуле, развёрнутый на `yaw`.
+func _rotated_plan(yaw: float) -> CityPlan:
+	var plan := CityPlan.new()
+	plan.add_building(Vector4(-10.0, -4.0, 10.0, 4.0), 12.0,
+		Color.BLUE, Color.BLUE, 0, 0, yaw)
+	return plan
+
+
+func _hash_of(plan: CityPlan) -> PoliceManager.BuildingHash:
+	var h := PoliceManager.BuildingHash.new()
+	h.build(plan)
+	return h
+
+
+func test_rotated_building_blocks_the_line_of_sight() -> void:
+	var h := _hash_of(_rotated_plan(PI * 0.25))
+	assert_bool(h.segment_hits(-12.0, -12.0, 12.0, 12.0))\
+		.override_failure_message("отрезок через центр повёрнутого дома обязан упереться")\
+		.is_true()
+
+
+func test_rotated_building_does_not_block_beside_itself() -> void:
+	# Точка (9, 9) лежит внутри описанного AABB (±9.9), но снаружи корпуса:
+	# в его осях это 12.7 м от середины при глубине 8 м.
+	var h := _hash_of(_rotated_plan(PI * 0.25))
+	assert_bool(h.segment_hits(7.0, 7.0, 12.0, 12.0))\
+		.override_failure_message(
+			"отрезок мимо угла дома (внутри его AABB) не должен считаться перекрытым")\
+		.is_false()
+
+
+func test_zero_yaw_keeps_the_old_behaviour() -> void:
+	var h := _hash_of(_rotated_plan(0.0))
+	assert_bool(h.segment_hits(0.0, -12.0, 0.0, 12.0))\
+		.override_failure_message("отрезок поперёк неповёрнутого дома обязан упереться")\
+		.is_true()
+	assert_bool(h.segment_hits(-12.0, 6.0, 12.0, 6.0))\
+		.override_failure_message("отрезок в 2 м за торцом дома проходит свободно")\
+		.is_false()

@@ -222,3 +222,63 @@ func test_prism_normals_point_outward() -> void:
 	for i in verts.size():
 		# Нормали смотрят наружу от центра призмы (с небольшим допуском)
 		assert_float(normals[i].dot(verts[i])).is_greater_equal(-EPS)
+
+
+# --- Модельный трансформ ----------------------------------------------------
+#
+# Повёрнутые здания (этап 5) строятся в собственных осях, а место в городе
+# задаёт трансформ билдера. Значит две вещи обязаны быть верны: перенос без
+# поворота не меняет НИЧЕГО в сравнении с прямой укладкой в мировых
+# координатах, и поворот применяется ко всем примитивам, а не только к боксу.
+
+func _verts_of(mesh: ArrayMesh) -> PackedVector3Array:
+	var arrays := mesh.surface_get_arrays(0)
+	return arrays[Mesh.ARRAY_VERTEX]
+
+
+func test_model_translation_matches_direct_world_coordinates() -> void:
+	var offset := Vector3(37.0, 0.0, -19.0)
+	var direct := MeshBuilder.new()
+	direct.box(offset + Vector3(1.5, 2.0, -0.5), Vector3(4.0, 6.0, 3.0), Color.WHITE)
+	var moved := MeshBuilder.new()
+	moved.set_model(Transform3D(Basis.IDENTITY, offset))
+	moved.box(Vector3(1.5, 2.0, -0.5), Vector3(4.0, 6.0, 3.0), Color.WHITE)
+	var a := _verts_of(direct.commit())
+	var b := _verts_of(moved.commit())
+	assert_int(b.size()).is_equal(a.size())
+	for i in a.size():
+		assert_vector(b[i])\
+			.override_failure_message(
+				"вершина %d разошлась: %s против %s" % [i, b[i], a[i]])\
+			.is_equal(a[i])
+
+
+func test_model_rotation_turns_every_primitive() -> void:
+	# Цилиндр и призма идут мимо box(), но через tri() — а трансформ живёт
+	# именно там, поэтому поворачивается и они.
+	var yaw := PI * 0.5
+	var b := MeshBuilder.new()
+	b.set_model(Transform3D(Basis(Vector3.UP, yaw), Vector3.ZERO))
+	b.box(Vector3(10.0, 0.0, 0.0), Vector3(2.0, 2.0, 2.0), Color.WHITE)
+	b.prism(Vector3(20.0, 0.0, 0.0), Vector3(2.0, 2.0, 2.0), Color.WHITE)
+	b.cylinder(Vector3(30.0, 0.0, 0.0), 1.0, 1.0, 2.0, Color.WHITE, 6)
+	# Поворот на +90° вокруг Y уводит ось X в -Z (city_plan.gd: локальный +X
+	# ложится в мир как (cos yaw, -sin yaw)).
+	for v in _verts_of(b.commit()):
+		assert_float(v.x)\
+			.override_failure_message("вершина %s осталась на оси X после поворота" % v)\
+			.is_less(2.0)
+		assert_float(v.z)\
+			.override_failure_message("вершина %s не ушла в -Z после поворота" % v)\
+			.is_less(1.0)
+
+
+func test_clear_model_returns_to_world_coordinates() -> void:
+	var b := MeshBuilder.new()
+	b.set_model(Transform3D(Basis.IDENTITY, Vector3(100.0, 0.0, 0.0)))
+	b.clear_model()
+	b.box(Vector3.ZERO, Vector3(2.0, 2.0, 2.0), Color.WHITE)
+	for v in _verts_of(b.commit()):
+		assert_float(absf(v.x))\
+			.override_failure_message("после clear_model() вершина уехала в %s" % v)\
+			.is_less_equal(1.0 + EPS)

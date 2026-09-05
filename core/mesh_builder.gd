@@ -13,6 +13,18 @@ extends RefCounted
 
 var _st := SurfaceTool.new()
 var _started := false
+## Модельный трансформ: примитивы задаются в локальных осях объекта, а сюда
+## кладётся его положение и поворот в мире. Нужен повёрнутым зданиям (этап 5):
+## дом на улице по диагонали состоит из полутора сотен коробок, поясков и
+## окон, и передавать `basis_rot` с пересчётом смещения в каждый вызов —
+## полтораста мест, где можно ошибиться, вместо одного.
+##
+## Применяется в `tri()`/`tri_gradient()`, через которые проходят ВСЕ
+## примитивы, поэтому поворачивается вообще любая геометрия. Флаг `_has_model`
+## держит нулевую цену для основного случая: без трансформа вершина не
+## проходит ни одного лишнего умножения.
+var _model := Transform3D.IDENTITY
+var _has_model := false
 ## Накопительное вертикальное затемнение (псевдо-AO) применяется шейдером,
 ## здесь хранится только опорная высота для чанка.
 var vertex_count := 0
@@ -53,6 +65,21 @@ func is_empty() -> bool:
 	return vertex_count == 0
 
 
+## Дальнейшие примитивы задаются в локальных осях объекта и переносятся этим
+## трансформом. Вложенности нет намеренно: объект либо в мире, либо в своих
+## осях, стек «текущей матрицы» здесь не нужен.
+func set_model(transform: Transform3D) -> MeshBuilder:
+	_model = transform
+	_has_model = true
+	return self
+
+
+func clear_model() -> MeshBuilder:
+	_model = Transform3D.IDENTITY
+	_has_model = false
+	return self
+
+
 # --- Примитивы ---------------------------------------------------------------
 
 ## Треугольник a-b-c, заданный ПРОТИВ часовой стрелки при взгляде снаружи.
@@ -61,6 +88,10 @@ func is_empty() -> bool:
 ## вершины укладываются в обратном порядке. Вся геометрия проекта задаётся
 ## в привычной CCW-нотации, а разворот происходит здесь — один раз.
 func tri(a: Vector3, b: Vector3, c: Vector3, color: Color) -> void:
+	if _has_model:
+		a = _model * a
+		b = _model * b
+		c = _model * c
 	_st.set_color(color)
 	_st.set_uv(Vector2(0.5, 1.0))
 	_st.add_vertex(c)
@@ -84,6 +115,10 @@ func quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, color: Color) -> void:
 ## Намотка/порядок вершин — как в tri().
 func tri_gradient(a: Vector3, b: Vector3, c: Vector3,
 		color_a: Color, color_b: Color, color_c: Color) -> void:
+	if _has_model:
+		a = _model * a
+		b = _model * b
+		c = _model * c
 	_st.set_color(color_c)
 	_st.set_uv(Vector2(0.5, 1.0))
 	_st.add_vertex(c)
