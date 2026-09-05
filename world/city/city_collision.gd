@@ -40,11 +40,16 @@ var _shape_count := 0
 func build(space: RID, plan: CityPlan, field: CityField) -> void:
 	clear()
 
+	# Здание — коробка с поворотом, как лавка или припаркованная машина ниже:
+	# на улице, идущей по диагонали, дом стоит вдоль неё, и AABB торчал бы
+	# углом на проезжую часть. При нулевом повороте `_add_box` берёт
+	# `Basis.IDENTITY` и форма та же, что была.
 	for i in plan.building_count():
-		var r := plan.building_rect[i]
-		var center := Vector3((r.x + r.z) * 0.5, BUILDING_HEIGHT * 0.5, (r.y + r.w) * 0.5)
-		var size := Vector3(r.z - r.x, BUILDING_HEIGHT, r.w - r.y)
-		_add_box(_chunk_body(space, center), center, size)
+		var c := plan.building_center(i)
+		var s := plan.building_size(i)
+		var center := Vector3(c.x, BUILDING_HEIGHT * 0.5, c.y)
+		_add_box(_chunk_body(space, center), center,
+			Vector3(s.x, BUILDING_HEIGHT, s.y), plan.building_yaw[i])
 
 	# Стойки светофоров и фонари — цилиндры: в них можно въехать.
 	for p in plan.lamp_pos:

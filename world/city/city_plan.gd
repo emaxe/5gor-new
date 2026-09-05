@@ -14,8 +14,22 @@ extends RefCounted
 var seed_value := 0
 
 # --- Здания -----------------------------------------------------------------
-## AABB в плане: x0, z0, x1, z1.
+## Габарит в плане: x0, z0, x1, z1 — В СОБСТВЕННЫХ ОСЯХ здания, повёрнутых
+## на `building_yaw` вокруг центра прямоугольника. При нулевом повороте это
+## тот же AABB в мировых осях, что и раньше, поэтому сеточный `CityPlanner`
+## и все его потребители работают без изменений.
 var building_rect: PackedVector4Array = PackedVector4Array()
+## Поворот вокруг Y: локальная ось X идёт вдоль фасада, локальная +Z — вглубь
+## квартала (`yaw = atan2(-tz, tx)` от касательной улицы). Периметральная
+## застройка по полигону квартала ставит дома фронтом вдоль улицы, а улицы в
+## настоящем городе по осям X/Z не выровнены.
+var building_yaw: PackedFloat32Array = PackedFloat32Array()
+## Высота земли под четырьмя углами здания в порядке (-x,-z), (+x,-z),
+## (+x,+z), (-x,+z) локальных осей. Нужна цоколю: на квартале с уклоном одна
+## отметка на центр оставила бы часть дома висеть в воздухе. Весь нынешний
+## город плоский (`CityField.height_at` = 0 южнее z = -260), поэтому здесь
+## нули — но это ДАННЫЕ рельефа, а не допущение о плоскости.
+var building_ground: PackedVector4Array = PackedVector4Array()
 var building_height: PackedFloat32Array = PackedFloat32Array()
 var building_facade: PackedColorArray = PackedColorArray()
 var building_roof: PackedColorArray = PackedColorArray()
@@ -74,8 +88,11 @@ func building_count() -> int:
 
 
 func add_building(rect: Vector4, height: float, facade: Color, roof: Color,
-		district: int, roof_kind: int) -> void:
+		district: int, roof_kind: int, yaw: float = 0.0,
+		ground: Vector4 = Vector4.ZERO) -> void:
 	building_rect.append(rect)
+	building_yaw.append(yaw)
+	building_ground.append(ground)
 	building_height.append(height)
 	building_facade.append(facade)
 	building_roof.append(roof)
@@ -83,9 +100,46 @@ func add_building(rect: Vector4, height: float, facade: Color, roof: Color,
 	building_roof_kind.append(roof_kind)
 
 
+## Габарит в собственных осях здания. При `building_yaw[i] == 0` — он же
+## и мировой AABB.
 func building_aabb(i: int) -> Rect2:
 	var r := building_rect[i]
 	return Rect2(r.x, r.y, r.z - r.x, r.w - r.y)
+
+
+func building_center(i: int) -> Vector2:
+	var r := building_rect[i]
+	return Vector2((r.x + r.z) * 0.5, (r.y + r.w) * 0.5)
+
+
+## Габарит в плане: длина фасада по локальному X, глубина корпуса по Z.
+func building_size(i: int) -> Vector2:
+	var r := building_rect[i]
+	return Vector2(r.z - r.x, r.w - r.y)
+
+
+## Четыре угла в мировых осях, порядок как у `building_ground`.
+func building_corners(i: int) -> PackedVector2Array:
+	var c := building_center(i)
+	var h := building_size(i) * 0.5
+	var yaw := building_yaw[i]
+	var ex := Vector2(cos(yaw), -sin(yaw)) * h.x
+	var ez := Vector2(sin(yaw), cos(yaw)) * h.y
+	return PackedVector2Array([
+		c - ex - ez, c + ex - ez, c + ex + ez, c - ex + ez])
+
+
+## Мировой AABB вокруг повёрнутого габарита — для хешей и чанков.
+func building_world_aabb(i: int) -> Rect2:
+	if is_zero_approx(building_yaw[i]):
+		return building_aabb(i)
+	var pts := building_corners(i)
+	var lo := pts[0]
+	var hi := pts[0]
+	for p in pts:
+		lo = Vector2(minf(lo.x, p.x), minf(lo.y, p.y))
+		hi = Vector2(maxf(hi.x, p.x), maxf(hi.y, p.y))
+	return Rect2(lo, hi - lo)
 
 
 ## Итоговая сводка для лога и тестов производительности.
