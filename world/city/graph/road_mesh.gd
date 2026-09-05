@@ -141,15 +141,26 @@ var _slot_b := PackedInt32Array()
 ## приватен, а степень узла доступна.
 var _approach_base := PackedInt32Array()
 var _trim := PackedFloat32Array()
-## Вылет для тротуаров и бордюров. Он больше вылета полотна: тротуар обязан
-## остановиться там, где его ВНЕШНЯЯ кромка выходит из полотна соседнего
-## подхода. На кольце — тем более: там тротуар останавливается СНАРУЖИ
-## кольцевого полотна, а полотно подхода, наоборот, заходит внутрь него.
-var _walk_trim := PackedFloat32Array()
+## Вылет для тротуаров и бордюров, ОТДЕЛЬНО ПО СТОРОНАМ подхода: `ccw` — та
+## сторона, что смотрит по ходу возрастания угла вокруг узла, `cw` — обратная.
+## Он больше вылета полотна: тротуар обязан остановиться там, где его ВНЕШНЯЯ
+## кромка выходит из полотна соседнего подхода. На кольце — тем более: там
+## тротуар останавливается СНАРУЖИ кольцевого полотна, а полотно подхода,
+## наоборот, заходит внутрь него.
+##
+## Две стороны врозь, а не одним максимумом: на развилке 30-50° глубокая
+## обрезка нужна ровно ОДНОЙ стороне — той, что смотрит в развилку. Общий
+## максимум обрезал и вторую, ни за чем, на те же 20-37 м, и суммы двух концов
+## хватало, чтобы от тротуара не осталось `MIN_WALK_RIBBON` и он пропадал у
+## ребра целиком. Так теряли тротуар проспект Кирова и привокзальное кольцо.
+var _walk_trim_ccw := PackedFloat32Array()
+var _walk_trim_cw := PackedFloat32Array()
 
-## Обрезанные полилинии: по одной на ребро, полотно и тротуарный контур.
+## Обрезанные полилинии: полотно — одна на ребро, тротуарные — по одной на
+## сторону (`pos` — сторона `+n` полилинии, `neg` — противоположная).
 var _road_poly: Array[PackedVector3Array] = []
-var _walk_poly: Array[PackedVector3Array] = []
+var _walk_poly_pos: Array[PackedVector3Array] = []
+var _walk_poly_neg: Array[PackedVector3Array] = []
 
 
 func _init(graph: CityGraph, field: CityField) -> void:
@@ -179,7 +190,8 @@ func _index_approaches() -> void:
 		acc += _graph.node_degree(i)
 	_approach_base[n] = acc
 	_trim.resize(acc)
-	_walk_trim.resize(acc)
+	_walk_trim_ccw.resize(acc)
+	_walk_trim_cw.resize(acc)
 
 	for i in n:
 		for k in _graph.node_degree(i):
@@ -212,16 +224,18 @@ func _measure_trims() -> void:
 			var cap := minf(widest,
 				TRIM_EDGE_FRACTION * _plan_len[_graph.approach_edge(n, k)])
 			var r := 0.0
-			var w := 0.0
-			# Пара с предыдущим подходом даёт расстояние вдоль ВТОРОГО из пары.
+			var w_cw := 0.0
+			var w_ccw := 0.0
+			# Пара с предыдущим подходом даёт расстояние вдоль ВТОРОГО из пары
+			# и ограничивает сторону `cw`; пара со следующим — сторону `ccw`.
 			var left := _pair_corner(n, prev, k)
 			if left.x > 0.0:
 				r = maxf(r, left.y)
-				w = maxf(w, _pair_corner(n, prev, k, _walk, _walk).y)
+				w_cw = _pair_corner(n, prev, k, _walk, _walk).y
 			var right := _pair_corner(n, k, next)
 			if right.x > 0.0:
 				r = maxf(r, right.x)
-				w = maxf(w, _pair_corner(n, k, next, _walk, _walk).x)
+				w_ccw = _pair_corner(n, k, next, _walk, _walk).x
 			_trim[base + k] = clampf(r, 0.0, cap)
 			# Тротуар обрезается по пересечению ВНЕШНИХ кромок тротуаров, и без
 			# потолка. Причин две. Во-первых, тротуар, заехавший на проезжую
@@ -232,7 +246,8 @@ func _measure_trims() -> void:
 			# цепочки площадки идут в одну сторону, и полоса между ними не
 			# выворачивается бабочкой. Промежуточный срез — между углом полотна
 			# и углом тротуара — даёт именно её.
-			_walk_trim[base + k] = maxf(_trim[base + k], w)
+			_walk_trim_cw[base + k] = maxf(_trim[base + k], w_cw)
+			_walk_trim_ccw[base + k] = maxf(_trim[base + k], w_ccw)
 
 
 func _measure_ring(n: int, deg: int, base: int) -> void:
@@ -250,7 +265,10 @@ func _measure_ring(n: int, deg: int, base: int) -> void:
 		# Тротуар, наоборот, обрывается снаружи кольцевого полотна, и торец у
 		# него прямой: соседних прямых кромок, по которым его скашивать, нет —
 		# кромка кольца круглая, промежуток закрывает дуга угловой площадки.
-		_walk_trim[base + k] = maxf(outer, chord + 1.0)
+		# У кольца сторон нет: кромка круглая, обе стороны обрываются снаружи
+		# кольцевого полотна одинаково.
+		_walk_trim_cw[base + k] = maxf(outer, chord + 1.0)
+		_walk_trim_ccw[base + k] = _walk_trim_cw[base + k]
 
 
 ## Полуширина кольцевого полотна, м. Публичная: её же читают тесты и разметка.
@@ -304,20 +322,31 @@ func _max_half(node: int) -> float:
 ## острой развилкой и кольцом; тест держит его под наблюдением.
 func _cut_edges() -> void:
 	_road_poly.resize(_graph.edge_count())
-	_walk_poly.resize(_graph.edge_count())
+	_walk_poly_pos.resize(_graph.edge_count())
+	_walk_poly_neg.resize(_graph.edge_count())
 	for e in _graph.edge_count():
 		var ends := _graph.edge_ends(e)
 		var ia := _approach_base[ends.x] + _slot_a[e]
 		var ib := _approach_base[ends.y] + _slot_b[e]
 		var total := _plan_len[e]
 		_fit(_trim, ia, ib, total)
-		_fit(_walk_trim, ia, ib, total)
 		var pts := _graph.edge_polyline(e)
 		var snap := _graph.edge_width(e) * SNAP_FACTOR
 		_road_poly[e] = _slice(pts, _trim[ia], total - _trim[ib],
 			_snap_at(snap, _trim[ia]), _snap_at(snap, _trim[ib]))
-		_walk_poly[e] = _slice(pts, _walk_trim[ia], total - _walk_trim[ib],
-			_snap_at(snap, _walk_trim[ia]), _snap_at(snap, _walk_trim[ib]))
+		# Полилиния идёт ОТ узла-начала и К узлу-концу, поэтому одна и та же
+		# сторона улицы у начала называется `ccw`, а у конца — `cw`.
+		_walk_poly_pos[e] = _cut_walk(pts, total, snap,
+			_walk_trim_ccw[ia], _walk_trim_cw[ib])
+		_walk_poly_neg[e] = _cut_walk(pts, total, snap,
+			_walk_trim_cw[ia], _walk_trim_ccw[ib])
+
+
+func _cut_walk(pts: PackedVector3Array, total: float, snap: float, from: float,
+		to: float) -> PackedVector3Array:
+	var pair := _fit_pair(from, to, total)
+	return _slice(pts, pair.x, total - pair.y,
+		_snap_at(snap, pair.x), _snap_at(snap, pair.y))
 
 
 ## Схлопывание огрызка включается только там, где горловина действительно
@@ -329,13 +358,19 @@ static func _snap_at(snap: float, trim: float) -> float:
 
 
 func _fit(arr: PackedFloat32Array, ia: int, ib: int, total: float) -> void:
-	var sum: float = arr[ia] + arr[ib]
+	var pair := _fit_pair(arr[ia], arr[ib], total)
+	arr[ia] = pair.x
+	arr[ib] = pair.y
+
+
+## Пара вылетов, ужатая пропорционально до того, чтобы поместиться в ребро.
+static func _fit_pair(a: float, b: float, total: float) -> Vector2:
+	var sum := a + b
 	var room := maxf(total - MIN_RIBBON, 0.0)
 	if sum <= room or sum <= 0.0:
-		return
+		return Vector2(a, b)
 	var k := room / sum
-	arr[ia] *= k
-	arr[ib] *= k
+	return Vector2(a * k, b * k)
 
 
 # ============================================================================
@@ -366,11 +401,11 @@ func _edge_mesh(b: MeshBuilder, e: int) -> void:
 	b.ribbon(road, width, CityMesher.COLOR_ROAD, CityMesher.Y_ROAD)
 	if _graph.edge_kind(e) == CityGraph.EdgeKind.RAMP:
 		_embankment(b, e)
-	if not has_sidewalk(e):
-		return
-	var walk_pts := _walk_poly[e]
 	var h := width * 0.5
 	for s: float in [-1.0, 1.0]:
+		if not side_has_sidewalk(e, s > 0.0):
+			continue
+		var walk_pts := walk_polyline(e, s > 0.0)
 		b.ribbon(_offset(walk_pts, s * (h + _walk * 0.5)), _walk,
 			CityMesher.COLOR_SIDEWALK, CityMesher.Y_SIDEWALK)
 		b.ribbon(_offset(walk_pts, s * (h + CURB_WIDTH * 0.5)), CURB_WIDTH,
@@ -378,17 +413,36 @@ func _edge_mesh(b: MeshBuilder, e: int) -> void:
 		_curb_face(b, walk_pts, s * h, s)
 
 
+## Обрезанная полилиния тротуара одной стороны ребра: `positive` — сторона
+## `+n` полилинии.
+func walk_polyline(edge: int, positive: bool) -> PackedVector3Array:
+	return _walk_poly_pos[edge] if positive else _walk_poly_neg[edge]
+
+
 ## Тротуар есть только у рядовой улицы яруса 0. Серпантин — горная дорога, у
 ## неё тротуара нет и в оригинале; у рампы вместо тротуара насыпь; полотно
-## деки со своими перилами — предмет этапа 3. Плюс огрызки: если косые торцы с
-## двух концов не оставляют `MIN_WALK_RIBBON`, тротуара нет ни у ленты, ни у
-## угловых площадок, ни у разметки — иначе вместо тротуара выходит одинокая
-## плита поперёк перекрёстка.
-func has_sidewalk(edge: int) -> bool:
+## деки со своими перилами — предмет этапа 3. Плюс огрызки: если горловины с
+## двух концов не оставляют стороне `MIN_WALK_RIBBON`, тротуара с этой стороны
+## нет — иначе вместо него выходит одинокая плита поперёк перекрёстка.
+func side_has_sidewalk(edge: int, positive: bool) -> bool:
 	var k := _graph.edge_kind(edge)
 	if k != CityGraph.EdgeKind.STREET and k != CityGraph.EdgeKind.AVENUE:
 		return false
-	return _walk_poly[edge].size() >= 2 and _arc(_walk_poly[edge]) >= MIN_WALK_RIBBON
+	var poly := walk_polyline(edge, positive)
+	return poly.size() >= 2 and _arc(poly) >= MIN_WALK_RIBBON
+
+
+## Есть ли у ребра тротуар хоть с одной стороны — для разметки, которой важно
+## лишь то, что улица «с тротуарами», а не какая именно её сторона.
+func has_sidewalk(edge: int) -> bool:
+	return side_has_sidewalk(edge, true) or side_has_sidewalk(edge, false)
+
+
+## Есть ли тротуар у подхода `k` узла `n` с той его стороны, что смотрит по
+## ходу возрастания угла вокруг узла (`ccw`) или против него.
+func approach_has_sidewalk(node: int, k: int, ccw: bool) -> bool:
+	var e := _graph.approach_edge(node, k)
+	return side_has_sidewalk(e, ccw == (_graph.edge_ends(e).x == node))
 
 
 ## Вертикальная щёчка бордюра со стороны проезжей части. Без неё бордюр —
@@ -519,10 +573,24 @@ func _corner_mesh(b: MeshBuilder, n: int) -> void:
 	var ring := _graph.node_kind(n) == CityGraph.NodeKind.ROUNDABOUT
 	for k in deg:
 		var next := (k + 1) % deg
-		if not has_sidewalk(_graph.approach_edge(n, k)):
-			continue
-		if not has_sidewalk(_graph.approach_edge(n, next)):
-			continue
+		# Обод кольца строится всегда: дуга аннулюса считается по углам и
+		# ширинам подходов и не зависит от того, есть ли у подхода тротуар —
+		# от него зависит только, к чему обод причаливает на концах. Иначе
+		# привокзальное кольцо оставалось голым асфальтовым диском по всей
+		# окружности из-за двух подходов без тротуара.
+		if ring:
+			# Кольцу довольно тротуара у ОДНОГО из двух соседей: дуга обода
+			# считается по углам и ширинам подходов и от наличия тротуара не
+			# зависит — от него зависит только, к чему обод причаливает.
+			# Иначе привокзальное кольцо оставалось голым асфальтовым диском
+			# по всей окружности из-за двух подходов без тротуара.
+			if not _anchors(n, k, true, ring) and not _anchors(n, next, false, ring):
+				continue
+		else:
+			if not approach_has_sidewalk(n, k, true):
+				continue
+			if not approach_has_sidewalk(n, next, false):
+				continue
 		var chains := _corner_chain(n, k, next, ring, CURB_WIDTH)
 		_strip(b, chains[0], chains[1], CityMesher.COLOR_CURB, CityMesher.Y_CURB_TOP)
 		chains = _corner_chain(n, k, next, ring, _walk)
@@ -540,10 +608,11 @@ func _corner_chain(n: int, i: int, j: int, ring: bool,
 	var hi := _graph.edge_width(_graph.approach_edge(n, i)) * 0.5
 	var hj := _graph.edge_width(_graph.approach_edge(n, j)) * 0.5
 
-	var pi_ := walk_cut_point(n, i)
-	var ni := walk_cut_normal(n, i)
-	inner.append(pi_ + ni * hi)
-	outer.append(pi_ + ni * (hi + pad))
+	if _anchors(n, i, true, ring):
+		var pi_ := walk_cut_point(n, i, true)
+		var ni := walk_cut_normal(n, i, true)
+		inner.append(pi_ + ni * hi)
+		outer.append(pi_ + ni * (hi + pad))
 
 	if ring:
 		_ring_arc(n, i, j, hi, hj, pad, inner, outer)
@@ -554,11 +623,27 @@ func _corner_chain(n: int, i: int, j: int, ring: bool,
 			inner.append(ins[c])
 			outer.append(outs[c])
 
-	var pj := walk_cut_point(n, j)
-	var nj := walk_cut_normal(n, j)
-	inner.append(pj - nj * hj)
-	outer.append(pj - nj * (hj + pad))
+	if _anchors(n, j, false, ring):
+		var pj := walk_cut_point(n, j, false)
+		var nj := walk_cut_normal(n, j, false)
+		inner.append(pj - nj * hj)
+		outer.append(pj - nj * (hj + pad))
 	return [inner, outer]
+
+
+## Причаливает ли обод площадки к торцу тротуара этого подхода. У кольца
+## мало наличия тротуара: если ребро короткое, его вылеты ужимаются
+## пропорционально (`_fit_pair`) и торец тротуара оказывается ВНУТРИ
+## кольцевого полотна. Причалить к нему — значит протянуть полосу тротуара
+## поперёк аннулюса; там обод просто идёт по дуге дальше.
+func _anchors(n: int, k: int, ccw: bool, ring: bool) -> bool:
+	if not approach_has_sidewalk(n, k, ccw):
+		return false
+	if not ring:
+		return true
+	var center := _graph.node_position(n)
+	var outer_r := _graph.node_radius(n) + ring_half(n)
+	return _plan_dist(center, walk_cut_point(n, k, ccw)) >= outer_r - 0.5
 
 
 ## Участок дуги кольца между двумя подходами: внутренняя цепочка идёт по
@@ -814,9 +899,11 @@ func cut_point(node: int, k: int) -> Vector3:
 		_graph.approach_edge(node, k))
 
 
-func walk_cut_point(node: int, k: int) -> Vector3:
-	return _end_point(_walk_poly[_graph.approach_edge(node, k)], node,
-		_graph.approach_edge(node, k))
+## Точка, в которой обрывается тротуар подхода с указанной его стороны.
+func walk_cut_point(node: int, k: int, ccw: bool) -> Vector3:
+	var e := _graph.approach_edge(node, k)
+	return _end_point(walk_polyline(e, ccw == (_graph.edge_ends(e).x == node)),
+		node, e)
 
 
 ## Единичное направление ОТ узла в точке среза.
@@ -829,9 +916,10 @@ func cut_normal(node: int, k: int) -> Vector3:
 	return cut_dir(node, k).cross(Vector3.UP)
 
 
-func walk_cut_normal(node: int, k: int) -> Vector3:
-	return _end_dir(_walk_poly[_graph.approach_edge(node, k)], node,
-		_graph.approach_edge(node, k)).cross(Vector3.UP)
+func walk_cut_normal(node: int, k: int, ccw: bool) -> Vector3:
+	var e := _graph.approach_edge(node, k)
+	return _end_dir(walk_polyline(e, ccw == (_graph.edge_ends(e).x == node)),
+		node, e).cross(Vector3.UP)
 
 
 func _end_point(pts: PackedVector3Array, node: int, edge: int) -> Vector3:

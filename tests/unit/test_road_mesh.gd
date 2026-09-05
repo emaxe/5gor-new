@@ -34,6 +34,7 @@ var _roads: RoadMesh
 var _verts := PackedVector3Array()
 var _colors := PackedColorArray()
 var _index := PackedInt32Array()
+var _normals := PackedVector3Array()
 ## Индекс асфальтовых граней по клеткам GRID_CELL: ключ — клетка, значение —
 ## номера первых индексов граней.
 var _asphalt: Dictionary[Vector2i, PackedInt32Array] = {}
@@ -55,6 +56,7 @@ func before() -> void:
 	_verts = arrays[Mesh.ARRAY_VERTEX]
 	_colors = arrays[Mesh.ARRAY_COLOR]
 	_index = arrays[Mesh.ARRAY_INDEX]
+	_normals = arrays[Mesh.ARRAY_NORMAL]
 	_index_asphalt()
 
 
@@ -248,6 +250,39 @@ func test_junction_fan_covers_every_degree_from_three_to_five() -> void:
 						% [k, n, want, q.x, q.y, trim]).is_true()
 
 
+func test_flat_faces_point_up() -> void:
+	# Правило рендера: у нового веерного примитива нормали проверяются тестом
+	# сразу (`.agents/rules/rendering.md`, прецедент — `shadow_disc`). Веер узла
+	# ориентирует каждую грань сам, по знаку площади в плане; поставленная
+	# «наизнанку» грань с фронтальным cull_back исчезает молча, без ошибок в
+	# консоли. Щёчка бордюра вертикальна и в проверку не попадает.
+	var normals: PackedVector3Array = _normals
+	assert_int(normals.size()).override_failure_message(
+		"в меше нет нормалей — SurfaceTool их не сгенерировал").is_greater(0)
+	var flipped := 0
+	var flat := 0
+	var worst := 1.0
+	for i in range(0, _index.size(), 3):
+		var a := _verts[_index[i]]
+		var b := _verts[_index[i + 1]]
+		var c := _verts[_index[i + 2]]
+		if absf(a.y - b.y) > 0.01 or absf(a.y - c.y) > 0.01:
+			continue  # наклонная грань откоса или вертикальная щёчка бордюра
+		if absf(_plan_area(i)) < RoadMesh.MIN_FACE_AREA:
+			continue  # вырожденный квад ленты: площади нет, нормали тоже
+		flat += 1
+		for k in 3:
+			var ny := normals[_index[i + k]].y
+			if ny < 0.9:
+				flipped += 1
+				worst = minf(worst, ny)
+	assert_int(flat).override_failure_message(
+		"горизонтальных граней в полотне %d — считать нечего" % flat)		.is_greater(1000)
+	assert_int(flipped).override_failure_message(
+		"%d вершин горизонтальных граней смотрят не вверх (худшая нормаль y=%.3f) — веер вывернут"
+		% [flipped, worst]).is_equal(0)
+
+
 func test_junction_polygon_has_no_degenerate_faces() -> void:
 	# Вырожденная грань — признак того, что контур узла схлопнулся: веер
 	# отдаёт нулевую площадь вместо асфальта.
@@ -274,11 +309,11 @@ func test_corner_aprons_are_built_for_arbitrary_degree() -> void:
 			continue
 		for k in deg:
 			var next := (k + 1) % deg
-			# Улица, у которой тротуара нет вовсе (развилка съела его целиком),
-			# угол замостить не может — там его и не ждём.
-			if not _roads.has_sidewalk(_graph.approach_edge(n, k)):
+			# Сторона улицы, у которой тротуара нет (развилка съела его
+			# целиком), угол замостить не может — там его и не ждём.
+			if not _roads.approach_has_sidewalk(n, k, true):
 				continue
-			if not _roads.has_sidewalk(_graph.approach_edge(n, next)):
+			if not _roads.approach_has_sidewalk(n, next, false):
 				continue
 			var a0 := _graph.approach_angle(n, k)
 			var span := _graph.approach_angle(n, next) - a0
@@ -286,24 +321,26 @@ func test_corner_aprons_are_built_for_arbitrary_degree() -> void:
 				span += TAU
 			if span > PI:
 				continue  # внешняя сторона излома, площадки там нет
-			# Идём из центра узла по биссектрисе угла, пока не кончится асфальт.
-			# Сразу за его кромкой обязан начинаться тротуар (или бордюр на
-			# самой кромке) — иначе в углу перекрёстка вылезает трава.
+			# Идём из центра узла наружу, пока не кончится асфальт: сразу за
+			# его кромкой обязан начинаться тротуар (или бордюр на самой
+			# кромке), иначе в углу перекрёстка вылезает трава.
+			#
+			# Два луча на 35% и 65% угла, а не один по биссектрисе: на
+			# развилке угол площадки уходит ровно вдоль биссектрисы, и луч по
+			# ней едет по самой кромке площадки — попадание там решает
+			# арифметика float, а не геометрия.
 			var c := _graph.node_position(n)
-			var dir := Vector2(cos(a0 + span * 0.5), sin(a0 + span * 0.5))
-			var edge_r := _road_edge_along(Vector2(c.x, c.z), dir)
-			if edge_r < 0.0:
-				continue  # биссектриса вышла мимо полотна — угла как такового нет
-			var q := Vector2(c.x, c.z) + dir * (edge_r + 1.0)
-			# Радиус поиска 2 м, половина ширины тротуара: на развилке косой
-			# торец полосы идёт ровно вдоль биссектрисы, и проба едет по самой
-			# его кромке — попасть в грань точкой там нельзя, а щель шириной в
-			# тротуар такой допуск всё равно ловит.
-			assert_bool(_has_color(q, CityMesher.COLOR_SIDEWALK, 2.0)
-					or _has_color(q, CityMesher.COLOR_CURB, 2.0))\
-				.override_failure_message(
-					"за кромкой полотна в углу подходов %d и %d узла %d (степень %d) нет тротуара: (%.1f, %.1f), кромка в %.1f м"
-					% [k, next, n, deg, q.x, q.y, edge_r]).is_true()
+			for f: float in [0.35, 0.65]:
+				var dir := Vector2(cos(a0 + span * f), sin(a0 + span * f))
+				var edge_r := _road_edge_along(Vector2(c.x, c.z), dir)
+				if edge_r < 0.0:
+					continue  # луч вышел мимо полотна — угла как такового нет
+				var q := Vector2(c.x, c.z) + dir * (edge_r + 1.0)
+				assert_bool(_has_color(q, CityMesher.COLOR_SIDEWALK, 2.0)
+						or _has_color(q, CityMesher.COLOR_CURB, 2.0))\
+					.override_failure_message(
+						"за кромкой полотна в углу подходов %d и %d узла %d (степень %d) нет тротуара: (%.1f, %.1f), кромка в %.1f м"
+						% [k, next, n, deg, q.x, q.y, edge_r]).is_true()
 
 
 func test_sidewalk_never_lies_on_the_carriageway() -> void:
