@@ -59,10 +59,12 @@ func test_axes_are_never_green_together() -> void:
 
 
 func test_pedestrian_green_complements_car_red() -> void:
-	var gate := PedGraph.gate_id(4, 4, PedGraph.CrossAxis.Z_ROAD)
+	# Адресация пешеходного запроса — та же, что у машин: индекс оси
+	# перекрёстка и ось пересекаемой дороги. Упакованный гейт теперь адресует
+	# (узел графа, подход) и распаковывается в PedGraph.gate_axial().
 	for step in 320:
 		_lights.time = step * 0.05
-		var open := _lights.is_crossing_open(gate)
+		var open := _lights.is_crossing_open(4, TrafficLightController.Axis.Z_ROAD)
 		var cars := _lights.car_state(4, TrafficLightController.Axis.Z_ROAD)
 		assert_bool(open)\
 			.override_failure_message("пешеход и машины в t=%.2f" % _lights.time)\
@@ -70,36 +72,35 @@ func test_pedestrian_green_complements_car_red() -> void:
 
 
 func test_green_remaining_counts_down_to_zero() -> void:
-	var gate := PedGraph.gate_id(4, 4, PedGraph.CrossAxis.Z_ROAD)
+	var axis := TrafficLightController.Axis.Z_ROAD
 	# Машинам вдоль Z красный с 8 до 16 — пешеходу зелёный те же 8 секунд.
 	_lights.time = 8.5
-	assert_float(_lights.crossing_green_remaining(gate)).is_equal_approx(7.5, 1e-4)
+	assert_float(_lights.crossing_green_remaining(4, axis)).is_equal_approx(7.5, 1e-4)
 	_lights.time = 15.9
-	assert_float(_lights.crossing_green_remaining(gate)).is_equal_approx(0.1, 1e-4)
+	assert_float(_lights.crossing_green_remaining(4, axis)).is_equal_approx(0.1, 1e-4)
 	_lights.time = 2.0
-	assert_float(_lights.crossing_green_remaining(gate)).is_equal(0.0)
+	assert_float(_lights.crossing_green_remaining(4, axis)).is_equal(0.0)
 
 
 func test_time_until_green_is_bounded_by_cycle() -> void:
-	for gate_axis in [PedGraph.CrossAxis.Z_ROAD, PedGraph.CrossAxis.X_ROAD]:
-		var gate := PedGraph.gate_id(4, 4, gate_axis)
+	for axis: int in [TrafficLightController.Axis.Z_ROAD,
+			TrafficLightController.Axis.X_ROAD]:
 		for step in 160:
 			_lights.time = step * 0.1
-			var wait := _lights.time_until_crossing_green(gate)
+			var wait := _lights.time_until_crossing_green(4, axis)
 			assert_float(wait).is_between(0.0, TrafficLightController.CYCLE)
 			if wait > 0.0:
-				assert_bool(_lights.is_crossing_open(gate)).is_false()
+				assert_bool(_lights.is_crossing_open(4, axis)).is_false()
 
 
 func test_pedestrian_always_gets_green_within_a_cycle() -> void:
 	# Ожидание не должно образовывать дедлок ни на одном перекрёстке.
 	for i in 9:
-		for j in 9:
-			for gate_axis in [PedGraph.CrossAxis.Z_ROAD, PedGraph.CrossAxis.X_ROAD]:
-				var gate := PedGraph.gate_id(i, j, gate_axis)
-				_lights.time = 3.7
-				assert_float(_lights.time_until_crossing_green(gate))\
-					.is_less_equal(TrafficLightController.CYCLE)
+		for axis: int in [TrafficLightController.Axis.Z_ROAD,
+				TrafficLightController.Axis.X_ROAD]:
+			_lights.time = 3.7
+			assert_float(_lights.time_until_crossing_green(i, axis))\
+				.is_less_equal(TrafficLightController.CYCLE)
 
 
 func test_green_wave_shifts_phase_along_x() -> void:

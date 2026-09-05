@@ -142,10 +142,10 @@ static func block_rect(bi: int, bj: int) -> Rect2:
 func _plan_crosswalks() -> void:
 	for c: Dictionary in graph.crossings:
 		var center: Vector3 = c["center"]
-		# Переход поперёк вертикальной дороги идёт вдоль X.
-		var yaw := 0.0 if int(c["axis"]) == PedGraph.CrossAxis.Z_ROAD else PI * 0.5
+		# Поворот зебры берётся у самого перехода: у произвольного узла нет
+		# «оси дороги», зато есть направление хода пешехода между углами.
 		_plan.crosswalk_pos.append(center)
-		_plan.crosswalk_yaw.append(yaw)
+		_plan.crosswalk_yaw.append(float(c["yaw"]))
 		_crosswalk_hash.add_point(center.x, center.z, field.road_half + 1.0)
 
 

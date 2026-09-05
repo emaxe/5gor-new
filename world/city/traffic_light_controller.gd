@@ -72,9 +72,15 @@ func is_open_for_cars(i: int, axis: int) -> bool:
 
 ## Пешеходный зелёный горит ровно тогда, когда машинам по пересекаемой
 ## дороге — красный. Жёлтый пешеходу зелёного не даёт.
-func is_crossing_open(gate: int) -> bool:
-	var isec := PedGraph.gate_intersection(gate)
-	return car_state(isec.x, PedGraph.gate_axis(gate)) == State.RED
+##
+## Адресация та же, что у `car_state`: индекс оси перекрёстка и ось дороги,
+## которую пешеход пересекает. Раньше методы принимали упакованный гейт
+## `PedGraph` и сами его распаковывали; с переходом пешеходов на явный граф
+## (этап 8) гейт адресует (узел, подход), и перевод в осевую модель живёт
+## в `PedGraph.gate_axial()` — осевому контроллеру про пешеходный граф знать
+## больше нечего.
+func is_crossing_open(isec_i: int, axis: int) -> bool:
+	return car_state(isec_i, axis) == State.RED
 
 
 ## Сколько секунд ещё продлится пешеходный зелёный. 0 — уже нельзя идти.
@@ -82,12 +88,11 @@ func is_crossing_open(gate: int) -> bool:
 ## Пешеход обязан спрашивать это ПЕРЕД выходом на зебру: ступать можно, только
 ## если успеешь дойти (приём из capital) — иначе он застревает посреди дороги
 ## при смене фазы.
-func crossing_green_remaining(gate: int) -> float:
-	if not is_crossing_open(gate):
+func crossing_green_remaining(isec_i: int, axis: int) -> float:
+	if not is_crossing_open(isec_i, axis):
 		return 0.0
-	var isec := PedGraph.gate_intersection(gate)
-	var t := local_time(isec.x)
-	if PedGraph.gate_axis(gate) == Axis.Z_ROAD:
+	var t := local_time(isec_i)
+	if axis == Axis.Z_ROAD:
 		# Машинам вдоль Z красный с 8 до 16.
 		return CYCLE - t
 	# Машинам вдоль X красный с 0 до 8.
@@ -95,12 +100,11 @@ func crossing_green_remaining(gate: int) -> float:
 
 
 ## Через сколько секунд загорится пешеходный зелёный (0 — уже горит).
-func time_until_crossing_green(gate: int) -> float:
-	if is_crossing_open(gate):
+func time_until_crossing_green(isec_i: int, axis: int) -> float:
+	if is_crossing_open(isec_i, axis):
 		return 0.0
-	var isec := PedGraph.gate_intersection(gate)
-	var t := local_time(isec.x)
-	if PedGraph.gate_axis(gate) == Axis.Z_ROAD:
+	var t := local_time(isec_i)
+	if axis == Axis.Z_ROAD:
 		return Z_YELLOW_END - t
 	return CYCLE - t
 

@@ -44,12 +44,16 @@ func test_setup_spawns_requested_count_with_mixed_archetypes() -> void:
 
 ## Ставит одного пешехода на подъезде к перекрёстку (1,1) — обе координаты
 ## нечётные, значит регулируемый (PedGraph.is_signalized) — с маршрутом
-## ЧЕРЕЗ переход NW-NE (ось Z регулирует машины, ровно как в тесте трафика).
+## ЧЕРЕЗ переход поперёк северного рукава (по нему машины едут вдоль Z,
+## ровно как в тесте трафика).
 func _place_at_gated_crossing(mgr: PedManager, graph: PedGraph, lights: TrafficLightController,
 		car_green_for_z: bool) -> void:
 	const ISEC := 1
-	var from_id := PedGraph.corner_id(ISEC, ISEC, PedGraph.Corner.NW)
-	var to_id := PedGraph.corner_id(ISEC, ISEC, PedGraph.Corner.NE)
+	# Узлы сетки нумеруются i * 9 + j (CityGraphGrid.from_field), подходы
+	# упорядочены по возрастанию угла: 0 — северный рукав (-Z).
+	var ends := graph.crossing_ends(ISEC * 9 + ISEC, 0)
+	var from_id := ends.x
+	var to_id := ends.y
 	var from_pos := graph.position_of(from_id)
 	mgr.x[0] = from_pos.x
 	mgr.z[0] = from_pos.z

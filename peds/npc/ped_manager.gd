@@ -550,10 +550,12 @@ func _pick_weighted_poi(from_id: int) -> int:
 ## угловым/перекрёстным, чтобы idle не случался посреди проезжей части.
 func _pick_random_node(from_id: int) -> int:
 	var from_pos := graph.position_of(from_id)
-	var lo := PedGraph.VMID_BASE
-	var hi := PedGraph.HMID_BASE + PedGraph.VMID_COUNT
+	var lo := graph.mid_first()
+	var span := graph.mid_count()
+	if span <= 0:
+		return -1
 	for _attempt in 12:
-		var node := lo + rng.randi_below(hi - lo)
+		var node := lo + rng.randi_below(span)
 		if node == from_id:
 			continue
 		var d := from_pos.distance_to(graph.position_of(node))
@@ -661,7 +663,10 @@ func _update_wait(i: int, delta: float) -> void:
 	var check_light := gate >= 0 and is_animal[i] == 0 and violator[i] == 0
 
 	if check_light:
-		if not lights.is_crossing_open(gate):
+		# Гейт адресует (узел графа, подход); осевой контроллер живого города
+		# до этапа 9 говорит на (индекс оси, ось дороги) — перевод у графа.
+		var axial := graph.gate_axial(gate)
+		if not lights.is_crossing_open(axial.x, axial.y):
 			if wait_t[i] > 22.0:
 				_cancel_route(i)
 			return
