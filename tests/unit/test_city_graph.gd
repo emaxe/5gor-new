@@ -72,6 +72,26 @@ func _arc() -> CityGraph:
 	return g
 
 
+## Две параллельные улицы одного яруса: широкая (24 м) и узкая (8 м).
+## Узкая нарочно на 0.02 м ближе к оси запроса — это меньше TIE_EPSILON,
+## то есть рёбра считаются равноудалёнными. `wide_first` меняет порядок
+## добавления, чтобы отделить правило ширины от правила «меньший id».
+func _tie_pair(wide_first: bool) -> CityGraph:
+	var g := CityGraph.new()
+	var w0 := g.add_node(Vector3(0.0, 0.0, -20.0))
+	var w1 := g.add_node(Vector3(100.0, 0.0, -20.0))
+	var n0 := g.add_node(Vector3(0.0, 0.0, 19.98))
+	var n1 := g.add_node(Vector3(100.0, 0.0, 19.98))
+	if wide_first:
+		g.add_edge(w0, w1, PackedVector3Array(), 24.0)
+		g.add_edge(n0, n1, PackedVector3Array(), 8.0)
+	else:
+		g.add_edge(n0, n1, PackedVector3Array(), 8.0)
+		g.add_edge(w0, w1, PackedVector3Array(), 24.0)
+	g.build()
+	return g
+
+
 ## Улица вдоль X на земле и эстакада вдоль Z на высоте 6 м, пересекающиеся
 ## в плане в (0, 0), но без общего узла — два уровня.
 func _overpass() -> CityGraph:
@@ -84,7 +104,8 @@ func _overpass() -> CityGraph:
 	var b2 := g.add_node(Vector3(0.0, 6.0, 100.0), 1)
 	g.add_edge(s0, s1, PackedVector3Array(), WIDTH)
 	g.add_edge(s1, s2, PackedVector3Array(), WIDTH)
-	# Эстакада уже улицы: заодно проверяется приоритет широкого ребра.
+	# Эстакада уже улицы — как в жизни; на выбор ребра это здесь не влияет,
+	# кандидатов разводит фильтр по высоте до сравнения ширин.
 	g.add_edge(b0, b1, PackedVector3Array(), 10.0, CityGraph.EdgeKind.BRIDGE, 1)
 	g.add_edge(b1, b2, PackedVector3Array(), 10.0, CityGraph.EdgeKind.BRIDGE, 1)
 	g.build()
@@ -181,6 +202,39 @@ func test_equidistant_edges_resolve_deterministically() -> void:
 	for _i in 5:
 		assert_int(g.query_nearest_edge(Vector3(60.0, 0.0, 34.641016), 50.0))\
 			.is_equal(0)
+
+
+func test_tie_break_prefers_wider_edge() -> void:
+	# Внутри полосы равноудалённости решает ширина: полотно в 24 м физически
+	# перекрывает полотно в 8 м. Порядок добавления рёбер на ответ не влияет,
+	# иначе побеждало бы правило «меньший id».
+	for wide_first in [true, false]:
+		var g := _tie_pair(wide_first)
+		var e := g.query_nearest_edge(Vector3(50.0, 0.0, 0.0), 40.0)
+		assert_int(e).is_greater_equal(0)
+		assert_float(g.edge_width(e))\
+			.override_failure_message(
+				"при wide_first=%s ожидалась широкая улица (24 м), получено %.1f м"
+				% [wide_first, g.edge_width(e)])\
+			.is_equal_approx(24.0, EPS)
+		assert_float(g.hit_dist)\
+			.override_failure_message("до широкой улицы 20 м, получено %.4f" % g.hit_dist)\
+			.is_equal_approx(20.0, EPS)
+
+
+func test_nearest_edge_results_are_independent() -> void:
+	# Два ответа подряд должны сосуществовать: каждый вызов отдаёт свой
+	# словарь, а не общий буфер, который затирается следующим запросом.
+	var g := _tee()
+	var east := g.nearest_edge(Vector3(40.0, 0.0, 1.0))
+	var south := g.nearest_edge(Vector3(1.0, 0.0, 40.0))
+	var e_east: int = east["edge_id"]
+	var e_south: int = south["edge_id"]
+	assert_int(e_east)\
+		.override_failure_message("первый ответ затёрт вторым: ожидалось ребро 0, получено %d"
+			% e_east)\
+		.is_equal(0)
+	assert_int(e_south).is_equal(2)
 
 
 func test_on_road_uses_edge_width() -> void:
