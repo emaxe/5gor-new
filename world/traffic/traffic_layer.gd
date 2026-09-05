@@ -47,7 +47,10 @@ func setup(catalog: TrafficCatalog, field: CityField, lights: TrafficLightContro
 		player_x: float, player_z: float) -> void:
 	_space = space
 	_field = field
-	manager.setup(catalog, field, lights, rng, traffic_count)
+	# Граф трафика строится из тех же девяти осей поля, что и прежняя
+	# рельсовая модель: настоящий граф Пятигорска попадёт сюда на этапе 9,
+	# и тогда изменится только источник этой строки (см. CityGraphGrid).
+	manager.setup(catalog, field, CityGraphGrid.from_field(field), lights, rng, traffic_count)
 	manager.place_all_near(player_x, player_z)
 	_roll.resize(manager.count)
 	_roll.fill(0.0)
