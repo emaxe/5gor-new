@@ -15,11 +15,16 @@ const WIDTH := 12.0
 const RING_RADIUS := 20.0
 
 
+## `signal_nodes` пуст по умолчанию: у синтетических графов (крест, звезда,
+## кольцо) светофоров нет, и правило 10 в них не участвует. Сеточные сценарии
+## передают список регулируемых узлов сетки — те же перекрёстки, что
+## регулировала осевая модель.
 func _new_manager(catalog: TrafficCatalog, traffic_count: int, seed_value: int,
-		field: CityField, graph: CityGraph,
-		lights: TrafficLightController) -> TrafficManager:
+		field: CityField, graph: CityGraph, lights: TrafficLightController,
+		signal_nodes: PackedInt32Array = PackedInt32Array()) -> TrafficManager:
 	var mgr := TrafficManager.new()
-	mgr.setup(catalog, field, graph, lights, SeededRng.new(seed_value), traffic_count)
+	mgr.setup(catalog, field, graph, lights, SeededRng.new(seed_value), traffic_count,
+		signal_nodes)
 	return mgr
 
 
@@ -118,7 +123,7 @@ func test_setup_spawns_requested_count_with_guaranteed_police() -> void:
 	var field := _default_field()
 	var lights := TrafficLightController.new(field)
 	var mgr := _new_manager(Db.traffic, Db.balance.traffic_count, 42, field,
-		CityGraphGrid.from_field(field), lights)
+		CityGraphGrid.from_field(field), lights, CityGraphGrid.signalized_nodes(field))
 	mgr.place_all_near(0.0, 0.0)
 
 	assert_int(mgr.count).is_equal(Db.balance.traffic_count)
@@ -221,7 +226,8 @@ func test_non_aggressive_car_stops_at_red_light() -> void:
 	var g := CityGraphGrid.from_field(field)
 	var lights := TrafficLightController.new(field)
 	var cat := _single_type_catalog(0.0, 0.3)
-	var mgr := _new_manager(cat, 1, 5, field, g, lights)
+	var mgr := _new_manager(cat, 1, 5, field, g, lights,
+		CityGraphGrid.signalized_nodes(field))
 	mgr.place_all_near(0.0, 0.0)
 	_place_approaching_red_z(mgr, g, field, lights)
 
@@ -252,7 +258,8 @@ func test_aggressive_car_runs_clear_red_light() -> void:
 	# aggressive_ratio=1 и red_light_run_chance=1 — детерминированно проезжает,
 	# перекрёсток пуст (единственная машина в пуле), значит проезд гарантирован.
 	var cat := _single_type_catalog(1.0, 1.0)
-	var mgr := _new_manager(cat, 1, 7, field, g, lights)
+	var mgr := _new_manager(cat, 1, 7, field, g, lights,
+		CityGraphGrid.signalized_nodes(field))
 	mgr.place_all_near(0.0, 0.0)
 	_place_approaching_red_z(mgr, g, field, lights)
 	assert_int(mgr.aggressive[0])\
@@ -277,7 +284,8 @@ func test_cars_stay_within_map_bounds_over_time() -> void:
 	var field := _default_field()
 	var g := CityGraphGrid.from_field(field)
 	var lights := TrafficLightController.new(field)
-	var mgr := _new_manager(Db.traffic, Db.balance.traffic_count, 11, field, g, lights)
+	var mgr := _new_manager(Db.traffic, Db.balance.traffic_count, 11, field, g, lights,
+		CityGraphGrid.signalized_nodes(field))
 	mgr.place_all_near(0.0, 0.0)
 
 	for _step in 900:
@@ -302,7 +310,8 @@ func test_update_fits_frame_budget_at_triple_density() -> void:
 	var g := CityGraphGrid.from_field(field)
 	var lights := TrafficLightController.new(field)
 	var triple := Db.balance.traffic_count * 3
-	var mgr := _new_manager(Db.traffic, triple, 9, field, g, lights)
+	var mgr := _new_manager(Db.traffic, triple, 9, field, g, lights,
+		CityGraphGrid.signalized_nodes(field))
 	mgr.place_all_near(0.0, 0.0)
 
 	var best := INF
@@ -406,7 +415,7 @@ func test_oncoming_cars_do_not_block_each_other() -> void:
 	var field := _default_field()
 	var g := CityGraphGrid.from_field(field)
 	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 2, 23, field, g,
-		TrafficLightController.new(field))
+		TrafficLightController.new(field), CityGraphGrid.signalized_nodes(field))
 	# Перекрёсток (0, 0) — обе координаты чётные, значит нерегулируемый.
 	var south := mgr.graph.query_nearest_edge(Vector3(0.0, 0.0, -20.0), 20.0)
 	var north := mgr.graph.query_nearest_edge(Vector3(0.0, 0.0, 20.0), 20.0)
@@ -559,6 +568,80 @@ func test_car_entering_ring_yields_to_car_on_arc() -> void:
 		.is_greater(0.0)
 
 
+## Критерий готовности этапа 7 для колец: светофоров там нет вовсе, весь
+## приоритет держит правило уступания, — и под нагрузкой оно обязано остаться
+## живым. Восемь машин: по одной на каждой из четырёх дуг и по одной,
+## въезжающей с каждой из четырёх улиц, то есть уступать приходится
+## одновременно на всех четырёх гейтах.
+##
+## Порог простоя — 5.5 с, время срабатывания watchdog'а: если хоть одна машина
+## его достигла, кольцо встало намертво и трафик спасает не правило, а
+## переброс застрявшего.
+func test_ring_stays_live_under_load() -> void:
+	var field := _default_field()
+	var g := _ring()
+	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 8, 41, field, g,
+		TrafficLightController.new(field))
+	var arcs := PackedInt32Array()
+	var streets := PackedInt32Array()
+	for e in mgr.graph.edge_count():
+		if mgr.is_arc(e):
+			arcs.append(e)
+		else:
+			streets.append(e)
+	assert_int(arcs.size())\
+		.override_failure_message("у кольца с четырьмя подходами должно быть 4 дуги, а не %d"
+			% arcs.size())\
+		.is_equal(4)
+
+	for k in 4:
+		mgr.place_on_edge(k, arcs[k], mgr.graph.edge_length(arcs[k]) * 0.35, 1.0)
+		mgr.speed[k] = 6.0
+		mgr.target[k] = 6.0
+		# Улица идёт от гейта наружу, значит въезд — движение в обратную сторону.
+		mgr.place_on_edge(4 + k, streets[k], 6.0, -1.0)
+		mgr.speed[4 + k] = 6.0
+		mgr.target[4 + k] = 6.0
+
+	var stalled := PackedFloat32Array()
+	stalled.resize(8)
+	var worst_stall := 0.0
+	var travelled := PackedFloat32Array()
+	travelled.resize(8)
+	var prev_x := PackedFloat32Array()
+	var prev_z := PackedFloat32Array()
+	prev_x.resize(8)
+	prev_z.resize(8)
+	for c in 8:
+		prev_x[c] = mgr.world_x(c)
+		prev_z[c] = mgr.world_z(c)
+
+	# 15 с при 60 Гц: почти три полных цикла светофора и заведомо больше
+	# порога watchdog'а.
+	for _step in 900:
+		mgr.update(DT, 0.0, 0.0, 1.0)
+		for c in 8:
+			travelled[c] += MathUtils.dist_2d(prev_x[c], prev_z[c],
+				mgr.world_x(c), mgr.world_z(c))
+			prev_x[c] = mgr.world_x(c)
+			prev_z[c] = mgr.world_z(c)
+			if mgr.speed_of(c) < 0.5:
+				stalled[c] += DT
+				worst_stall = maxf(worst_stall, stalled[c])
+			else:
+				stalled[c] = 0.0
+
+	assert_float(worst_stall)\
+		.override_failure_message("на кольце машина простояла подряд %.1f с — уступание встало намертво"
+			% worst_stall)\
+		.is_less(5.5)
+	for c in 8:
+		assert_float(travelled[c])\
+			.override_failure_message("машина %d за 15 с прошла %.1f м — кольцо её не пропустило"
+				% [c, travelled[c]])\
+			.is_greater(30.0)
+
+
 # --- Watchdog и приборы -----------------------------------------------------
 
 ## Watchdog деадлока: машина, простоявшая у узла дольше 8 с, переставляется
@@ -567,7 +650,7 @@ func test_deadlock_watchdog_respawns_stuck_car() -> void:
 	var field := _default_field()
 	var g := CityGraphGrid.from_field(field)
 	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 21, field, g,
-		TrafficLightController.new(field))
+		TrafficLightController.new(field), CityGraphGrid.signalized_nodes(field))
 	# Ребро у центра карты: подъезд к узлу (0, 0) с юга.
 	var e := g.query_nearest_edge(Vector3(0.0, 0.0, -20.0), 20.0)
 	mgr.place_on_edge(0, e, g.edge_length(e) - 3.0, 1.0)
@@ -595,7 +678,8 @@ func test_lamp_accessors_derive_from_kinematics() -> void:
 	var field := _default_field()
 	var g := CityGraphGrid.from_field(field)
 	var lights := TrafficLightController.new(field)
-	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 3, field, g, lights)
+	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 3, field, g, lights,
+		CityGraphGrid.signalized_nodes(field))
 	mgr.place_all_near(0.0, 0.0)
 
 	mgr.accel_val[0] = -2.0

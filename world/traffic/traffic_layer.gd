@@ -50,7 +50,10 @@ func setup(catalog: TrafficCatalog, field: CityField, lights: TrafficLightContro
 	# Граф трафика строится из тех же девяти осей поля, что и прежняя
 	# рельсовая модель: настоящий граф Пятигорска попадёт сюда на этапе 9,
 	# и тогда изменится только источник этой строки (см. CityGraphGrid).
-	manager.setup(catalog, field, CityGraphGrid.from_field(field), lights, rng, traffic_count)
+	# Список регулируемых узлов — оттуда же и по той же причине: пока город
+	# сеточный, регулируются ровно те перекрёстки, что и раньше.
+	manager.setup(catalog, field, CityGraphGrid.from_field(field), lights, rng,
+		traffic_count, CityGraphGrid.signalized_nodes(field))
 	manager.place_all_near(player_x, player_z)
 	_roll.resize(manager.count)
 	_roll.fill(0.0)

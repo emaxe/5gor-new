@@ -34,3 +34,21 @@ static func from_field(field: CityField) -> CityGraph:
 				g.add_edge(id, id + 1, PackedVector3Array(), LANE_WIDTH)
 	g.build()
 	return g
+
+
+## Регулируемые узлы сетки — те же перекрёстки, что регулирует сеточная
+## модель (`PedGraph.is_signalized`: чётность индексов осей).
+##
+## Настоящий список регулируемых узлов задаёт топология (этап 2) явными
+## данными; здесь он выводится арифметикой ровно потому же, почему и сам
+## граф, — чтобы живой сеточный город до этапа 9 вёл себя как прежде. На
+## этапе 9 в `TrafficManager.setup()` уедет `signal_nodes` топологии, и эта
+## функция умрёт вместе с остальным мостом.
+static func signalized_nodes(field: CityField) -> PackedInt32Array:
+	var out := PackedInt32Array()
+	var n := field.road_axes.size()
+	for i in n:
+		for j in n:
+			if PedGraph.is_signalized(i, j):
+				out.append(i * n + j)
+	return out
