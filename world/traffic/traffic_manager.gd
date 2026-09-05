@@ -108,13 +108,19 @@ const STOP_LINE := 6.5
 const LIGHT_LOOKAHEAD := 30.0
 const RED_OVERSHOOT := 3.0
 
+## Самая дальняя продольная проверка правил ПДД, м. Это дистанция следования
+## правила 3 на максимальной скорости (`speed * 1.5 + 4` для неагрессивного),
+## а не EMERGENCY_YIELD_DIST: при SPEED_MAX = 18 она даёт 31 м против 25.
+const MAX_LONGITUDINAL_CHECK := SPEED_MAX * 1.5 + 4.0
 ## Длина бакета вдоль ребра, м. Ключ бакетизации — (edge_id, t / этого шага):
 ## та же идея «сравнивать только с соседями по своей полосе», что и у прежних
 ## (axis, coord), но на длинном ребре полоса больше не один бакет на всех.
-## Шаг взят строго больше самой дальней продольной проверки
-## (EMERGENCY_YIELD_DIST = 25 м): тогда сосед гарантированно лежит в своём
-## бакете или в одном из двух смежных, которые и просматриваются.
-const BUCKET_SPAN := 32.0
+##
+## Шаг выведен из проверки выше с запасом 20%, а не задан числом: тогда
+## сосед гарантированно лежит в своём бакете или в одном из двух смежных,
+## которые и просматриваются, и подъём SPEED_MAX не сломает бакетизацию молча
+## (правило дистанции начало бы терять соседей — то есть наезды в хвост).
+const BUCKET_SPAN := MAX_LONGITUDINAL_CHECK * 1.2
 
 const BEACON_PERIOD := 0.6
 ## Период мигания поворотников — общий таймер на весь трафик, тот же
@@ -140,7 +146,14 @@ var count := 0
 
 var catalog: TrafficCatalog
 var field: CityField
+## Сеть, по которой едут машины: производный вид графа города, где кольца
+## развёрнуты в дуги (`TrafficRoadView`). СОБСТВЕННОЕ id-пространство — эти
+## id нельзя подставлять в граф, переданный в `setup()`.
 var graph: CityGraph
+## Признаки рёбер вида, разложенные в свои массивы: в горячем пути дешевле
+## читать Packed-массив, чем ходить через объект вида.
+var _arc: PackedByteArray = PackedByteArray()
+var _one_way: PackedByteArray = PackedByteArray()
 var lights: TrafficLightController
 var rng: SeededRng
 ## Необязательная ссылка на пешеходов (этап 8) — правила 4-6 (уступить на
@@ -255,7 +268,10 @@ func setup(catalog_: TrafficCatalog, field_: CityField, graph_: CityGraph,
 		lights_: TrafficLightController, rng_: SeededRng, traffic_count: int) -> void:
 	catalog = catalog_
 	field = field_
-	graph = graph_
+	var view := TrafficRoadView.build(graph_)
+	graph = view.graph
+	_arc = view.arc
+	_one_way = view.one_way
 	lights = lights_
 	rng = rng_
 	count = maxi(0, traffic_count)
@@ -529,7 +545,7 @@ func place_near(i: int, player_x: float, player_z: float) -> void:
 func place_on_edge(i: int, e: int, s: float, along: float) -> void:
 	edge_id[i] = e
 	t[i] = clampf(s, 0.0, graph.edge_length(e))
-	dir_along[i] = along
+	dir_along[i] = 1.0 if _one_way[e] == 1 else along
 	lane_offset[i] = LANE_OFFSET
 	next_edge[i] = -1
 	turning[i] = 0
@@ -560,7 +576,7 @@ func _rand_road(player_x: float, player_z: float) -> void:
 			continue
 		_spot_edge = e
 		_spot_t = graph.hit_t * graph.edge_length(e)
-		_spot_dir = 1.0 if rng.chance(0.5) else -1.0
+		_spot_dir = 1.0 if _one_way[e] == 1 or rng.chance(0.5) else -1.0
 		var wp := _lane_point(e, _spot_t, _spot_dir, LANE_OFFSET)
 		if MathUtils.dist_2d(wp.x, wp.y, player_x, player_z) >= 75.0:
 			return
@@ -854,12 +870,17 @@ func _rule_intersection_priority(i: int) -> void:
 	# насмерть — въезжающий уже стоит в пяти метрах от узла, то есть внутри
 	# обычной проверки «поперечная машина на узле».
 	# Точная формулировка правил уступания — этап 7, здесь базовая версия.
-	var on_ring := graph.edge_kind(edge_id[i]) == CityGraph.EdgeKind.ROUNDABOUT
+	var on_ring := _arc[edge_id[i]] == 1
 	var entering_ring := not on_ring and _node_has_ring(node)
+	# Встречная машина на продолжении моей же улицы — не поперечная: раньше её
+	# отсекало `axis[j] == axis[i]`, на графе тот же смысл несёт «её подход
+	# коллинеарен моему», то есть попадает в сектор «прямо». Без этого пара
+	# встречных машин в 4 м от узла останавливает друг друга.
+	var straight_edge := _straight_continuation(i, node)
 	for j in count:
-		if j == i or edge_id[j] == edge_id[i]:
+		if j == i or edge_id[j] == edge_id[i] or edge_id[j] == straight_edge:
 			continue
-		var j_on_ring := graph.edge_kind(edge_id[j]) == CityGraph.EdgeKind.ROUNDABOUT
+		var j_on_ring := _arc[edge_id[j]] == 1
 		if entering_ring and j_on_ring:
 			if MathUtils.dist_2d(render_x[j], render_z[j], np.x, np.z) < RING_YIELD_DIST:
 				target[i] = 0.0
@@ -874,9 +895,30 @@ func _rule_intersection_priority(i: int) -> void:
 			return
 
 
+## Ребро, продолжающее курс машины за узлом, или -1. То же, что кандидат
+## «прямо» в `_collect_exits`, но без заполнения буферов кандидатов: правило 8
+## зовётся каждый кадр для каждой машины у узла, и складывать ради одного
+## числа три Packed-массива дороже самого ответа.
+func _straight_continuation(i: int, node: int) -> int:
+	var e := edge_id[i]
+	var in_h := _edge_heading(e, _end_s(i), dir_along[i])
+	var best := STRAIGHT_TOL
+	var found := -1
+	for k in graph.node_degree(node):
+		var oe := graph.approach_edge(node, k)
+		if oe == e:
+			continue
+		var dev := absf(Heading.delta(in_h, PI * 0.5 - graph.approach_angle(node, k)))
+		if dev < best:
+			best = dev
+			found = oe
+	return found
+
+
+## Узел вида — гейт кольца: хотя бы один его подход это дуга.
 func _node_has_ring(node: int) -> bool:
 	for k in graph.node_degree(node):
-		if graph.edge_kind(graph.approach_edge(node, k)) == CityGraph.EdgeKind.ROUNDABOUT:
+		if _arc[graph.approach_edge(node, k)] == 1:
 			return true
 	return false
 
@@ -999,6 +1041,10 @@ func _collect_exits(i: int, node: int) -> void:
 	for k in graph.node_degree(node):
 		var oe := graph.approach_edge(node, k)
 		if oe == e:
+			continue
+		if _one_way[oe] == 1 and graph.edge_ends(oe).x != node:
+			# Односторонняя дуга кольца, которая в этот гейт ВХОДИТ: выехать
+			# по ней значит поехать по кольцу навстречу.
 			continue
 		# approach_angle — atan2(dz, dx) направления ОТ узла; курс проекта
 		# считается как atan2(dx, dz), отсюда поворот на четверть.
@@ -1443,6 +1489,12 @@ func color_of(i: int) -> Color:
 
 func is_turning(i: int) -> bool:
 	return turning[i] == 1
+
+
+## Ребро вида — дуга кольца. Публично ради полигонов и тестов: снаружи графа
+## города дуг не видно, они существуют только в производном виде.
+func is_arc(e: int) -> bool:
+	return _arc[e] == 1
 
 
 ## Стоп-сигнал — заметное продольное замедление (BRAKE_ACCEL_THRESHOLD).

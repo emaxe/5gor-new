@@ -35,11 +35,7 @@ extends RefCounted
 ## потоков, заводить по курсору на поток, а не мьютекс.
 
 enum NodeKind { INTERSECTION, ROUNDABOUT }
-## ROUNDABOUT — дуга кольца. Кольцо в графе разложено на цепочку коротких
-## рёбер по аннулюсу (решение этапа 6: движение по дуге — то же движение по
-## полилинии, третий режим не нужен), и этот вид отличает дугу от улицы,
-## которая в кольцо въезжает: правило уступания читает именно его.
-enum EdgeKind { STREET, AVENUE, SERPENTINE, BRIDGE, TUNNEL, ROUNDABOUT }
+enum EdgeKind { STREET, AVENUE, SERPENTINE, BRIDGE, TUNNEL }
 
 ## Сторона относительно направления a -> b, знак `hit_side`.
 enum Side { LEFT = -1, ON_AXIS = 0, RIGHT = 1 }

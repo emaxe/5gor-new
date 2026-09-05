@@ -47,7 +47,9 @@ func _place_showcase_row() -> void:
 
 	# Ряд ставится на ребро вдоль X, идущее от перекрёстка (x=-64, z=0)
 	# к (x=0, z=0): машины выстраиваются на подходе к центру карты.
-	var graph := _layer.graph
+	# Ездят машины по производному виду графа (кольца развёрнуты в дуги),
+	# поэтому и ребро витрины берётся из него.
+	var graph := mgr.graph
 	var row_edge := graph.query_nearest_edge(Vector3(-32.0, 0.0, 0.0), 20.0)
 	var row_len := graph.edge_length(row_edge)
 	for k in slots.size():
