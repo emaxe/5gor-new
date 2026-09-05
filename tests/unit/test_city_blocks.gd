@@ -167,6 +167,51 @@ func test_landmark_blocks_touch_their_landmark() -> void:
 
 # --- Детерминизм ------------------------------------------------------------
 
+func test_landmark_ids_are_sorted_alphabetically() -> void:
+	# `Array[StringName].sort()` в Godot сравнивает по внутреннему УКАЗАТЕЛЮ,
+	# а не по тексту: порядок стабилен внутри процесса и разный между
+	# запусками — город менялся бы от загрузки к загрузке, а проверка
+	# детерминизма в одном процессе этого не ловит. Поэтому порядок
+	# проверяется по значению, а не «два вызова дали одно и то же».
+	var ids := CityBlocks.sorted_ids(_topo.landmark_node)
+	var text: Array[String] = []
+	for id in ids:
+		text.append(String(id))
+	var expected := text.duplicate()
+	expected.sort()
+	assert_array(text)\
+		.override_failure_message(
+			"порядок лендмарков %s, по алфавиту должен быть %s" % [text, expected])\
+		.is_equal(expected)
+	assert_int(ids.size())\
+		.override_failure_message("лендмарков в топологии %d" % ids.size())\
+		.is_equal(_topo.landmark_node.size())
+
+
+func test_rebuild_on_the_same_instance_gives_the_same_split() -> void:
+	# `build()` собирает разбивку заново, а не поверх прежней: обход граней
+	# дописывает CSR с нуля, и второй проход без сброса испортил бы индексы.
+	var before := _blocks.count()
+	_blocks.build(_graph, _topo.node_district, _topo.landmark_node)
+	assert_int(_blocks.count())\
+		.override_failure_message("после повторной разбивки кварталов %d вместо %d"
+			% [_blocks.count(), before])\
+		.is_equal(before)
+	for b in _blocks.count():
+		assert_int(_blocks.polygon_size(b))\
+			.override_failure_message("квартал %d: вершин %d после повторной разбивки"
+				% [b, _blocks.polygon_size(b)])\
+			.is_greater_equal(3)
+	var sum := 0.0
+	for b in _blocks.count():
+		sum += _blocks.area(b)
+	assert_float(sum)\
+		.override_failure_message(
+			"после повторной разбивки сумма площадей %.1f м² против внешней %.1f м²"
+			% [sum, _blocks.outer_area])\
+		.is_equal_approx(_blocks.outer_area, AREA_EPS)
+
+
 func test_split_is_deterministic() -> void:
 	var again := CityBlocks.new()
 	again.build(_graph, _topo.node_district, _topo.landmark_node)

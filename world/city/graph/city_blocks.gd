@@ -84,12 +84,34 @@ var outer_area := 0.0
 ## города её позвали.
 func build(city_graph: CityGraph, node_district: Array[StringName],
 		landmark_node: Dictionary[StringName, int]) -> void:
+	clear()
 	graph = city_graph
 	var active := _active_edges()
 	_prune_dangling(active)
 	_extract_faces(active)
 	_assign_districts(node_district)
 	_assign_landmarks(landmark_node)
+
+
+## Сбрасывает разбивку. Вызывается самим `build()`: обход граней дописывает
+## CSR с нуля (`_poly_start.append(0)`), и повторный `build()` на том же
+## экземпляре без сброса вставил бы второй ноль в середину — `polygon_size()`
+## стал бы отрицательным на первом же квартале. Тот же контракт, что у
+## `CityCollision.build()` и `PoliceManager.BuildingHash.build()`: собрать
+## заново, а не поверх.
+func clear() -> void:
+	_poly_start = PackedInt32Array()
+	_poly = PackedVector2Array()
+	_poly_edge = PackedInt32Array()
+	_bnd_start = PackedInt32Array()
+	_bnd_edge = PackedInt32Array()
+	_bnd_forward = PackedByteArray()
+	_bnd_node = PackedInt32Array()
+	_area = PackedFloat32Array()
+	_centroid = PackedVector2Array()
+	_district = []
+	_special = []
+	outer_area = 0.0
 
 
 ## Рёбра, участвующие в разбивке: только нулевой ярус.
