@@ -15,12 +15,20 @@ const LAYER := 1
 const BUILDING_HEIGHT := 40.0
 ## Шаг округления габаритов для кэша шейпов, м.
 const SHAPE_QUANT := 0.25
+## Перекрытие соседних плит деки по длине, м. Плиты стыкуются торец в торец,
+## и просто соприкоснуться им мало: луч, пущенный точно в стык, обязан
+## попасть в деку, а не провалиться на улицу под мостом. 5 см — заведомо
+## больше погрешности float на координатах города (сотни метров).
+const DECK_JOINT_OVERLAP := 0.05
 ## Размер чанка коллизий.
 const CHUNK := 128.0
 
 var _bodies: Array[RID] = []
 var _shapes: Dictionary[Vector3i, BoxShape3D] = {}
 var _cylinders: Dictionary[int, CylinderShape3D] = {}
+## Шейпы точного габарита (плиты деки). Держатся ссылкой, иначе Resource
+## освободится и RID в теле станет висячим.
+var _exact_shapes: Array[BoxShape3D] = []
 ## Статик-боди по чанкам. Поле, а не локальная переменная `build()`, чтобы
 ## коллизии, добавленные после плана (мосты), попадали в те же тела, а не
 ## заводили второй набор.
@@ -77,11 +85,16 @@ func build(space: RID, plan: CityPlan, field: CityField) -> void:
 ## поверхности запросом высоты (`CityGraph.surface_y_at`), а не контактом,
 ## и «съехать» с деки вбок ей нечем. Появится физический контакт с полотном
 ## (этап 9) — барьер добавляется сюда же, к плите.
+##
+## Плиты — единственные тела города, которые обязаны стыковаться в сплошное
+## полотно, поэтому им не годится кэш округлённых форм: на 8-метровом
+## сегменте `_box_shape` даёт 8.00 м вместо 8.12, и каждый стык становится
+## 12-сантиметровой сквозной щелью. Отсюда точный габарит плюс перекрытие.
 func build_bridges(space: RID, bridges: BridgeGeometry) -> void:
 	for i in bridges.deck_count():
 		var c := bridges.deck_center[i]
-		_add_box(_chunk_body(space, c), c, bridges.deck_size[i],
-			bridges.deck_yaw[i])
+		var size := bridges.deck_size[i] + Vector3(0.0, 0.0, DECK_JOINT_OVERLAP)
+		_add_exact_box(_chunk_body(space, c), c, size, bridges.deck_yaw[i])
 	for i in bridges.pier_count():
 		var base := bridges.pier_base[i]
 		var h := bridges.pier_height[i]
@@ -95,6 +108,7 @@ func clear() -> void:
 	_bodies.clear()
 	_shapes.clear()
 	_cylinders.clear()
+	_exact_shapes.clear()
 	_chunks.clear()
 	_shape_count = 0
 
@@ -123,6 +137,20 @@ func _chunk_body(space: RID, pos: Vector3) -> RID:
 
 func _add_box(body: RID, center: Vector3, size: Vector3, yaw: float = 0.0) -> void:
 	var shape := _box_shape(size)
+	var basis := Basis.IDENTITY if is_zero_approx(yaw) \
+		else Basis.from_euler(Vector3(0.0, yaw, 0.0))
+	PhysicsServer3D.body_add_shape(body, shape.get_rid(), Transform3D(basis, center))
+	_shape_count += 1
+
+
+## Бокс точного габарита, мимо кэша округлённых форм. Кэш экономит сотни
+## одинаковых шейпов на застройке и пропсе; плит деки на весь город единицы,
+## и точность размера им важнее экономии.
+func _add_exact_box(body: RID, center: Vector3, size: Vector3,
+		yaw: float) -> void:
+	var shape := BoxShape3D.new()
+	shape.size = size
+	_exact_shapes.append(shape)
 	var basis := Basis.IDENTITY if is_zero_approx(yaw) \
 		else Basis.from_euler(Vector3(0.0, yaw, 0.0))
 	PhysicsServer3D.body_add_shape(body, shape.get_rid(), Transform3D(basis, center))

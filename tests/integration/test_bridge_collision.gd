@@ -62,6 +62,34 @@ func test_ray_from_above_lands_on_the_deck() -> void:
 		.is_equal_approx(mid.y, 0.05)
 
 
+func test_deck_has_no_gaps_at_the_slab_joints() -> void:
+	# Слепое пятно, которое середина пролёта не ловит: плиты стыкуются ровно
+	# во внутренних точках полилинии ребра, и именно там сквозная щель в
+	# полотне отправила бы машину на улицу под мостом. Луч бьётся в каждый
+	# стык и в середину каждого сегмента.
+	var pts := _graph.edge_polyline(_deck)
+	var probes := PackedVector3Array()
+	for k in range(1, pts.size() - 1):
+		probes.append(pts[k])
+	for k in range(1, pts.size()):
+		probes.append(pts[k - 1].lerp(pts[k], 0.5))
+	assert_int(probes.size())\
+		.override_failure_message("у пролёта нет ни одного внутреннего стыка плит")\
+		.is_greater(4)
+	for p in probes:
+		var hit := _ray(Vector3(p.x, 30.0, p.z), Vector3(p.x, -1.0, p.z))
+		assert_bool(hit.is_empty())\
+			.override_failure_message(
+				"луч в точке (%.2f, %.2f) не встретил ничего — дека дырявая" % [p.x, p.z])\
+			.is_false()
+		var y: float = (hit["position"] as Vector3).y
+		assert_float(y)\
+			.override_failure_message(
+				"луч в (%.2f, %.2f) упал на %.2f м вместо полотна деки на %.2f м — щель в стыке плит"
+				% [p.x, p.z, y, p.y])\
+			.is_equal_approx(p.y, 0.05)
+
+
 func test_ray_along_the_street_passes_under_the_deck() -> void:
 	# Главная проверка этапа: плита — платформа на своей высоте, а не объём
 	# от земли до полотна. Луч идёт по оси улицы внизу на высоте кабины
