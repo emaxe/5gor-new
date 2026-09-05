@@ -347,8 +347,23 @@ func _resize(n: int) -> void:
 func _sample_edge(e: int, s: float) -> void:
 	var n := graph.edge_point_count(e)
 	var p0 := graph.edge_point(e, 0)
+	if n == 2:
+		# Прямое ребро — подавляющее большинство: и сетка, и дуги кольца.
+		# Отдельная ветка снимает с горячего пути обход ломаной целиком.
+		var p1 := graph.edge_point(e, 1)
+		var seg := p0.distance_to(p1)
+		var u := 0.0 if seg < 0.0001 else clampf(s / seg, 0.0, 1.0)
+		_s_point = p0.lerp(p1, u)
+		var dx := p1.x - p0.x
+		var dz := p1.z - p0.z
+		var dl := sqrt(dx * dx + dz * dz)
+		_s_tangent = Vector2(0.0, 1.0) if dl < 0.0001 else Vector2(dx / dl, dz / dl)
+		return
 	var acc := 0.0
-	for k in range(1, n):
+	# while, а не `for k in range(1, n)`: range() аллоцирует массив, а этот
+	# цикл выполняется по несколько раз на машину в каждом кадре.
+	var k := 1
+	while k < n:
 		var p1 := graph.edge_point(e, k)
 		var seg := p0.distance_to(p1)
 		if acc + seg >= s or k == n - 1:
@@ -361,6 +376,7 @@ func _sample_edge(e: int, s: float) -> void:
 			return
 		acc += seg
 		p0 = p1
+		k += 1
 	_s_point = p0
 	_s_tangent = Vector2(0.0, 1.0)
 
@@ -403,10 +419,21 @@ func lane_heading(i: int) -> float:
 func _project_onto_edge(e: int, x: float, z: float) -> float:
 	var n := graph.edge_point_count(e)
 	var p0 := graph.edge_point(e, 0)
+	if n == 2:
+		# Быстрая ветка прямого ребра — см. `_sample_edge`.
+		var p1 := graph.edge_point(e, 1)
+		var dx := p1.x - p0.x
+		var dz := p1.z - p0.z
+		var denom := dx * dx + dz * dz
+		if denom < 1e-9:
+			return 0.0
+		var u := clampf(((x - p0.x) * dx + (z - p0.z) * dz) / denom, 0.0, 1.0)
+		return p0.distance_to(p1) * u
 	var acc := 0.0
 	var best := 0.0
 	var best_d := INF
-	for k in range(1, n):
+	var k := 1
+	while k < n:
 		var p1 := graph.edge_point(e, k)
 		var dx := p1.x - p0.x
 		var dz := p1.z - p0.z
@@ -422,6 +449,7 @@ func _project_onto_edge(e: int, x: float, z: float) -> float:
 			best = acc + seg * u
 		acc += seg
 		p0 = p1
+		k += 1
 	return best
 
 
