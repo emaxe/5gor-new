@@ -104,8 +104,8 @@ func test_order_manager_lifecycle_headless() -> void:
 	assert_that(Game.money).is_greater(prev_money)
 	assert_that(mgr.active_order).is_null()
 
-	mgr.queue_free()
-	player_car.queue_free()
+	mgr.free()
+	player_car.free()
 
 
 func test_order_manager_sets_passenger_count_on_accept_and_complete() -> void:
@@ -142,5 +142,5 @@ func test_order_manager_sets_passenger_count_on_accept_and_complete() -> void:
 
 	assert_that(player_car.runtime.passenger_count).is_equal(0)
 
-	mgr.queue_free()
-	player_car.queue_free()
+	mgr.free()
+	player_car.free()

@@ -19,3 +19,7 @@ export_presets.cfg
 
 # Отчёты gdUnit4
 /reports/
+
+# Планы
+/docs/plans/
+
