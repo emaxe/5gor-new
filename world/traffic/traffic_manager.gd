@@ -27,9 +27,6 @@ extends RefCounted
 ## никогда не считаются соседями по полосе, даже если их проекции на (x, z)
 ## совпадают.
 
-const Z_ROAD := TrafficLightController.Axis.Z_ROAD
-const X_ROAD := TrafficLightController.Axis.X_ROAD
-
 ## Слой физики для коллайдеров трафика (PlayerCar добавляет его в свою
 ## collision_mask, чтобы не проезжать машины NPC насквозь).
 const COLLISION_LAYER := 4
@@ -137,7 +134,7 @@ const BRAKE_ACCEL_THRESHOLD := 1.0
 class LightInfo extends RefCounted:
 	var found := false
 	var dist := 0.0
-	var state := TrafficLightController.State.GREEN
+	var state := NodeSignalController.State.GREEN
 	var isec_x := 0.0
 	var isec_z := 0.0
 
@@ -154,7 +151,21 @@ var graph: CityGraph
 ## читать Packed-массив, чем ходить через объект вида.
 var _arc: PackedByteArray = PackedByteArray()
 var _one_way: PackedByteArray = PackedByteArray()
+## Часы светофоров города: узловой контроллер (`signals`) считает фазу из
+## времени, а ведёт это время владелец осевого контроллера (`World._process`).
+## Общий отсчёт обязателен, пока линзы красит осевая модель: разойдись часы,
+## машина стояла бы на зелёную линзу.
 var lights: TrafficLightController
+## Регулирование перекрёстков по узлам и подходам (этап 7). Менеджер строит
+## его сам — так же, как владеет своим `TrafficRoadView`: контроллер целиком
+## выводится из графа и списка регулируемых узлов, и навязывать его сборку
+## каждому вызову `setup()` было бы лишней связностью.
+##
+## Построен на ГРАФЕ ГОРОДА, а не на виде трафика: фаза — свойство
+## перекрёстка города. Id узлов вида совпадают с городскими для всех узлов,
+## кроме гейтов колец, а гейты не регулируются по определению (кольцо живёт
+## по правилу уступания), поэтому перевод id не нужен.
+var signals: NodeSignalController
 var rng: SeededRng
 ## Необязательная ссылка на пешеходов (этап 8) — правила 4-6 (уступить на
 ## зебре, наезд, уступить при повороте) выключены, пока она null.
@@ -264,8 +275,13 @@ var chase_target_x := 0.0
 var chase_target_z := 0.0
 
 
+## `signal_nodes` — список регулируемых узлов ГРАФА ГОРОДА (этап 2 задаёт его
+## топологией явно). Параметр необязательный и последний: пустой список значит
+## «регулирования нет вовсе», и вызывающие, которым светофоры не нужны
+## (тесты синтетических графов, полигон полиции), остаются без правок.
 func setup(catalog_: TrafficCatalog, field_: CityField, graph_: CityGraph,
-		lights_: TrafficLightController, rng_: SeededRng, traffic_count: int) -> void:
+		lights_: TrafficLightController, rng_: SeededRng, traffic_count: int,
+		signal_nodes: PackedInt32Array = PackedInt32Array()) -> void:
 	catalog = catalog_
 	field = field_
 	var view := TrafficRoadView.build(graph_)
@@ -273,6 +289,7 @@ func setup(catalog_: TrafficCatalog, field_: CityField, graph_: CityGraph,
 	_arc = view.arc
 	_one_way = view.one_way
 	lights = lights_
+	signals = NodeSignalController.build(graph_, signal_nodes)
 	rng = rng_
 	count = maxi(0, traffic_count)
 	_resize(count)
@@ -501,11 +518,6 @@ func _sync_render(i: int) -> void:
 	accel_val[i] = 0.0
 
 
-## Индекс оси дорожной сетки — нужен только светофорам (см. `_light_ahead`).
-func _axis_index(v: float) -> int:
-	return clampi(roundi((v - field.road_axes[0]) / field.cell), 0, field.road_axes.size() - 1)
-
-
 # --- Размещение ---------------------------------------------------------------
 
 func place_all_near(player_x: float, player_z: float) -> void:
@@ -587,6 +599,9 @@ func _rand_road(player_x: float, player_z: float) -> void:
 ## Порт TrafficManager.update() (traffic.js:317-579). Пешеходные правила
 ## (4-7 из плана) вернутся вместе с этапом 8.
 func update(delta: float, player_x: float, player_z: float, density: float) -> void:
+	# Фаза узлового контроллера считается из этого времени; ведёт часы
+	# владелец осевого контроллера, см. поле `signals`.
+	signals.time = lights.time
 	_beacon_t = fmod(_beacon_t + delta, BEACON_PERIOD)
 	beacon_red_on = _beacon_t < BEACON_PERIOD * 0.5
 	_turn_blink_t = fmod(_turn_blink_t + delta, TURN_BLINK_PERIOD)
@@ -869,7 +884,11 @@ func _rule_intersection_priority(i: int) -> void:
 	# машина на дуге пропускала того, кто ждёт на въезде, обе встали бы
 	# насмерть — въезжающий уже стоит в пяти метрах от узла, то есть внутри
 	# обычной проверки «поперечная машина на узле».
-	# Точная формулировка правил уступания — этап 7, здесь базовая версия.
+	# Этап 7 (регулирование перекрёстков) это правило пересмотрел и оставил
+	# как есть: светофора на кольце не бывает вовсе, и приоритет «кто уже на
+	# дуге» — вся его формулировка целиком, а не заготовка. Не покрыта здесь
+	# только вторая половина задачи — уступить пешеходу, переходящему рукав
+	# кольца: пешеходов в правилах ещё нет (этап 8).
 	var on_ring := _arc[edge_id[i]] == 1
 	var entering_ring := not on_ring and _node_has_ring(node)
 	# Встречная машина на продолжении моей же улицы — не поперечная: раньше её
@@ -941,12 +960,12 @@ func _rule_traffic_light(i: int) -> void:
 	if turning[i] == 1:
 		return
 	var l := _light_ahead(i)
-	if not l.found or l.state == TrafficLightController.State.GREEN:
+	if not l.found or l.state == NodeSignalController.State.GREEN:
 		run_red[i] = 0
 		return
 
 	var brake_dist := speed[i] * speed[i] / 20.0
-	if l.state == TrafficLightController.State.YELLOW:
+	if l.state == NodeSignalController.State.YELLOW:
 		if l.dist >= brake_dist + STOP_LINE:
 			target[i] = minf(target[i], 0.0)
 		return
@@ -971,15 +990,11 @@ func _rule_traffic_light(i: int) -> void:
 ## результат арифметики `ceil(pos / cell)`: на графе «следующий перекрёсток»
 ## задан топологией.
 ##
-## [b]Временная граница этапа 6/7.[/b] Сам `TrafficLightController` до этапа 7
-## остаётся сеточным: он адресует перекрёсток парой индексов осей и знает
-## ровно две фазы (`Axis.Z_ROAD`/`X_ROAD`). Поэтому здесь узел графа
-## переводится обратно в эту адресацию — индексы осей по (x, z) его позиции,
-## ось — по преобладающей компоненте курса машины. Для сетки это тождественно
-## прежнему `_axis_index()` (путь (a) из решения контроллера:
-## поведение светофоров сохранено без изменений), для произвольного графа —
-## приближение, которое уходит вместе с переводом светофоров на узлы графа
-## (этап 7, N-фазные сигналы).
+## Сигнал спрашивается по паре (узел, подход) у `signals`: сеточной адресации
+## «индексы осей + одна из двух осей» здесь больше нет — у узла степени 3 или
+## 5 она не выражается. Свой подход машина находит по УГЛУ, а не по id ребра:
+## трафик едет по производному виду графа с собственным id-пространством
+## рёбер, а направления подходов у вида и у города одни и те же.
 func _light_ahead(i: int) -> LightInfo:
 	var l := _light_buf
 	l.found = false
@@ -987,17 +1002,17 @@ func _light_ahead(i: int) -> LightInfo:
 	if dist <= 0.0 or dist > LIGHT_LOOKAHEAD:
 		return l
 
-	var np := graph.node_position(_node_ahead(i))
-	var i_idx := _axis_index(np.x)
-	var j_idx := _axis_index(np.z)
-	if not PedGraph.is_signalized(i_idx, j_idx):
+	var node := _node_ahead(i)
+	if not signals.is_regulated(node):
 		return l
-
+	# Подход, по которому машина ПОДЪЕЗЖАЕТ, отходит от узла назад по её
+	# курсу: углы подходов заданы как atan2(dz, dx) направления ОТ узла.
 	var fwd := Heading.forward(render_h[i])
-	var car_axis := Z_ROAD if absf(fwd.z) >= absf(fwd.x) else X_ROAD
+	var approach := signals.approach_at_angle(node, atan2(-fwd.z, -fwd.x))
+	var np := graph.node_position(node)
 	l.found = true
 	l.dist = dist
-	l.state = lights.car_state(i_idx, car_axis)
+	l.state = signals.car_state(node, approach)
 	l.isec_x = np.x
 	l.isec_z = np.z
 	return l
