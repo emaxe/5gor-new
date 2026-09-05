@@ -26,6 +26,9 @@ const SHADOW_EDGE_COLOR := Color(0.28, 0.27, 0.26)
 const SHADOW_Y_OFFSET := 0.02 # см. Y_MARKING - Y_ROAD в city_mesher.gd
 
 var manager := TrafficManager.new()
+## Граф, по которому едет трафик. Публичный: тестовые полигоны ставят машины
+## на конкретные рёбра (tests/scenes/test_traffic.gd).
+var graph: CityGraph
 
 var _bodies: Array[RID] = []
 var _shape_cache: Dictionary[Vector3i, BoxShape3D] = {}
@@ -47,7 +50,11 @@ func setup(catalog: TrafficCatalog, field: CityField, lights: TrafficLightContro
 		player_x: float, player_z: float) -> void:
 	_space = space
 	_field = field
-	manager.setup(catalog, field, lights, rng, traffic_count)
+	# Граф трафика строится из тех же девяти осей поля, что и прежняя
+	# рельсовая модель: настоящий граф Пятигорска попадёт сюда на этапе 9,
+	# и тогда изменится только источник этой строки (см. CityGraphGrid).
+	graph = CityGraphGrid.from_field(field)
+	manager.setup(catalog, field, graph, lights, rng, traffic_count)
 	manager.place_all_near(player_x, player_z)
 	_roll.resize(manager.count)
 	_roll.fill(0.0)

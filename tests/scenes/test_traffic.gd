@@ -45,15 +45,16 @@ func _place_showcase_row() -> void:
 		if not slots.has(i):
 			slots.append(i)
 
+	# Ряд ставится на ребро вдоль X, идущее от перекрёстка (x=-64, z=0)
+	# к (x=0, z=0): машины выстраиваются на подходе к центру карты.
+	var graph := _layer.graph
+	var row_edge := graph.query_nearest_edge(Vector3(-32.0, 0.0, 0.0), 20.0)
+	var row_len := graph.edge_length(row_edge)
 	for k in slots.size():
 		var i: int = slots[k]
-		mgr.axis[i] = TrafficLightController.Axis.X_ROAD
-		mgr.coord[i] = 0.0
-		mgr.pos[i] = (k - slots.size() * 0.5) * 7.0
-		mgr.dir[i] = 1.0
+		mgr.place_on_edge(i, row_edge, row_len * 0.5 + (k - slots.size() * 0.5) * 7.0, 1.0)
 		mgr.speed[i] = 4.0
 		mgr.target[i] = 4.0
-		mgr.turning[i] = 0
 
 
 func _process(delta: float) -> void:

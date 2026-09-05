@@ -26,8 +26,6 @@ signal player_hit_ped
 
 enum Mode { WALK, WAIT, FLEE, KICK, KNOCKED, IDLE }
 
-const Z_ROAD := TrafficLightController.Axis.Z_ROAD
-const X_ROAD := TrafficLightController.Axis.X_ROAD
 
 ## Дистанция до цели/узла, при которой считаем «дошёл».
 const ARRIVE_EPS := 0.08
@@ -696,19 +694,29 @@ func _car_on_road(i: int, point_idx: int, safe_dist: float) -> bool:
 	var mid_x := (from3.x + to3.x) * 0.5
 	var mid_z := (from3.z + to3.z) * 0.5
 	var crossing_along_x := absf(to3.x - from3.x) > absf(to3.z - from3.z)
-	var car_axis := Z_ROAD if crossing_along_x else X_ROAD
 	var isec := field.nearest_intersection(mid_x, mid_z)
 	var car_coord: float = isec.x if crossing_along_x else isec.y
 	var ped_pos: float = mid_z if crossing_along_x else mid_x
 
 	if traffic != null:
+		# Трафик с этапа 6 живёт на рёбрах графа, а не на двух осях, поэтому
+		# «та ли это дорога» и «по ходу ли движения» считаются в мировых
+		# координатах: поперечное отклонение от оси пересекаемой дороги и
+		# проекция на курс машины. Настоящая привязка пешеходов к графу —
+		# этап 8.
 		for c in traffic.count:
-			if traffic.axis[c] != car_axis or not is_equal_approx(traffic.coord[c], car_coord):
-				continue
 			if traffic.speed_of(c) <= 0.8:
 				continue
-			var d_pos := (traffic.pos[c] - ped_pos) * traffic.dir[c]
-			if absf(traffic.pos[c] - ped_pos) < safe_dist and d_pos < 3.0:
+			var cx := traffic.world_x(c)
+			var cz := traffic.world_z(c)
+			var lateral: float = absf((cx if crossing_along_x else cz) - car_coord)
+			if lateral > field.road_half + 3.0:
+				continue
+			var car_along: float = cz if crossing_along_x else cx
+			var fwd := Heading.forward(traffic.heading_of(c))
+			var car_fwd: float = fwd.z if crossing_along_x else fwd.x
+			var d_pos := (car_along - ped_pos) * signf(car_fwd)
+			if absf(car_along - ped_pos) < safe_dist and d_pos < 3.0:
 				return true
 
 	if absf(_player_speed) > 1.0:
