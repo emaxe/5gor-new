@@ -21,46 +21,72 @@ const CHUNK := 128.0
 var _bodies: Array[RID] = []
 var _shapes: Dictionary[Vector3i, BoxShape3D] = {}
 var _cylinders: Dictionary[int, CylinderShape3D] = {}
+## Статик-боди по чанкам. Поле, а не локальная переменная `build()`, чтобы
+## коллизии, добавленные после плана (мосты), попадали в те же тела, а не
+## заводили второй набор.
+var _chunks: Dictionary[Vector2i, RID] = {}
 var _shape_count := 0
 
 
 ## Строит коллизии по плану города. space — из get_world_3d().space.
 func build(space: RID, plan: CityPlan, field: CityField) -> void:
 	clear()
-	var chunks: Dictionary[Vector2i, RID] = {}
 
 	for i in plan.building_count():
 		var r := plan.building_rect[i]
 		var center := Vector3((r.x + r.z) * 0.5, BUILDING_HEIGHT * 0.5, (r.y + r.w) * 0.5)
 		var size := Vector3(r.z - r.x, BUILDING_HEIGHT, r.w - r.y)
-		_add_box(_chunk_body(space, chunks, center), center, size)
+		_add_box(_chunk_body(space, center), center, size)
 
 	# Стойки светофоров и фонари — цилиндры: в них можно въехать.
 	for p in plan.lamp_pos:
-		_add_cylinder(_chunk_body(space, chunks, p), p + Vector3(0.0, 2.8, 0.0),
+		_add_cylinder(_chunk_body(space, p), p + Vector3(0.0, 2.8, 0.0),
 			0.18, 5.6)
 	for p in plan.signal_pos:
-		_add_cylinder(_chunk_body(space, chunks, p), p + Vector3(0.0, 2.2, 0.0),
+		_add_cylinder(_chunk_body(space, p), p + Vector3(0.0, 2.2, 0.0),
 			0.22, 4.4)
 	for i in plan.bin_pos.size():
-		_add_cylinder(_chunk_body(space, chunks, plan.bin_pos[i]),
+		_add_cylinder(_chunk_body(space, plan.bin_pos[i]),
 			plan.bin_pos[i] + Vector3(0.0, 0.45, 0.0), 0.36, 0.9)
 	for i in plan.bench_pos.size():
 		var p := plan.bench_pos[i]
-		_add_box(_chunk_body(space, chunks, p), p + Vector3(0.0, 0.45, 0.0),
+		_add_box(_chunk_body(space, p), p + Vector3(0.0, 0.45, 0.0),
 			Vector3(1.9, 0.9, 0.6), plan.bench_yaw[i])
 	for i in plan.parked_pos.size():
 		var p := plan.parked_pos[i]
-		_add_box(_chunk_body(space, chunks, p), p + Vector3(0.0, 0.75, 0.0),
+		_add_box(_chunk_body(space, p), p + Vector3(0.0, 0.75, 0.0),
 			Vector3(2.0, 1.5, 4.6), plan.parked_yaw[i])
 	# Деревья: только ствол, крона проезжаемой быть не должна, но и
 	# цепляться за неё на скорости незачем.
 	for p in plan.tree_pos:
-		_add_cylinder(_chunk_body(space, chunks, p), p + Vector3(0.0, 1.2, 0.0),
+		_add_cylinder(_chunk_body(space, p), p + Vector3(0.0, 1.2, 0.0),
 			0.42, 2.4)
 
 	# Барьер по границе города: за него выезжать нельзя.
-	_add_map_bounds(space, chunks)
+	_add_map_bounds(space)
+
+
+## Коллизии путепроводов поверх уже построенных (`build()` их стирает, так
+## что порядок вызовов — сперва план, потом мосты).
+##
+## Дека — ТОНКАЯ плита на своей высоте, а не объём от земли до полотна: под
+## мостом обязано остаться проезжим, это два разных прохода по одному (x, z).
+## Единственные тела между землёй и декой — опоры, они же и видны глазу.
+##
+## Перила физического барьера не получают намеренно: машина держится на
+## поверхности запросом высоты (`CityGraph.surface_y_at`), а не контактом,
+## и «съехать» с деки вбок ей нечем. Появится физический контакт с полотном
+## (этап 9) — барьер добавляется сюда же, к плите.
+func build_bridges(space: RID, bridges: BridgeGeometry) -> void:
+	for i in bridges.deck_count():
+		var c := bridges.deck_center[i]
+		_add_box(_chunk_body(space, c), c, bridges.deck_size[i],
+			bridges.deck_yaw[i])
+	for i in bridges.pier_count():
+		var base := bridges.pier_base[i]
+		var h := bridges.pier_height[i]
+		_add_cylinder(_chunk_body(space, base),
+			base + Vector3(0.0, h * 0.5, 0.0), BridgeGeometry.PIER_RADIUS, h)
 
 
 func clear() -> void:
@@ -69,6 +95,7 @@ func clear() -> void:
 	_bodies.clear()
 	_shapes.clear()
 	_cylinders.clear()
+	_chunks.clear()
 	_shape_count = 0
 
 
@@ -80,17 +107,16 @@ func body_count() -> int:
 	return _bodies.size()
 
 
-func _chunk_body(space: RID, chunks: Dictionary[Vector2i, RID],
-		pos: Vector3) -> RID:
+func _chunk_body(space: RID, pos: Vector3) -> RID:
 	var key := Vector2i(floori(pos.x / CHUNK), floori(pos.z / CHUNK))
-	if chunks.has(key):
-		return chunks[key]
+	if _chunks.has(key):
+		return _chunks[key]
 	var body := PhysicsServer3D.body_create()
 	PhysicsServer3D.body_set_mode(body, PhysicsServer3D.BODY_MODE_STATIC)
 	PhysicsServer3D.body_set_space(body, space)
 	PhysicsServer3D.body_set_collision_layer(body, LAYER)
 	PhysicsServer3D.body_set_collision_mask(body, 0)
-	chunks[key] = body
+	_chunks[key] = body
 	_bodies.append(body)
 	return body
 
@@ -138,21 +164,21 @@ func _cylinder_shape(radius: float, height: float) -> CylinderShape3D:
 ## Невидимая стена по краю карты. В оригинале выезд ограничивался проверкой
 ## координат в коде; здесь это обычная коллизия — машина упирается, а не
 ## телепортируется обратно.
-func _add_map_bounds(space: RID, chunks: Dictionary[Vector2i, RID]) -> void:
+func _add_map_bounds(space: RID) -> void:
 	const LIMIT := 312.0
 	const THICK := 8.0
 	const HEIGHT := 12.0
 	for s: float in [-1.0, 1.0]:
 		var wall_x := Vector3(s * (LIMIT + THICK * 0.5), HEIGHT * 0.5, 0.0)
-		_add_box(_chunk_body(space, chunks, wall_x), wall_x,
+		_add_box(_chunk_body(space, wall_x), wall_x,
 			Vector3(THICK, HEIGHT, LIMIT * 2.0 + THICK * 2.0))
 		# Южная стена сплошная, северная — с проёмом под серпантин на Машук.
 		var wall_z := Vector3(0.0, HEIGHT * 0.5, s * (LIMIT + THICK * 0.5))
 		if s > 0.0:
-			_add_box(_chunk_body(space, chunks, wall_z), wall_z,
+			_add_box(_chunk_body(space, wall_z), wall_z,
 				Vector3(LIMIT * 2.0 + THICK * 2.0, HEIGHT, THICK))
 		else:
 			for side: float in [-1.0, 1.0]:
 				var seg := Vector3(side * (LIMIT + 85.0) * 0.5, HEIGHT * 0.5, wall_z.z)
-				_add_box(_chunk_body(space, chunks, seg), seg,
+				_add_box(_chunk_body(space, seg), seg,
 					Vector3(LIMIT - 85.0, HEIGHT, THICK))

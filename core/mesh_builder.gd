@@ -247,8 +247,9 @@ func plane_xz(center: Vector3, size: Vector2, color: Color) -> void:
 		color)
 
 
-## Лента по массиву точек заданной ширины — дорожное полотно серпантина,
-## следы шин, разметка вдоль кривой.
+## Лента по массиву точек заданной ширины — дорожное полотно серпантина и
+## моста, следы шин, разметка вдоль кривой. Нормали смотрят вверх: лента
+## лежит на земле и видна сверху (`test_ribbon_normals_point_up`).
 func ribbon(points: PackedVector3Array, width: float, color: Color,
 		y_offset: float = 0.0) -> void:
 	if points.size() < 2:
@@ -272,6 +273,8 @@ func ribbon(points: PackedVector3Array, width: float, color: Color,
 		var l := p - side
 		var r := p + side
 		if i > 0:
-			quad(prev_l, l, r, prev_r, color)
+			# Обход контура prev_l -> prev_r -> r -> l, а не по ходу ленты:
+			# в нотации quad() (CCW снаружи) только он даёт нормаль вверх.
+			quad(prev_l, prev_r, r, l, color)
 		prev_l = l
 		prev_r = r

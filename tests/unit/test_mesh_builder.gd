@@ -149,6 +149,24 @@ func test_ribbon_follows_points() -> void:
 	assert_float(aabb.size.x).is_between(4.0, 10.0)
 
 
+func test_ribbon_normals_point_up() -> void:
+	# Лента — это дорожное полотно (полотно моста, серпантина, следы шин):
+	# её видно сверху. Обратная намотка с фронтальным cull_back делает полосу
+	# невидимой целиком и без единой ошибки в консоли — та же ловушка, что
+	# закрыта `test_shadow_disc_normals_point_up`.
+	var b := MeshBuilder.new()
+	var pts := PackedVector3Array([
+		Vector3(0, 0, 0), Vector3(0, 0, 10), Vector3(5, 2, 20),
+	])
+	b.ribbon(pts, 4.0, Color.WHITE)
+	var normals := _normals_of(b.commit())
+	assert_int(normals.size()).is_greater(0)
+	for n in normals:
+		assert_float(n.dot(Vector3.UP))\
+			.override_failure_message("нормаль ленты %s смотрит не вверх" % n)\
+			.is_greater(0.5)
+
+
 func test_empty_builder_commits_null() -> void:
 	var b := MeshBuilder.new()
 	assert_bool(b.is_empty()).is_true()

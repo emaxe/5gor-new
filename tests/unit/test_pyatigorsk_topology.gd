@@ -8,9 +8,6 @@ extends GdUnitTestSuite
 
 ## Допуск на расстояния: полилинии хранятся во float32 PackedVector3Array.
 const EPS := 0.01
-## Минимальный клиренс разноуровневой развязки, м (этап 3): половина —
-## верхняя граница CityGraph.LEVEL_TOLERANCE.
-const MIN_CLEARANCE := 4.5
 ## Целевой масштаб топологии из плана: сопоставимо с 81 перекрёстком сетки.
 const NODES_MIN := 60
 const NODES_MAX := 100
@@ -240,11 +237,13 @@ func test_overpass_clears_the_street_below() -> void:
 			"улица под путепроводом должна проходить под самым пролётом, а не в %.1f м в стороне"
 			% _graph.hit_dist)\
 		.is_less(_graph.edge_width(below) * 0.5 + 1.0)
+	# Просвет считается от НИЗА плиты; тонкости геометрии моста проверяет
+	# `test_bridge_geometry.gd`, здесь довольно отметки полотна деки.
 	var clearance := mid.y - _graph.hit_point.y
 	assert_float(clearance)\
 		.override_failure_message("клиренс путепровода %.2f м, минимум %.1f м"
-			% [clearance, MIN_CLEARANCE])\
-		.is_greater(MIN_CLEARANCE)
+			% [clearance, CityGraph.MIN_CLEARANCE])\
+		.is_greater(CityGraph.MIN_CLEARANCE)
 
 
 # --- Привязки ---------------------------------------------------------------
