@@ -23,3 +23,6 @@ export_presets.cfg
 # Планы
 /docs/plans/
 
+# Рабочие деревья для параллельных подагентов
+/.worktrees/
+
