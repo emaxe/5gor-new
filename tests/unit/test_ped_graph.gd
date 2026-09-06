@@ -378,25 +378,38 @@ func test_invariant_holds_on_degree_3_5_and_ring_nodes() -> void:
 
 ## Потолок известных нарушений инварианта на настоящей топологии, см.
 ## `test_real_topology_sidewalks_stay_off_the_roadway`. Число измеренное,
-## а не подобранное: сегодня их ровно 20 из 405 тротуарных рёбер.
-const REAL_TOPOLOGY_KNOWN_VIOLATIONS := 20
+## а не подобранное: сегодня их ровно 8 из 532 тротуарных рёбер.
+const REAL_TOPOLOGY_KNOWN_VIOLATIONS := 8
 
 
 ## Инвариант «тротуар не заходит на проезжую часть» на НАСТОЯЩЕЙ топологии
 ## Пятигорска — той, что с этапа 9 работает в живой игре.
 ##
 ## [b]Тут он держится не полностью, и это измеренный факт, а не недосмотр.[/b]
-## Конструкция углов (`PedGraph._corner_pos`) гарантирует вынос только пока
-## сектор между соседними рукавами шире `2 * MIN_CORNER_HALF` (45.8°); на более
-## острой развилке вынос зажимается потолком, и угол может уйти внутрь полотна
-## одного из рукавов. В сетке 9x9 таких секторов нет вовсе (все углы 90° или
-## 180°), в топологии Пятигорска их шесть — отсюда 20 рёбер из 405 (4.9 %).
-## Ограничение унаследовано от этапа 8, где оно явно записано в
-## doc-комментарии `_corner_pos` как «страхует тест, а не конструкция».
+## Было 20 рёбер из 405; после разбора причин (задача 9f) осталось 8 из 532.
+## Закрыты три из пяти причин, и все три — в конструкции пешеходного графа:
+##
+##  1. зажатый угол на секторе острее 45.8° и на секторе шире 314°
+##     (`PedGraph._corner_pos` — честный митр и обвод вместо `clampf`), 9 рёбер;
+##  2. угол, посчитанный по выносу ДВУХ рукавов сектора, тогда как через узел
+##     проходит третий, более широкий (`_side_of_node`), 2 ребра;
+##  3. лента, срезавшая излом полилинии прямой хордой (станции ленты на
+##     изломах, `_ribbon_frame`), 3 ребра.
+##
+## Оставшиеся 8 в конструкции тротуара не лечатся — это наложение самих
+## проезжих частей:
+##
+##  - 6 рёбер: безымянная улица `kir_e1 - krn_m` проходит в 22.0 м от центра
+##    кольца привокзальной площади при радиусе кольца ровно 22 м и расходится
+##    с проспектом Кирова всего на 32°. Её полотно физически накрывает и
+##    аннулюс кольца, и место тротуара проспекта;
+##  - 2 ребра: переулок к Гроту Лермонтова (22 м) отходит от проспекта Кирова
+##    под 42°, и вся внутренняя сторона переулка у развилки лежит в полотне
+##    проспекта — тротуара там нет и быть не может (`RoadMesh` его в этом
+##    месте тоже не рисует, `MIN_WALK_RIBBON`).
 ##
 ## Тест — храповик: он фиксирует ровно нынешнее число и падает, если станет
-## хуже. Убрать его в ноль значит переделать размещение углов на острых
-## развилках, а это работа этапа 8, а не врезки живого города.
+## хуже. Убрать его в ноль значит править ТОПОЛОГИЮ, а не пешеходный граф.
 ##
 ## [b]Что этот тест доказывает уже сейчас.[/b] Без per-edge выноса (прежняя
 ## константа `road_half + sidewalk/2` = 8 м) нарушений было бы в разы больше:
@@ -600,6 +613,185 @@ func _mixed_graph() -> CityGraph:
 	g.add_edge(0, RING_NODE + 1, PackedVector3Array(), CityGraphGrid.LANE_WIDTH)
 	g.build()
 	return g
+
+
+# --- Полигон с острой развилкой и шпилькой -----------------------------------
+
+## Центральный узел полигона острых углов и узел-шпилька на конце его
+## восточного рукава.
+const FORK_NODE := 0
+const HAIRPIN_NODE := 1
+## Азимуты рукавов центрального узла, град. Пара 0/30 — острая развилка:
+## 30° заметно острее `2 * PedGraph.MIN_CORNER_HALF` (45.8°), при котором
+## одного общего угла тротуара сектору уже не хватает. Остальные два рукава
+## разнесены широко — на них проверяется, что широкий угол не изменился.
+const FORK_ANGLES: Array[float] = [0.0, 30.0, 130.0, 230.0]
+## Азимут второго рукава шпильки, град: улица разворачивается почти назад (в
+## 30° от направления на центр), и СНАРУЖИ излома остаётся сектор в 330° —
+## верхняя зажатая ветка `_corner_pos`. Именно 210°, а не 150°: на 150° луч
+## шпильки пересёк бы рукав развилки, и полигон проверял бы наложение двух
+## проезжих частей вместо геометрии тротуара.
+const HAIRPIN_ANGLE := 210.0
+## Длина рукава, м: хватает и на вынос честного угла (30.9 м при 30°), и на
+## ленту с серединным узлом за ним.
+const FORK_ARM := 200.0
+
+
+## Звезда с одной ОСТРОЙ развилкой (30°) и шпилькой на конце восточного луча.
+func _sharp_fork() -> CityGraph:
+	var g := CityGraph.new()
+	g.add_node(Vector3.ZERO)
+	var east := Vector3(FORK_ARM, 0.0, 0.0)
+	g.add_node(east)
+	for i in range(1, FORK_ANGLES.size()):
+		g.add_node(_polar(Vector3.ZERO, FORK_ANGLES[i], FORK_ARM))
+	g.add_node(_polar(east, HAIRPIN_ANGLE, FORK_ARM))
+	g.add_edge(FORK_NODE, HAIRPIN_NODE, PackedVector3Array(), CityGraphGrid.LANE_WIDTH)
+	for i in range(1, FORK_ANGLES.size()):
+		g.add_edge(FORK_NODE, i + 1, PackedVector3Array(), CityGraphGrid.LANE_WIDTH)
+	g.add_edge(HAIRPIN_NODE, FORK_ANGLES.size() + 1, PackedVector3Array(),
+		CityGraphGrid.LANE_WIDTH)
+	g.build()
+	return g
+
+
+static func _polar(from: Vector3, deg: float, r: float) -> Vector3:
+	var a := deg_to_rad(deg)
+	return from + Vector3(cos(a), 0.0, sin(a)) * r
+
+
+## Острая развилка: угол тротуара стоит в ЧЕСТНОМ пересечении кромок — на
+## своём выносе от оси КАЖДОГО из двух рукавов, — а не на зажатом расстоянии
+## по биссектрисе.
+##
+## До правки угол ставился на `side / sin(MIN_CORNER_HALF)` = 20.5 м по
+## биссектрисе, то есть в 20.5 * sin(15°) = 5.32 м от оси каждого рукава при
+## полуполотне 6 м: тротуар лежал НА проезжей части обоих.
+func test_sharp_fork_corner_leaves_both_arms_free() -> void:
+	var street := _sharp_fork()
+	var graph := PedGraph.on_graph(street, PackedInt32Array(), _field.sidewalk)
+	# Подходы упорядочены по углу, а не по порядку заведения рёбер, поэтому
+	# острый сектор ищется, а не задаётся номером.
+	var sharp := _narrow_sector(street, FORK_NODE)
+	assert_int(sharp)\
+		.override_failure_message("в полигоне нет сектора острее %.1f°"
+			% rad_to_deg(2.0 * PedGraph.MIN_CORNER_HALF))\
+		.is_greater_equal(0)
+	var d := street.node_degree(FORK_NODE)
+	var gap := _sector_gap(street, FORK_NODE, sharp)
+	var side := street.edge_width(0) * 0.5 + _field.sidewalk * 0.5
+	var corner := graph.position_of(graph.corner_node(FORK_NODE, sharp))
+	var arms := PackedInt32Array([sharp, (sharp + 1) % d])
+	for k in arms:
+		var arm := street.approach_edge(FORK_NODE, k)
+		var dist := _point_to_polyline(street, arm, corner)
+		assert_float(dist)\
+			.override_failure_message(
+				"на развилке в %.1f° угол тротуара стоит в %.2f м от оси рукава %d, а вынос %.2f м"
+				% [rad_to_deg(gap), dist, k, side])\
+			.is_equal_approx(side, 1e-2)
+	var checked := _assert_walk_edges_stay_off_the_roadway(graph, street)
+	assert_int(checked)\
+		.override_failure_message("проверено тротуарных рёбер: %d" % checked)\
+		.is_greater(20)
+
+
+## Шпилька: снаружи почти развёрнутого излома у сектора ДВЕ кербовые точки и
+## обвод между ними, а не один угол, унесённый от узла на `side / sin(165°)`.
+func test_hairpin_outside_is_wrapped_not_one_far_corner() -> void:
+	var street := _sharp_fork()
+	var graph := PedGraph.on_graph(street, PackedInt32Array(), _field.sidewalk)
+	var d := street.node_degree(HAIRPIN_NODE)
+	assert_int(d)\
+		.override_failure_message("шпилька обязана быть узлом степени 2, а не %d" % d)\
+		.is_equal(2)
+	# Сектор снаружи излома — тот из двух, что шире развёрнутого.
+	var outer := 0 if _sector_gap(street, HAIRPIN_NODE, 0) > PI else 1
+	var gap := _sector_gap(street, HAIRPIN_NODE, outer)
+	assert_float(gap)\
+		.override_failure_message("сектор снаружи шпильки %.1f°, а нужен шире %.1f°"
+			% [rad_to_deg(gap), rad_to_deg(TAU - 2.0 * PedGraph.MIN_CORNER_HALF)])\
+		.is_greater(TAU - 2.0 * PedGraph.MIN_CORNER_HALF)
+
+	var from_kerb := graph.corner_node(HAIRPIN_NODE, outer)
+	var to_kerb := graph.kerb_node(HAIRPIN_NODE, (outer + 1) % d, false)
+	assert_int(from_kerb)\
+		.override_failure_message(
+			"у сектора снаружи шпильки один общий угол вместо двух кербовых точек")\
+		.is_not_equal(to_kerb)
+	# Обе кербовые точки стоят на выносе узла, а не на зажатом расстоянии по
+	# биссектрисе (20.5 м при выносе 8 м).
+	var side := street.edge_width(0) * 0.5 + _field.sidewalk * 0.5
+	var center := street.node_position(HAIRPIN_NODE)
+	for id in PackedInt32Array([from_kerb, to_kerb]):
+		var r := center.distance_to(graph.position_of(id))
+		assert_float(r)\
+			.override_failure_message(
+				"кербовая точка шпильки в %.2f м от узла, а вынос тротуара %.2f м"
+				% [r, side])\
+			.is_equal_approx(side, 1e-2)
+	# Между ними идёт обвод, а не прямая хорда через сам излом.
+	var path := graph.find_path(from_kerb, to_kerb, false)
+	assert_int(path.size())\
+		.override_failure_message("обвода снаружи шпильки нет: путь из %d узлов"
+			% path.size())\
+		.is_greater(2)
+	for k in range(1, path.size()):
+		assert_int(graph.edge_kind(path[k - 1], path[k]))\
+			.override_failure_message("обвод снаружи шпильки идёт не по тротуару")\
+			.is_equal(int(PedGraph.Edge.WALK))
+
+
+## Широкий сектор правку острых развилок не заметил: угол стоит там же, где и
+## раньше, — на биссектрисе, на `side / sin(gap / 2)` от узла.
+func test_wide_corner_geometry_is_unchanged() -> void:
+	var street := _sharp_fork()
+	var graph := PedGraph.on_graph(street, PackedInt32Array(), _field.sidewalk)
+	var side := street.edge_width(0) * 0.5 + _field.sidewalk * 0.5
+	var center := street.node_position(FORK_NODE)
+	var wide := 0
+	for k in street.node_degree(FORK_NODE):
+		var gap := _sector_gap(street, FORK_NODE, k)
+		if gap < 2.0 * PedGraph.MIN_CORNER_HALF or gap > TAU - 2.0 * PedGraph.MIN_CORNER_HALF:
+			continue
+		wide += 1
+		var ang := street.approach_angle(FORK_NODE, k) + gap * 0.5
+		var want := center + Vector3(cos(ang), 0.0, sin(ang)) * (side / sin(gap * 0.5))
+		var got := graph.position_of(graph.corner_node(FORK_NODE, k))
+		assert_float(got.distance_to(want))\
+			.override_failure_message(
+				"широкий угол (сектор %.1f°) сместился на %.3f м"
+				% [rad_to_deg(gap), got.distance_to(want)])\
+			.is_less(1e-3)
+	assert_int(wide)\
+		.override_failure_message("широких секторов в полигоне %d" % wide)\
+		.is_greater_equal(3)
+
+
+static func _sector_gap(street: CityGraph, node: int, k: int) -> float:
+	var d := street.node_degree(node)
+	return fposmod(street.approach_angle(node, (k + 1) % d)
+		- street.approach_angle(node, k), TAU)
+
+
+## Номер сектора узла, который острее `2 * MIN_CORNER_HALF`, или -1.
+static func _narrow_sector(street: CityGraph, node: int) -> int:
+	for k in street.node_degree(node):
+		if _sector_gap(street, node, k) < 2.0 * PedGraph.MIN_CORNER_HALF:
+			return k
+	return -1
+
+
+## Минимальное расстояние в плане от точки до полилинии ребра улицы.
+func _point_to_polyline(street: CityGraph, e: int, p: Vector3) -> float:
+	var q := Vector2(p.x, p.z)
+	var best := INF
+	for i in street.edge_point_count(e) - 1:
+		var p0 := street.edge_point(e, i)
+		var p1 := street.edge_point(e, i + 1)
+		best = minf(best, _point_to_segment(q, Vector2(p0.x, p0.z),
+			Vector2(p1.x, p1.z)))
+	return best
 
 
 # --- Полигон из тупиковых лучей ---------------------------------------------

@@ -61,19 +61,30 @@ const JWALK_SEED := 20260807
 ## POI дальше этого от узла считается вне сетки (Машук) и отбрасывается, м.
 const POI_MAX_DIST := 40.0
 
-## Минимальная половина угла между соседними рукавами при расчёте выноса
-## угла, рад. 0.4 (23°) ограничивает вынос величиной ped_side / sin(0.4) =
-## 2.57 * ped_side: на более острой развилке честное пересечение кромок
-## уносит угол на десятки метров от перекрёстка, и «угол тротуара» перестаёт
-## быть углом. Та же по смыслу отсечка, что `RoadMesh.TRIM_EDGE_FRACTION`
-## у мешера.
+## Половина угла между соседними рукавами, ниже/выше которой один общий угол
+## тротуара сектору уже не годится, рад. 0.4 (23°) — та же по смыслу отсечка,
+## что `RoadMesh.TRIM_EDGE_FRACTION` у мешера.
+##
+## Граница РАЗВЕТВЛЯЕТ построение, а не зажимает его (см. `_corner_pos`):
+## сектор острее `2 * MIN_CORNER_HALF` получает честный митр, сектор шире
+## `TAU - 2 * MIN_CORNER_HALF` — две кербовые точки с обводом. Прежний
+## `clampf(gap * 0.5, MIN_CORNER_HALF, PI - MIN_CORNER_HALF)` в обеих этих
+## ветках выдавал КОНЕЧНОЕ расстояние вместо верного и уводил угол внутрь
+## полотна одного из рукавов — 9 из 20 нарушений инварианта на живой
+## топологии Пятигорска.
 const MIN_CORNER_HALF := 0.4
 
-## Запас обвода торца тупика над полуширотой полотна. Хорда обвода обязана
-## пройти СНАРУЖИ полотна; 5 % — чтобы она проходила с зазором, а не легла на
-## кромку впритык, где всё решает погрешность acos/cos.
+## Ниже этого |sin| угла сектора кромки двух рукавов считаются параллельными
+## и точки пересечения у них нет. Та же граница, что `RoadMesh.PARALLEL_SIN`:
+## 0.05 — это 2.9°, дальше формула пересечения теряет точность быстрее, чем
+## растёт польза от неё.
+const PARALLEL_SIN := 0.05
+
+## Запас обвода над полушириной полотна. Хорда обвода обязана пройти СНАРУЖИ
+## полотна; 5 % — чтобы она проходила с зазором, а не легла на кромку впритык,
+## где всё решает погрешность acos/cos.
 const DEAD_END_CLEARANCE := 1.05
-## Потолок числа звеньев обвода торца. На 8 звеньях хорда отходит от узла на
+## Потолок числа звеньев обвода. На 8 звеньях хорда отходит от узла на
 ## `cos(PI/16) = 0.98 * ped_side`: если тротуар не шире полотна, обвода
 ## снаружи не существует ни при каком дроблении, и дробить дальше незачем.
 const DEAD_END_CAP_MAX := 8
@@ -86,6 +97,23 @@ const DEAD_END_CAP_MAX := 8
 ## отрезок между ними прошёл бы наискось через сам перекрёсток, а не поперёк
 ## одного рукава.
 const STRAIGHT_TOL := PI * 0.25
+
+## Косинус, ниже которого стык двух сегментов полилинии считается ИЗЛОМОМ и
+## получает собственную станцию ленты. 0.999 — это 2.6°; хорда, срезающая такой
+## излом, отходит от оси на `side * (1 - cos(1.3°))` = 2 мм при выносе 8 м,
+## против запаса тротуара над кромкой полотна в 2 м. Порог нужен потому, что
+## уплотнение полилинии рельефом даёт коллинеарные точки, чьи нормали
+## расходятся лишь на шум float32.
+const RIBBON_BEND_COS := 0.999
+
+## Потолок числа итераций выноса серединного узла ленты (`_push_out`). Шаг
+## закрывает недостачу с множителем `cos(излома)`: на изломе в 60° это половина
+## за шаг, и восьми шагов хватает с запасом в 250 раз.
+const MID_PUSH_STEPS := 8
+## Допуск сходимости выноса серединного узла, м. Сантиметр: в 200 раз меньше
+## запаса тротуара над кромкой полотна (`walk_width / 2` = 2 м) и заведомо
+## больше погрешности float32 на координатах в сотни метров.
+const MID_PUSH_EPS := 0.01
 
 ## Шаг ячейки пространственного хеша узлов, м. Соизмерим с шагом самих узлов
 ## (полулента сетки — 24 м): мельче — пустые ячейки, крупнее — в ячейке
@@ -152,6 +180,11 @@ var _edge_road: Dictionary[int, int] = {}
 ## Первый угловой (кербовый) узел тротуара для узла графа улиц; сами углы
 ## лежат подряд, поэтому таблица нужна одна.
 var _corner_first: PackedInt32Array = PackedInt32Array()
+## Вторая кербовая точка развёрнутого сектора: `gate_id(узел, k)` -> узел,
+## обслуживающий ЛЕВУЮ сторону подхода k+1. Таблица, а не место в общей
+## нумерации углов: основные углы обязаны лежать подряд по номеру подхода
+## (`corner_node`), а вторые точки есть далеко не у каждого сектора.
+var _split_corner: Dictionary[int, int] = {}
 ## Левый серединный узел ленты ребра (правый — следующий id), -1 без ленты.
 var _edge_mid: PackedInt32Array = PackedInt32Array()
 ## Номер подхода ребра у его узла a / b.
@@ -268,6 +301,7 @@ func _setup(graph: CityGraph, signal_nodes: PackedInt32Array,
 	_build_crossings()
 	_build_ring_walks()
 	_build_dead_end_caps()
+	_build_sharp_wraps()
 	_build_jwalks()
 	_build_hash()
 	if is_inf(_h_scale):
@@ -325,11 +359,12 @@ func _build_regulated(signal_nodes: PackedInt32Array) -> void:
 
 
 ## Углы тротуара: по одному между каждой парой соседних подходов; у кольца
-## (см. `_ring_kerb_pos`) и у тупика (см. `_dead_end_kerb_pos`) — по две
-## кербовые точки на рукав.
+## (см. `_ring_kerb_pos`), у тупика (см. `_dead_end_kerb_pos`) и у
+## развёрнутого сектора (см. `_reflex_kerb_pos`) — по две кербовые точки.
 func _build_corners() -> void:
 	var n := _graph.node_count()
 	_corner_first.resize(n)
+	_split_corner.clear()
 	for node in n:
 		var d := _graph.node_degree(node)
 		_corner_first[node] = _positions.size()
@@ -343,51 +378,135 @@ func _build_corners() -> void:
 		else:
 			for k in d:
 				_add_node(_corner_pos(node, k))
+			# Вторые точки развёрнутых секторов лежат ПОСЛЕ основных углов
+			# узла: основные адресуются арифметикой `corner_node()` и обязаны
+			# идти подряд по номеру подхода.
+			for k in d:
+				if _is_reflex_sector(node, k):
+					_split_corner[gate_id(node, k)] = _add_node(
+						_reflex_kerb_pos(node, k, false))
 
 
-## Угол между подходами k и k+1: точка пересечения внешних кромок этих двух
-## рукавов. Она лежит на биссектрисе угла между ними на расстоянии
-## `side / sin(половина угла)` — при 90° это привычные (±8, ±8) сетки,
-## при развёрнутых 180° (проход насквозь) — ровно `side` вбок.
-##
-## `side` — БОЛЬШИЙ из выносов двух рукавов: угол общий у обоих, и лежать
-## снаружи он обязан у обоих. На стыке переулка (вынос 6 м) с проспектом
-## Кирова (вынос 11 м) вынос по переулку увёл бы угол внутрь полотна
-## проспекта.
-##
-## Расстояние ВСЕГДА не меньше `side`, поэтому САМ УГОЛ гарантированно
-## лежит вне полотна обоих рукавов (`side = width/2 + sidewalk/2 > width/2`).
-## Зовётся только при степени >= 2 и не для кольца.
-##
-## [b]Что отсюда следует, а что нет.[/b] Конструкция доказывает свойство
-## ТОЧЕК, а главный инвариант ПДД — свойство ОТРЕЗКОВ между ними. Второе
-## вытекает из первого лишь потому, что угол ОБЩИЙ у пары соседних подходов:
-## лента идёт от него вдоль своего рукава, оба её конца отстоят от оси не
-## меньше чем на `ped_side`, значит и вся она снаружи полотна. У вывода два
-## исключения:
-##
-## 1. отсечка `MIN_CORNER_HALF`: на развилке острее 46° вынос зажимается, и
-##    угол может оказаться ближе `ped_side` к одному из рукавов;
-## 2. степень 1: пары соседних подходов нет вовсе, «общий угол» вырождается в
-##    точку на самой оси улицы, и ленты к нему режут полотно наискось. Поэтому
-##    тупик обслуживает не эта функция, а `_dead_end_kerb_pos` плюс обвод
-##    торца (`_build_dead_end_caps`).
-##
-## В обоих случаях страхует тест, а не конструкция: `_segment_enters_roadway`
-## меряет расстояние отрезок-полилиния по всей длине отрезка, а не в концах.
-func _corner_pos(node: int, k: int) -> Vector3:
-	var c := _graph.node_position(node)
+## Сектор между подходами k и k+1, рад. Подходы упорядочены по возрастанию
+## угла, поэтому положительный остаток и есть сектор между ними; на
+## замыкающей паре он же даёт остаток круга.
+func _sector_gap(node: int, k: int) -> float:
 	var d := _graph.node_degree(node)
-	var a0 := _graph.approach_angle(node, k)
-	var a1 := _graph.approach_angle(node, (k + 1) % d)
-	# Подходы упорядочены по возрастанию угла, поэтому положительный остаток
-	# и есть сектор между ними; на замыкающей паре он же даёт остаток круга.
-	var gap := fposmod(a1 - a0, TAU)
-	var half := clampf(gap * 0.5, MIN_CORNER_HALF, PI - MIN_CORNER_HALF)
-	var ang := a0 + gap * 0.5
-	var side: float = maxf(_side_of_approach(node, k),
-		_side_of_approach(node, (k + 1) % d))
-	return c + Vector3(cos(ang), 0.0, sin(ang)) * (side / sin(half))
+	return fposmod(_graph.approach_angle(node, (k + 1) % d)
+		- _graph.approach_angle(node, k), TAU)
+
+
+## Острый сектор: два рукава расходятся настолько мало, что общий угол уходит
+## от узла дальше `2.57 * ped_side` (`1 / sin(MIN_CORNER_HALF)`).
+func _is_sharp_sector(node: int, k: int) -> bool:
+	return _sector_gap(node, k) < 2.0 * MIN_CORNER_HALF
+
+
+## Развёрнутый сектор: рукава сошлись шпилькой, и СНАРУЖИ излома одной точки
+## недостаточно — эквидистанта там содержит дугу (см. `_reflex_kerb_pos`).
+func _is_reflex_sector(node: int, k: int) -> bool:
+	if _is_ring(node) or _graph.node_degree(node) < 2:
+		return false
+	return _sector_gap(node, k) > TAU - 2.0 * MIN_CORNER_HALF
+
+
+## Кербовая точка, обслуживающая ПРАВУЮ сторону подхода k, — она же общий
+## угол сектора (k, k+1), если сектор допускает общую точку.
+##
+## Форма угла определяется шириной сектора, и это ровно три случая
+## эквидистанты (кривой, всюду отстоящей от полотна на вынос тротуара):
+##
+## 1. [b]Обычный сектор[/b] (46° <= gap <= 314°). Эквидистанта — две прямые,
+##    пересекающиеся на биссектрисе на расстоянии `side / sin(gap / 2)`: при
+##    90° это привычные (±8, ±8) сетки, при развёрнутых 180° (проход
+##    насквозь) — ровно `side` вбок. `side` берётся по САМОМУ ШИРОКОМУ рукаву
+##    УЗЛА, а не двух рукавов сектора: полилиния каждого рукава проходит
+##    ЧЕРЕЗ узел, поэтому угол, стоящий к узлу ближе полуполотна третьего,
+##    самого широкого рукава, лежит в его полотне. Так угол между двумя
+##    пригородными проездами у `kal_s3` заходил на 1.8 м в улицу Калинина.
+##
+## 2. [b]Острый сектор[/b] (gap < 46°, `_miter_pos`). Эквидистанта — те же две
+##    прямые, но точка их пересечения уходит далеко, и биссектриса с общим
+##    `side` даёт не её. Здесь считается ЧЕСТНОЕ пересечение — у каждого
+##    рукава свой вынос.
+##
+## 3. [b]Развёрнутый сектор[/b] (gap > 314°, `_reflex_kerb_pos`). Эквидистанта
+##    снаружи выпуклого излома содержит ДУГУ, а не точку: одна точка ушла бы
+##    от узла на `side / sin(gap / 2)` -> бесконечность при gap -> 360°.
+##    Сектор получает две кербовые точки и обвод между ними
+##    (`_build_sharp_wraps`) — тот же приём, что у торца тупика, частный
+##    случай которого сектор в полный круг и есть.
+##
+## [b]Что отсюда следует.[/b] Конструкция доказывает свойство ТОЧЕК, а главный
+## инвариант ПДД — свойство ОТРЕЗКОВ между ними. Второе вытекает из первого
+## потому, что каждая кербовая точка отстоит от оси СВОЕГО рукава ровно на его
+## вынос: лента идёт от неё вдоль этого же рукава, оба её конца на выносе,
+## значит и вся она снаружи полотна. Единственное исключение — степень 1: пары
+## соседних подходов нет вовсе, и тупик обслуживает не эта функция, а
+## `_dead_end_kerb_pos` плюс обвод торца (`_build_dead_end_caps`).
+func _corner_pos(node: int, k: int) -> Vector3:
+	if _is_sharp_sector(node, k):
+		return _miter_pos(node, k)
+	if _is_reflex_sector(node, k):
+		return _reflex_kerb_pos(node, k, true)
+	var gap := _sector_gap(node, k)
+	var ang := _graph.approach_angle(node, k) + gap * 0.5
+	# Ветка зовётся только при 2 * MIN_CORNER_HALF <= gap <= TAU - 2 *
+	# MIN_CORNER_HALF, поэтому sin(gap / 2) >= sin(MIN_CORNER_HALF) — деления
+	# на ноль нет и зажимать нечего.
+	return _graph.node_position(node) \
+		+ Vector3(cos(ang), 0.0, sin(ang)) * (_side_of_node(node) / sin(gap * 0.5))
+
+
+## Честное пересечение внешних кромок тротуара двух рукавов острого сектора:
+## точка на расстоянии `side_k` от оси рукава k И `side_{k+1}` от оси рукава
+## k+1. Та же формула, что `RoadMesh._pair_corner`, которой мешер уже режет
+## ВИДИМЫЙ тротуар на тех же развилках, — и без потолка по той же причине:
+## тротуар, заехавший на полотно, это ступенька поперёк дороги.
+##
+## Вывод: точка на угле t от рукава k и радиусе r даёт `r * sin(t) = side_k` и
+## `r * sin(gap - t) = side_{k+1}`; раскрытие второго синуса превращает пару в
+## `r * cos(t) = (side_{k+1} + side_k * cos(gap)) / sin(gap)` — это и есть
+## вынос ВДОЛЬ рукава k, а `side_k` — поперёк.
+##
+## На живой топологии Пятигорска шесть таких секторов, вынос выходит 23-35 м
+## (проспект Кирова x2, Калинина, Октябрьская, Крайнего, Козлова) — не дальше
+## прежнего зажатого (20-28 м) настолько, чтобы «угол» перестал быть углом.
+func _miter_pos(node: int, k: int) -> Vector3:
+	var d := _graph.node_degree(node)
+	var gap := _sector_gap(node, k)
+	var s := sin(gap)
+	assert(s > PARALLEL_SIN, "PedGraph: узел %d, сектор %d — рукава расходятся на %.2f°, кромки тротуара параллельны и общего угла у них нет" % [node, k, rad_to_deg(gap)])
+	var side := _side_of_approach(node, k)
+	var along := (_side_of_approach(node, (k + 1) % d) + side * cos(gap)) / s
+	var a := _graph.approach_angle(node, k)
+	return _graph.node_position(node) \
+		+ Vector3(cos(a), 0.0, sin(a)) * along \
+		+ Vector3(-sin(a), 0.0, cos(a)) * side
+
+
+## Кербовая точка развёрнутого сектора (k, k+1) со стороны рукава k
+## (`first`) или рукава k+1: на окружности выноса узла, отклонённая от оси
+## своего рукава на `asin(вынос рукава / радиус)`. Ровно та же конструкция,
+## что кербовая точка кольца (`_ring_kerb_pos`), и по той же причине: точка на
+## окружности радиуса `r` под углом `delta` к оси рукава отстоит от этой оси
+## на `r * sin(delta)`, то есть ровно на вынос рукава.
+##
+## Радиус — самый широкий вынос УЗЛА: обвод проходит рядом с узлом, через
+## который идут полилинии ВСЕХ рукавов.
+func _reflex_kerb_pos(node: int, k: int, first: bool) -> Vector3:
+	var d := _graph.node_degree(node)
+	var arm := k if first else (k + 1) % d
+	var delta := _reflex_delta(node, arm)
+	var a := _graph.approach_angle(node, arm) + (delta if first else -delta)
+	return _graph.node_position(node) \
+		+ Vector3(cos(a), 0.0, sin(a)) * _side_of_node(node)
+
+
+## Угловое смещение кербовой точки обвода от оси её рукава.
+func _reflex_delta(node: int, arm: int) -> float:
+	return asin(clampf(_side_of_approach(node, arm) / _side_of_node(node),
+		0.0, 1.0))
 
 
 ## Кербовая точка тупика: сбоку от единственного рукава, вровень с узлом, на
@@ -465,47 +584,137 @@ func _build_ribbons() -> void:
 		var ends := _graph.edge_ends(e)
 		if ends.x == ends.y or _approach_a[e] < 0 or _approach_b[e] < 0:
 			continue
-		var frame := _edge_mid_frame(e)
-		if frame.size() < 2:
+		var frame := _ribbon_frame(e)
+		var points: PackedVector3Array = frame["points"]
+		if points.is_empty():
 			continue
+		var normals: PackedVector3Array = frame["normals"]
+		var mid_at: int = frame["mid"]
+		# Серединные узлы идут ПАРОЙ и первыми: `mid_node()` адресует их
+		# арифметикой (левый, правый следом), а станции излома — нет.
 		_edge_mid[e] = _positions.size()
-		var left := _add_node(frame[0])
-		var right := _add_node(frame[1])
+		var left := PackedInt32Array()
+		var right := PackedInt32Array()
+		left.resize(points.size())
+		right.resize(points.size())
+		left[mid_at] = _add_node(_push_out(e, points[mid_at], -normals[mid_at]))
+		right[mid_at] = _add_node(_push_out(e, points[mid_at], normals[mid_at]))
+		for s in points.size():
+			if s == mid_at:
+				continue
+			left[s] = _add_node(_push_out(e, points[s], -normals[s]))
+			right[s] = _add_node(_push_out(e, points[s], normals[s]))
 		# Правая сторона направления a -> b — это левая сторона направления
 		# b -> a, поэтому у дальнего конца сторона переворачивается.
-		_link(kerb_node(ends.x, _approach_a[e], false), left, Edge.WALK)
-		_link(left, kerb_node(ends.y, _approach_b[e], true), Edge.WALK)
-		_link(kerb_node(ends.x, _approach_a[e], true), right, Edge.WALK)
-		_link(right, kerb_node(ends.y, _approach_b[e], false), Edge.WALK)
+		_chain_ribbon(kerb_node(ends.x, _approach_a[e], false), left,
+			kerb_node(ends.y, _approach_b[e], true))
+		_chain_ribbon(kerb_node(ends.x, _approach_a[e], true), right,
+			kerb_node(ends.y, _approach_b[e], false))
 	_mid_count = _positions.size() - _mid_first
 
 
-## Середина ленты по обе стороны ребра: точка на половине ДЛИНЫ полилинии,
-## смещённая на вынос этого ребра по нормали. Возвращает [левая, правая] или пустой
-## массив, если у ребра нет ни одного невырожденного в плане сегмента.
-func _edge_mid_frame(e: int) -> PackedVector3Array:
+## Лента одной стороны: угол — станции по порядку — угол дальнего конца.
+func _chain_ribbon(from_id: int, ids: PackedInt32Array, to_id: int) -> void:
+	var prev := from_id
+	for id in ids:
+		_link(prev, id, Edge.WALK)
+		prev = id
+	_link(prev, to_id, Edge.WALK)
+
+
+## Станции ленты вдоль ребра: `points` в порядке от конца `a` к концу `b`,
+## `normals` — правая единичная нормаль в каждой, `mid` — индекс серединной.
+## Пустой `points`, если у ребра нет ни одного невырожденного в плане сегмента.
+##
+## Станций две разновидности, и обе обязательны:
+##
+##  - [b]середина[/b] ребра (по половине ДЛИНЫ полилинии). Из этого диапазона
+##    берётся «случайная цель посреди квартала» (`mid_first`/`mid_count`), и
+##    только она адресуется снаружи (`mid_node`);
+##  - [b]изломы плана[/b]. Лента обязана повторить изгиб улицы: прямая хорда
+##    через излом срезает полотно СНАРУЖИ поворота — так лента бульвара
+##    Гагарина проходила в 5.6 м от оси при полуполотне 6 м. Уплотнение
+##    полилинии рельефом изломов не создаёт (`_densify` кладёт точки на прямой
+##    плана), поэтому на прямой улице станция по-прежнему ровно одна.
+func _ribbon_frame(e: int) -> Dictionary:
+	var points := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var mid := 0
 	var count := _graph.edge_point_count(e)
 	var target := _graph.edge_length(e) * 0.5
 	var acc := 0.0
+	var mid_done := false
+	var prev_n := Vector3.ZERO
 	for i in count - 1:
 		var p0 := _graph.edge_point(e, i)
 		var p1 := _graph.edge_point(e, i + 1)
-		var seg := p0.distance_to(p1)
 		var dx := p1.x - p0.x
 		var dz := p1.z - p0.z
 		var flat := sqrt(dx * dx + dz * dz)
+		var seg := p0.distance_to(p1)
 		if seg <= 0.0 or flat <= 1e-6:
 			continue
-		if acc + seg < target and i < count - 2:
-			acc += seg
-			continue
-		var p := p0.lerp(p1, clampf((target - acc) / seg, 0.0, 1.0))
 		# Правая нормаль к направлению (dx, dz) в плоскости (x, z) — та же
 		# правая тройка, что у `CityGraph.hit_side`: на восток едешь, юг
 		# справа.
-		var nrm := Vector3(-dz / flat, 0.0, dx / flat) * _side[e]
-		return PackedVector3Array([p - nrm, p + nrm])
-	return PackedVector3Array()
+		var n := Vector3(-dz / flat, 0.0, dx / flat)
+		# Излом в вершине p0 идёт ПЕРЕД серединой этого сегмента: обе станции
+		# кладутся по возрастанию длины вдоль ребра, а вершина стоит в его
+		# начале.
+		if prev_n != Vector3.ZERO and prev_n.dot(n) < RIBBON_BEND_COS:
+			points.append(p0)
+			normals.append((prev_n + n).normalized())
+		if not mid_done and (acc + seg >= target or i == count - 2):
+			mid = points.size()
+			points.append(p0.lerp(p1, clampf((target - acc) / seg, 0.0, 1.0)))
+			normals.append(n)
+			mid_done = true
+		acc += seg
+		prev_n = n
+	return {"points": points, "normals": normals, "mid": mid}
+
+
+## Точка на выносе ребра от ВСЕЙ его полилинии: от `p` в направлении `dir`.
+##
+## Простой сдвиг на вынос по нормали своего сегмента годится только на прямой.
+## На ВНУТРЕННЕЙ стороне излома параллель одного сегмента подходит к соседнему
+## ближе выноса — так серединный узел ленты бульвара Гагарина оказывался в
+## 5.24 м от полотна при полуполотне 6 м. Верная точка лежит дальше по той же
+## нормали, на кромке параллели соседнего сегмента.
+##
+## Итерация сходится: каждый шаг закрывает недостачу с множителем `cos(излома)`
+## от неё, то есть геометрически. `assert` вместо молчаливого выхода — если
+## сходимости нет, излом ребра развёрнут назад, и это дефект полилинии, а не
+## тротуара.
+func _push_out(e: int, p: Vector3, dir: Vector3) -> Vector3:
+	var side := _side[e]
+	var out := p + dir * side
+	var gap := side - _plan_dist_to_edge(e, out)
+	var steps := 0
+	while gap > MID_PUSH_EPS and steps < MID_PUSH_STEPS:
+		out += dir * gap
+		gap = side - _plan_dist_to_edge(e, out)
+		steps += 1
+	assert(gap <= MID_PUSH_EPS, "PedGraph: ребро %d — серединный узел ленты не удалось вынести из полотна за %d шагов, недостача %.3f м" % [e, MID_PUSH_STEPS, gap])
+	return out
+
+
+## Минимальное расстояние в плане от точки до полилинии ребра, м.
+func _plan_dist_to_edge(e: int, p: Vector3) -> float:
+	var q := Vector2(p.x, p.z)
+	var best := INF
+	for i in _graph.edge_point_count(e) - 1:
+		var p0 := _graph.edge_point(e, i)
+		var p1 := _graph.edge_point(e, i + 1)
+		var a := Vector2(p0.x, p0.z)
+		var ab := Vector2(p1.x - p0.x, p1.z - p0.z)
+		var len2 := ab.length_squared()
+		if len2 < 1e-12:
+			best = minf(best, q.distance_to(a))
+			continue
+		best = minf(best,
+			q.distance_to(a + ab * clampf((q - a).dot(ab) / len2, 0.0, 1.0)))
+	return best
 
 
 ## Переходы: по одному на подход узла, между углами по обе стороны рукава.
@@ -593,37 +802,75 @@ func _build_dead_end_caps() -> void:
 	for node in _graph.node_count():
 		if _is_ring(node) or _graph.node_degree(node) != 1:
 			continue
-		var c := _graph.node_position(node)
-		var a0 := _graph.approach_angle(node, 0)
-		var side := _side_of_approach(node, 0)
-		var steps := _dead_end_cap_steps(node)
-		var prev := kerb_node(node, 0, false)
-		for s in range(1, steps + 1):
-			# От левой кербовой точки (a0 - PI/2) назад через торец: на
-			# последнем шаге угол приходит ровно в правую (a0 + PI/2).
-			var ang := a0 - PI * 0.5 - PI * float(s) / float(steps)
-			var next := kerb_node(node, 0, true) if s == steps \
-				else _add_node(c + Vector3(cos(ang), 0.0, sin(ang)) * side)
-			_link(prev, next, Edge.WALK)
-			prev = next
+		# Сектор тупика — полный круг, а обвод покрывает ту его часть, что не
+		# закрыта лентами вдоль единственного рукава: PI = TAU - 2 * (PI / 2).
+		_wrap(node, kerb_node(node, 0, false), kerb_node(node, 0, true),
+			_graph.approach_angle(node, 0) - PI * 0.5, -PI)
 
 
-## Сколько звеньев нужно обводу торца, чтобы каждая хорда прошла снаружи
-## полотна: хорда, стягивающая угол `phi`, отстоит от узла на
-## `side * cos(phi / 2)`, и это обязано быть больше полуширины полотна.
-## Отсюда `phi < 2 * acos(half / side)`, а всего обвод покрывает PI.
+## Обвод развёрнутого сектора: та же ломаная по дуге выноса узла, что у торца
+## тупика, между двумя кербовыми точками сектора. Тупик — её частный случай:
+## там сектор равен полному кругу, здесь — от 314° и шире.
+func _build_sharp_wraps() -> void:
+	for node in _graph.node_count():
+		var d := _graph.node_degree(node)
+		for k in d:
+			if not _is_reflex_sector(node, k):
+				continue
+			var next := (k + 1) % d
+			var from_ang := _graph.approach_angle(node, k) + _reflex_delta(node, k)
+			var sweep := _sector_gap(node, k) - _reflex_delta(node, k) \
+				- _reflex_delta(node, next)
+			_wrap(node, corner_node(node, k), kerb_node(node, next, false),
+				from_ang, sweep)
+
+
+## Ломаная по дуге радиуса `_side_of_node` вокруг узла: от `from_id` под углом
+## `from_ang` на развёртку `sweep` (знак задаёт направление) до `to_id`.
+##
+## Прямая хорда между концами обвода не годится: она прошла бы близко к самому
+## узлу, то есть по торцу полотна. У дуги же каждая точка отстоит от узла ровно
+## на вынос, а для всего, что позади торца, узел и есть ближайшая точка
+## полилинии — значит весь обвод снаружи полотна.
+func _wrap(node: int, from_id: int, to_id: int, from_ang: float,
+		sweep: float) -> void:
+	var c := _graph.node_position(node)
+	var r := _side_of_node(node)
+	var steps := _wrap_steps(node, absf(sweep))
+	var prev := from_id
+	for s in range(1, steps + 1):
+		var ang := from_ang + sweep * float(s) / float(steps)
+		var next := to_id if s == steps \
+			else _add_node(c + Vector3(cos(ang), 0.0, sin(ang)) * r)
+		_link(prev, next, Edge.WALK)
+		prev = next
+
+
+## Сколько звеньев нужно обводу, чтобы каждая хорда прошла снаружи полотна:
+## хорда, стягивающая угол `phi`, отстоит от узла на `r * cos(phi / 2)`, и это
+## обязано быть больше полуширины САМОГО ШИРОКОГО рукава узла — полилинии всех
+## рукавов проходят через узел. Отсюда `phi < 2 * acos(half / r)`, а всего
+## обвод покрывает `sweep`.
 ##
 ## `assert`, а не молчаливый потолок `DEAD_END_CAP_MAX`: вынос считается
 ## per-edge (`_build_sides`) и по построению равен `half + walk / 2`, поэтому
 ## `half * 1.05 >= half + walk / 2` требует `half >= 10 * walk` — 40 м
 ## полуполотна при тротуаре 4 м, чего в городе быть не может. Раньше потолок
 ## клал хорды обвода ВНУТРЬ полотна без единой ошибки в консоли.
-func _dead_end_cap_steps(node: int) -> int:
-	var side := _side_of_approach(node, 0)
-	var half := _graph.edge_width(_graph.approach_edge(node, 0)) * 0.5 \
-		* DEAD_END_CLEARANCE
-	assert(half < side, "PedGraph: тупик %d — полуполотно %.2f м не меньше выноса тротуара %.2f м, обвод торца лёг бы на проезжую часть" % [node, half, side])
-	return clampi(ceili(PI / (2.0 * acos(half / side))), 1, DEAD_END_CAP_MAX)
+func _wrap_steps(node: int, sweep: float) -> int:
+	var r := _side_of_node(node)
+	var half := _widest_half(node) * DEAD_END_CLEARANCE
+	assert(half < r, "PedGraph: узел %d — полуполотно %.2f м не меньше выноса тротуара %.2f м, обвод лёг бы на проезжую часть" % [node, half, r])
+	return clampi(ceili(sweep / (2.0 * acos(half / r))), 1, DEAD_END_CAP_MAX)
+
+
+## Полуширина самого широкого полотна среди подходов узла, м.
+func _widest_half(node: int) -> float:
+	var widest := 0.0
+	for k in _graph.node_degree(node):
+		widest = maxf(widest,
+			_graph.edge_width(_graph.approach_edge(node, k)) * 0.5)
+	return widest
 
 
 ## Переход в неположенном месте — посреди ленты, между её серединными узлами.
@@ -684,21 +931,28 @@ func _link(a: int, b: int, kind: Edge, gate: int = -1) -> void:
 
 # --- Адресация узлов --------------------------------------------------------
 
-## Угол тротуара между подходами k и k+1 узла графа улиц.
+## Угол тротуара между подходами k и k+1 узла графа улиц. У развёрнутого
+## сектора это ПЕРВАЯ из двух его кербовых точек — та, что обслуживает правую
+## сторону подхода k; вторую отдаёт `kerb_node(node, k + 1, false)`.
 func corner_node(node: int, k: int) -> int:
 	return _corner_first[node] + k
 
 
 ## Кербовый узел тротуара у подхода k со стороны `right` (правая сторона
 ## направления ОТ узла). У перекрёстка стороны соседних рукавов — это ОДИН
-## общий угол; у кольца и у тупика — две отдельные точки на рукав (общего
-## угла нет: у кольца между рукавами аннулюс, у тупика соседнего подхода
-## не существует).
+## общий угол; у кольца, у тупика и у развёрнутого сектора — две отдельные
+## точки (общего угла нет: у кольца между рукавами аннулюс, у тупика соседнего
+## подхода не существует, у шпильки эквидистанта снаружи излома — дуга).
 func kerb_node(node: int, k: int, right: bool) -> int:
 	var d := _graph.node_degree(node)
 	if _is_ring(node) or d == 1:
 		return _corner_first[node] + k * 2 + (1 if right else 0)
-	return _corner_first[node] + (k if right else (k - 1 + d) % d)
+	if right:
+		return _corner_first[node] + k
+	var prev := (k - 1 + d) % d
+	var key := gate_id(node, prev)
+	return _split_corner[key] if _split_corner.has(key) \
+		else _corner_first[node] + prev
 
 
 ## Концы перехода через рукав k: (левый угол, правый угол).
