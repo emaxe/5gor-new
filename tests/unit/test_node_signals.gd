@@ -184,6 +184,71 @@ func test_opposite_approaches_share_a_phase() -> void:
 		.is_false()
 
 
+# --- Спаривание на настоящей топологии ----------------------------------------
+
+## Магистраль, проходящая регулируемый узел НАСКВОЗЬ, обязана ехать одной
+## фазой, даже когда в тот же узел под острым углом входит переулок.
+##
+## Регрессия на `kir_cvetnik` — узел степени 5, где проспект Кирова пересекает
+## улицу Лермонтова и туда же под 22.5° от развёрнутой прямой упирается
+## переулок к Гроту Лермонтова. Пока пары брались в порядке НОМЕРА подхода,
+## переулок (22.5°) перехватывал восточный рукав проспекта раньше, чем до него
+## доходил западный (19.3°), и проспект уезжал в две разные фазы: зелёная волна
+## вдоль хребта города, ради которой заведён `wave_front_nodes`, рассыпалась.
+##
+## Порог `OPPOSITE_TOL` тут ни при чём — 22.5° и 19.3° оба внутри 45°, и
+## сузить его так, чтобы отсечь только переулок, значит подогнать константу под
+## один узел. Лечит порядок перебора: пары берутся по возрастанию отклонения.
+func test_avenue_keeps_one_phase_through_a_skewed_five_way() -> void:
+	var field := CityField.new(Db.balance)
+	var topo := PyatigorskTopology.new()
+	var g := topo.build(field)
+	var s := NodeSignalController.build(g, topo.signal_nodes,
+		topo.wave_front_nodes)
+	var node := _named_node(g, Vector3(-32.0, 18.0, 0.0))
+	assert_int(g.node_degree(node))\
+		.override_failure_message("узел Кирова x Лермонтова степени %d, ожидалось 5"
+			% g.node_degree(node))\
+		.is_equal(5)
+	var west := _approach_towards(g, node, Vector3(-76.0, 30.0, 0.0))
+	var east := _approach_towards(g, node, Vector3(24.0, 22.0, 0.0))
+	var dev := absf(Heading.delta(g.approach_angle(node, west) + PI,
+		g.approach_angle(node, east)))
+	assert_float(rad_to_deg(dev))\
+		.override_failure_message(
+			"рукава проспекта расходятся от развёрнутой прямой на %.1f°, тест ставился на 19.3°"
+			% rad_to_deg(dev))\
+		.is_equal_approx(19.3, 0.5)
+	assert_int(s.phase_of(node, west))\
+		.override_failure_message(
+			"западный и восточный рукава проспекта Кирова в разных фазах (%d и %d): улица разорвана надвое"
+			% [s.phase_of(node, west), s.phase_of(node, east)])\
+		.is_equal(s.phase_of(node, east))
+
+
+## Узел графа в плановой точке (x, z) — координаты берутся из топологии.
+static func _named_node(g: CityGraph, at: Vector3) -> int:
+	for n in g.node_count():
+		var p := g.node_position(n)
+		if absf(p.x - at.x) < 0.5 and absf(p.z - at.y) < 0.5:
+			return n
+	return -1
+
+
+## Номер подхода узла, чей рукав уходит в сторону плановой точки (x, z).
+static func _approach_towards(g: CityGraph, node: int, at: Vector3) -> int:
+	var want := atan2(at.y - g.node_position(node).z,
+		at.x - g.node_position(node).x)
+	var best := -1
+	var best_dev := INF
+	for k in g.node_degree(node):
+		var dev := absf(Heading.delta(want, g.approach_angle(node, k)))
+		if dev < best_dev:
+			best_dev = dev
+			best = k
+	return best
+
+
 # --- Паритет с осевой моделью -------------------------------------------------
 
 ## На сетке 9x9 новая модель обязана выдавать РОВНО то же, что осевая: до
