@@ -87,20 +87,53 @@ func plan(city_plan: CityPlan, rng: SeededRng,
 
 
 ## Места, свободные от застройки помимо полотна: остров кольца — это
-## проезжая часть, которой в графе нет ребром, а участок достопримечательности
-## занят её сценой.
+## проезжая часть, которой в графе нет ребром, участок достопримечательности
+## занят её сценой, а рампа с пролётом не видны обычной проверке запаса до
+## полотна (см. `elevated_corridors`).
 func _collect_plots(landmark_node: Dictionary[StringName, int]) -> void:
 	_plots = PackedVector3Array()
 	for n in graph.node_count():
 		if graph.node_kind(n) == CityGraph.NodeKind.ROUNDABOUT:
 			var p := graph.node_position(n)
 			_plots.append(Vector3(p.x, p.z, graph.node_radius(n) + field.sidewalk))
+	_plots.append_array(elevated_corridors(graph, field.sidewalk))
 	# Порядок по алфавиту, а не по словарю: сам список на результат не влияет,
 	# но фаза обязана быть воспроизводимой целиком (`CityBlocks.sorted_ids`
 	# — там же про то, почему `StringName` нельзя сортировать напрямую).
 	for id in CityBlocks.sorted_ids(landmark_node):
 		var p := graph.node_position(landmark_node[id])
 		_plots.append(Vector3(p.x, p.z, LANDMARK_PLOT))
+
+
+## Коридор вдоль рампы и пролёта — цепочка кругов (центр xy, радиус z),
+## закрывающая полотно от застройки и уличного пропса.
+##
+## Обычная проверка запаса (`CityGraph.road_clearance`) их пропускает, и не по
+## ошибке: она сравнивает высоту полотна с высотой запроса и отбрасывает всё,
+## что отличается больше чем на `LEVEL_TOLERANCE`, — иначе рядом с опорой
+## путепровода нельзя было бы построить ничего. Но у рампы и пролёта полотно
+## поднимается ОТ ЗЕМЛИ: под верхней половиной рампы лежит не проезд, а
+## насыпь, и дом там встал бы прямо в откос. Поэтому их коридор задаётся
+## явными кругами, а не выводится из запроса о запасе.
+##
+## Шаг вдвое мельче радиуса круга: цепочка обязана быть сплошной, а не
+## пунктиром с дырами между кругами.
+static func elevated_corridors(graph: CityGraph, walk: float) -> PackedVector3Array:
+	var out := PackedVector3Array()
+	for e in graph.edge_count():
+		var kind := graph.edge_kind(e)
+		if kind != CityGraph.EdgeKind.RAMP and kind != CityGraph.EdgeKind.BRIDGE:
+			continue
+		var radius := graph.edge_width(e) * 0.5 + walk
+		var pts := graph.edge_polyline(e)
+		for i in range(1, pts.size()):
+			var a := Vector2(pts[i - 1].x, pts[i - 1].z)
+			var b := Vector2(pts[i].x, pts[i].z)
+			var steps := maxi(1, ceili(a.distance_to(b) / (radius * 0.5)))
+			for k in steps + 1:
+				var p := a.lerp(b, float(k) / float(steps))
+				out.append(Vector3(p.x, p.y, radius))
+	return out
 
 
 # --- Квартал ----------------------------------------------------------------

@@ -53,10 +53,10 @@ var _shadow_mm: MultiMeshInstance3D
 
 
 func setup(catalog: PedCatalog, field_: CityField, graph: PedGraph,
-		lights: TrafficLightController, config: PedConfig, rng: SeededRng,
+		signals: NodeSignalController, config: PedConfig, rng: SeededRng,
 		space: RID, ped_count: int, player_x: float, player_z: float) -> void:
 	field = field_
-	manager.setup(catalog, field, graph, lights, config, rng, space, ped_count)
+	manager.setup(catalog, graph, signals, config, rng, space, ped_count)
 	manager.place_all_near(player_x, player_z)
 	_build_nodes()
 	_build_shadows()

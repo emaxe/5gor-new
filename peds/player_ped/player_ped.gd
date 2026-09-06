@@ -64,7 +64,7 @@ func setup(city_field: CityField, ped_config: PedConfig,
 func place(pos: Vector3, new_heading: float) -> void:
 	logic.set_pos(pos.x, pos.z, new_heading)
 	if field != null:
-		logic.ground_y = field.surface_height_at(pos.x, pos.z)
+		logic.ground_y = field.surface_height_at(pos.x, pos.z, pos.y)
 	global_position = Vector3(pos.x, logic.ground_y, pos.z)
 	basis = Heading.basis_of(new_heading)
 	reset_physics_interpolation()
@@ -93,7 +93,7 @@ func _physics_process(delta: float) -> void:
 		var clamped := PlayerPedLogic.clamp_bounds(logic.x, logic.z)
 		logic.x = clamped.x
 		logic.z = clamped.y
-		var target_gy := field.surface_height_at(logic.x, logic.z)
+		var target_gy := field.surface_height_at(logic.x, logic.z, logic.ground_y)
 		logic.ground_y = MathUtils.damp(logic.ground_y, target_gy, 0.45, delta)
 
 

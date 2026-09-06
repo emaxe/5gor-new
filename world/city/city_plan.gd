@@ -62,11 +62,11 @@ var parked_yaw: PackedFloat32Array = PackedFloat32Array()
 var parked_color: PackedColorArray = PackedColorArray()
 var parked_kind: PackedByteArray = PackedByteArray()
 
-## Стойки светофоров: позиция, поворот, индексы перекрёстка и оси.
+## Стойки светофоров: позиция и поворот. Кто из них какой подход какого узла
+## обслуживает, знает `NodeSignalPlan` — плану города это не нужно, он несёт
+## стойки только ради меша и коллизии.
 var signal_pos: PackedVector3Array = PackedVector3Array()
 var signal_yaw: PackedFloat32Array = PackedFloat32Array()
-var signal_intersection: PackedInt32Array = PackedInt32Array()
-var signal_axis: PackedByteArray = PackedByteArray()
 
 ## Зебры: центр и поворот. Генерируются из списка переходов графа —
 ## разметка не может разъехаться с логикой.

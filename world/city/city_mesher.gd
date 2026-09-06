@@ -48,72 +48,20 @@ func _init(city_field: CityField, city_plan: CityPlan) -> void:
 	plan = city_plan
 
 
-## Земля, полотно дорог и тротуары одним мешем — крупная плоская геометрия,
-## которая всё равно почти всегда в кадре.
-func build_ground() -> ArrayMesh:
+## Земля, полотно дорог, тротуары и тело путепровода одним мешем — крупная
+## плоская геометрия, которая всё равно почти всегда в кадре.
+##
+## Собственной геометрии дорог здесь больше нет: полотно строит `RoadMesh` по
+## рёбрам графа, тело пролёта — `BridgeGeometry`. Прежние «2x9 бесконечных
+## полос крест-накрест» описывали ровно решётку и на кривой улице, узле
+## степени 3 или кольце не работали в принципе.
+func build_ground(roads: RoadMesh, bridges: BridgeGeometry) -> ArrayMesh:
 	var b := MeshBuilder.new()
 	b.plane_xz(Vector3(0.0, Y_GROUND, 0.0),
 		Vector2(GROUND_SIZE, GROUND_SIZE), COLOR_GRASS)
-
-	var half := field.road_half
-	var walk := field.sidewalk
-	var span := 256.0 + field.grid_ext
-
-	# 1. Полотно дорог
-	for c in field.road_axes:
-		b.plane_xz(Vector3(c, Y_ROAD, 0.0), Vector2(half * 2.0, span * 2.0), COLOR_ROAD)
-		b.plane_xz(Vector3(0.0, Y_ROAD, c), Vector2(span * 2.0, half * 2.0), COLOR_ROAD)
-
-	# 2. Сегменты между перекрёстками, чтобы тротуары и бордюры не рассекали перекрёстки
-	var seg_centers := PackedFloat32Array()
-	var seg_lengths := PackedFloat32Array()
-
-	var end_len := field.grid_ext - half
-	seg_centers.append((-span + (field.road_axes[0] - half)) * 0.5)
-	seg_lengths.append(end_len)
-
-	var block_len := field.cell - half * 2.0
-	for j in field.road_axes.size() - 1:
-		seg_centers.append((field.road_axes[j] + field.road_axes[j + 1]) * 0.5)
-		seg_lengths.append(block_len)
-
-	seg_centers.append((span + (field.road_axes[field.road_axes.size() - 1] + half)) * 0.5)
-	seg_lengths.append(end_len)
-
-	for c in field.road_axes:
-		for k in seg_centers.size():
-			var center := seg_centers[k]
-			var length := seg_lengths[k]
-			for s: float in [-1.0, 1.0]:
-				var off := s * (half + walk * 0.5)
-				var curb := s * (half + 0.25)
-
-				# Вдоль дорог оси Z
-				b.plane_xz(Vector3(c + off, Y_SIDEWALK, center),
-					Vector2(walk, length), COLOR_SIDEWALK)
-				b.box(Vector3(c + curb, Y_CURB_TOP * 0.5, center),
-					Vector3(0.5, Y_CURB_TOP, length), COLOR_CURB)
-
-				# Вдоль дорог оси X
-				b.plane_xz(Vector3(center, Y_SIDEWALK, c + off),
-					Vector2(length, walk), COLOR_SIDEWALK)
-				b.box(Vector3(center, Y_CURB_TOP * 0.5, c + curb),
-					Vector3(length, Y_CURB_TOP, 0.5), COLOR_CURB)
-
-	# 3. Угловые площадки тротуаров и бордюров вокруг перекрёстков
-	for cv in field.road_axes:
-		for ch in field.road_axes:
-			for sv: float in [-1.0, 1.0]:
-				for sh: float in [-1.0, 1.0]:
-					var off_v := sv * (half + walk * 0.5)
-					var off_h := sh * (half + walk * 0.5)
-					b.plane_xz(Vector3(cv + off_v, Y_SIDEWALK, ch + off_h),
-						Vector2(walk, walk), COLOR_SIDEWALK)
-					b.box(Vector3(cv + sv * (half + 0.25), Y_CURB_TOP * 0.5, ch + sh * (half + 0.25)),
-						Vector3(0.5, Y_CURB_TOP, 0.5), COLOR_CURB)
-
+	roads.build_mesh(b)
+	bridges.build_mesh(b)
 	return b.commit()
-
 
 
 ## Здания, сгруппированные в чанки 128 м. Ключ — координата чанка.

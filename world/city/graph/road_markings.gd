@@ -9,14 +9,16 @@ extends RefCounted
 ## шести полос зебры здесь та же, что там; меняется только источник координат —
 ## вместо девяти осей сетки это рёбра и подходы графа.
 ##
-## [b]Заглушка до этапа 8.[/b] Сегодня зебры выводятся из `PedGraph.crossings`
-## (`city_planner.gd:143`), а `PedGraph` целиком построен на сетке 9x9 и будет
-## переписан на граф этапом 8. Пока `crossings` выводится тривиально: по
-## переходу на каждый подход узла степени >= 3. Это ЗАГЛУШКА, а не проект
-## пешеходной сети — ни гейтов светофора, ни связи с тротуарными узлами, ни
-## нерегулируемых переходов посреди квартала здесь нет. Этап 8 обязан заменить
-## `_stub_crossings()` настоящим списком переходов; форма записи (`center`,
-## `yaw`, `width`) выбрана так, чтобы `_zebra()` от замены не изменился.
+## [b]Откуда берутся переходы.[/b] Живой город отдаёт сюда настоящий список
+## `PedGraph.crossings` (этап 8): какие рукава каких узлов вообще переходят
+## пешеходы — вопрос пешеходной сети, а не разметки. Геометрию зебры
+## (вынос от горловины, ширину, поворот полос) разметка считает сама по
+## `RoadMesh`: у `PedGraph` центр перехода стоит там, где пешеход ступает с
+## тротуара, а полосы зебры обязаны лежать перед горловиной и вдоль движения
+## машин — это разные числа с разным смыслом, сводить их нечем.
+##
+## Без списка (синтетические графы тестов) переходы выводятся тривиально —
+## по одному на каждый подход узла степени >= 3 (`_stub_crossings`).
 
 ## Шаг штриха осевой, м — как в `city_builder.gd:193`.
 const DASH_STEP := 6.4
@@ -59,11 +61,16 @@ var _mesh: RoadMesh
 
 ## `signal_nodes` — регулируемые узлы (`PyatigorskTopology.signal_nodes`):
 ## стоп-линия рисуется только там, где есть что останавливать.
+## `ped_crossings` — `PedGraph.crossings`; пустой список включает заглушку.
 func _init(graph: CityGraph, mesh: RoadMesh,
-		signal_nodes: PackedInt32Array = PackedInt32Array()) -> void:
+		signal_nodes: PackedInt32Array = PackedInt32Array(),
+		ped_crossings: Array[Dictionary] = []) -> void:
 	_graph = graph
 	_mesh = mesh
-	_stub_crossings()
+	if ped_crossings.is_empty():
+		_stub_crossings()
+	else:
+		_crossings_from_peds(ped_crossings)
 	_build_dashes()
 	_build_zebra()
 	_build_stop_lines(signal_nodes)
@@ -72,6 +79,24 @@ func _init(graph: CityGraph, mesh: RoadMesh,
 # ============================================================================
 # Источник данных
 # ============================================================================
+
+## Настоящие переходы пешеходной сети: из каждого берётся только адресация
+## (узел, подход), геометрия считается здесь.
+##
+## Один и тот же (узел, подход) может прийти дважды — на проходе насквозь
+## `PedGraph` заводит переход один раз, но jwalk и переходы соседних узлов
+## живут своей жизнью, и дублировать зебру на одном рукаве нельзя.
+func _crossings_from_peds(ped_crossings: Array[Dictionary]) -> void:
+	var seen: Dictionary[int, bool] = {}
+	for c: Dictionary in ped_crossings:
+		var n: int = c["node"]
+		var k: int = c["approach"]
+		var key := MathUtils.hash_key(n, k)
+		if seen.has(key):
+			continue
+		seen[key] = true
+		_add_crossing(n, k)
+
 
 ## Тривиальный вывод переходов из геометрии узла — см. оговорку в шапке.
 func _stub_crossings() -> void:
@@ -82,19 +107,26 @@ func _stub_crossings() -> void:
 		if deg < 3:
 			continue
 		for k in deg:
-			var e := _graph.approach_edge(n, k)
-			if not _mesh.has_sidewalk(e):
-				continue
-			var dir := _mesh.cut_dir(n, k)
-			var center := _mesh.cut_point(n, k) + dir * ZEBRA_SETBACK
-			center.y += CityMesher.Y_MARKING
-			crossings.append({
-				"node": n, "approach": k, "edge": e,
-				"center": center,
-				# Полосы зебры идут ВДОЛЬ движения, пешеход шагает поперёк них.
-				"yaw": atan2(dir.x, dir.z),
-				"width": _graph.edge_width(e),
-			})
+			_add_crossing(n, k)
+
+
+## Зебра поперёк рукава `k` узла `n`, отодвинутая от горловины на
+## `ZEBRA_SETBACK`. Рукав без тротуара (серпантин, пандус, дека) пропускается:
+## зебре не с чего и не на что вести.
+func _add_crossing(node: int, k: int) -> void:
+	var e := _graph.approach_edge(node, k)
+	if not _mesh.has_sidewalk(e):
+		return
+	var dir := _mesh.cut_dir(node, k)
+	var center := _mesh.cut_point(node, k) + dir * ZEBRA_SETBACK
+	center.y += CityMesher.Y_MARKING
+	crossings.append({
+		"node": node, "approach": k, "edge": e,
+		"center": center,
+		# Полосы зебры идут ВДОЛЬ движения, пешеход шагает поперёк них.
+		"yaw": atan2(dir.x, dir.z),
+		"width": _graph.edge_width(e),
+	})
 
 
 # ============================================================================

@@ -27,6 +27,14 @@ signal player_hit_ped
 enum Mode { WALK, WAIT, FLEE, KICK, KNOCKED, IDLE }
 
 
+## Поперечный коридор, в котором машина игрока считается едущей по той же
+## дороге, что переходит пешеход, м. Полполотна самой широкой улицы (9 м у
+## проспекта Кирова) плюс запас на полосу: у игрока нет `edge_id`, по
+## которому его можно было бы сверить с переходом, как трафик.
+const PLAYER_LATERAL_DANGER := 11.0
+## Ближе этого от игрока пешеход не появляется, м: иначе он возникает прямо
+## на глазах (порт _randPlace).
+const SPAWN_MIN_DIST := 50.0
 ## Дистанция до цели/узла, при которой считаем «дошёл».
 const ARRIVE_EPS := 0.08
 ## Половина ширины тротуара для бокового смещения при обходе — ограничивает laneOff.
@@ -46,9 +54,8 @@ const DODGE_SPEED_MIN := 1.0
 
 var count := 0
 
-var field: CityField
 var graph: PedGraph
-var lights: TrafficLightController
+var signals: NodeSignalController
 var catalog: PedCatalog
 var config: PedConfig
 var rng: SeededRng
@@ -123,13 +130,12 @@ var _shape: SphereShape3D
 var _query := PhysicsShapeQueryParameters3D.new()
 
 
-func setup(catalog_: PedCatalog, field_: CityField, graph_: PedGraph,
-		lights_: TrafficLightController, config_: PedConfig, rng_: SeededRng,
+func setup(catalog_: PedCatalog, graph_: PedGraph,
+		signals_: NodeSignalController, config_: PedConfig, rng_: SeededRng,
 		space_: RID, ped_count: int) -> void:
 	catalog = catalog_
-	field = field_
 	graph = graph_
-	lights = lights_
+	signals = signals_
 	config = config_
 	rng = rng_
 	space = space_
@@ -235,36 +241,41 @@ func place_all_near(player_x: float, player_z: float) -> void:
 
 
 ## Порт _randPlace() (peds.js:778-864): случайная точка на тротуаре не ближе
-## 50 м и вне поля зрения игрока; если за 30 попыток не нашли — точка сзади
-## игрока за спиной.
+## 50 м от игрока и не дальше радиуса респавна.
+##
+## Точка берётся из СЕРЕДИН тротуарных лент графа, а не арифметикой «ближайшая
+## ось сетки плюс полполотна»: на настоящей топологии улицы не стоят через
+## 64 м по осям, и прежняя формула ставила бы пешеходов посреди кварталов и на
+## склоне Машука. Середины лент, а не углы, — по той же причине, что и у
+## случайной цели (`_pick_random_node`): стоять вплотную к перекрёстку без
+## дела незачем.
 func place_near(i: int, player_x: float, player_z: float) -> void:
 	_deactivate(i)
+	var lo := graph.mid_first()
+	var span := graph.mid_count()
 	var found := false
 	for _attempt in 30:
-		var vertical := rng.chance(0.5)
-		var rx := rng.randf_range(-160.0, 160.0)
-		var rz := rng.randf_range(-160.0, 160.0)
-		var coord: float = clampf(roundf(((player_x if vertical else player_z)
-			+ (rx if vertical else rz)) / field.cell) * field.cell, -256.0, 256.0)
-		var pos: float = clampf((player_z if vertical else player_x)
-			+ (rz if vertical else rx), -256.0, 256.0)
-		var side := 1.0 if rng.chance(0.5) else -1.0
-		var side_off := field.road_half + field.sidewalk * 0.5
-		var wx := coord + side * side_off if vertical else pos
-		var wz := pos if vertical else coord + side * side_off
-		if MathUtils.dist_2d(wx, wz, player_x, player_z) < 50.0:
+		if span <= 0:
+			break
+		var p := graph.position_of(lo + rng.randi_below(span))
+		var d := MathUtils.dist_2d(p.x, p.z, player_x, player_z)
+		if d < SPAWN_MIN_DIST or d > config.respawn_radius:
 			continue
-		if _obstacle_at(wx, wz):
+		if _obstacle_at(p.x, p.z):
 			continue
-		x[i] = wx
-		z[i] = wz
+		x[i] = p.x
+		z[i] = p.z
 		found = true
 		break
 	if not found:
-		var bx: float = clampf(player_x + rng.randf_range(-115.0, 115.0), -250.0, 250.0)
-		var bz: float = clampf(player_z + rng.randf_range(-115.0, 115.0), -250.0, 250.0)
-		x[i] = bx
-		z[i] = bz
+		# Запасной путь: ближайший тротуарный узел к случайной точке вокруг
+		# игрока. Именно узел, а не сама точка, — иначе пешеход встаёт в поле.
+		var bx := player_x + rng.randf_range(-115.0, 115.0)
+		var bz := player_z + rng.randf_range(-115.0, 115.0)
+		var id := graph.nearest_node(bx, bz)
+		var p := graph.position_of(id) if id >= 0 else Vector3(bx, 0.0, bz)
+		x[i] = p.x
+		z[i] = p.z
 
 	_reset_runtime(i)
 
@@ -336,6 +347,10 @@ func update(delta: float, player_x: float, player_z: float, player_heading: floa
 		is_night: bool) -> void:
 	_tick_counter += 1
 	_route_budget = config.routes_per_tick
+	_player_x = player_x
+	_player_z = player_z
+	_player_speed = player_speed
+	_player_heading = player_heading
 	var bucket := _build_bucket()
 
 	for i in count:
@@ -663,10 +678,10 @@ func _update_wait(i: int, delta: float) -> void:
 	var check_light := gate >= 0 and is_animal[i] == 0 and violator[i] == 0
 
 	if check_light:
-		# Гейт адресует (узел графа, подход); осевой контроллер живого города
-		# до этапа 9 говорит на (индекс оси, ось дороги) — перевод у графа.
-		var axial := graph.gate_axial(gate)
-		if not lights.is_crossing_open(axial.x, axial.y):
+		# Гейт адресует (узел графа, подход) — ровно та пара, которой светофор
+		# узла и отвечает; переводить адресацию больше не во что.
+		if not signals.is_crossing_open(
+				PedGraph.gate_node(gate), PedGraph.gate_approach(gate)):
 			if wait_t[i] > 22.0:
 				_cancel_route(i)
 			return
@@ -692,45 +707,55 @@ func _cancel_route(i: int) -> void:
 
 
 ## Едет ли по дороге, которую сейчас пересекает пешеход, машина в опасной
-## близости — порт _carOnRoad. Считает и трафик, и машину игрока.
+## близости — порт _carOnRoad.
+##
+## «Та ли это дорога» решается СРАВНЕНИЕМ `edge_id`, а не совпадением
+## координат: пешеходное ребро перехода помнит, какое ребро улиц оно
+## пересекает (`PedGraph.road_edge_of`), а машина помнит, по какому ребру
+## едет. Разноуровневые пересечения от этого безопасны даром — ребро деки
+## путепровода и ребро улицы под ним разные по построению, и пешеход внизу
+## больше не ждёт машину, идущую поверху.
+##
+## Id рёбер вида трафика совпадают с городскими для всех обычных дорог: вид
+## копирует рёбра города по порядку и дописывает дуги колец в хвост
+## (`TrafficRoadView`). Машина на самой дуге кольца в сравнение не попадает —
+## её и не надо пропускать: переход через рукав кольца стоит СНАРУЖИ
+## аннулюса, и опасна там машина, идущая по рукаву.
+##
+## Продольная дистанция меряется проекцией на курс машины, а не подстановкой
+## в ось: у кривой улицы осей нет.
 func _car_on_road(i: int, point_idx: int, safe_dist: float) -> bool:
 	var from3 := route_points[i][point_idx - 1]
 	var to3 := route_points[i][point_idx]
 	var mid_x := (from3.x + to3.x) * 0.5
 	var mid_z := (from3.z + to3.z) * 0.5
-	var crossing_along_x := absf(to3.x - from3.x) > absf(to3.z - from3.z)
-	var isec := field.nearest_intersection(mid_x, mid_z)
-	var car_coord: float = isec.x if crossing_along_x else isec.y
-	var ped_pos: float = mid_z if crossing_along_x else mid_x
+	var road_edge := -1
+	var nodes := route_nodes[i]
+	if point_idx < nodes.size() and nodes[point_idx - 1] >= 0:
+		road_edge = graph.road_edge_of(nodes[point_idx - 1], nodes[point_idx])
 
-	if traffic != null:
-		# Трафик с этапа 6 живёт на рёбрах графа, а не на двух осях, поэтому
-		# «та ли это дорога» и «по ходу ли движения» считаются в мировых
-		# координатах: поперечное отклонение от оси пересекаемой дороги и
-		# проекция на курс машины. Настоящая привязка пешеходов к графу —
-		# этап 8.
+	if traffic != null and road_edge >= 0:
 		for c in traffic.count:
+			if traffic.edge_id[c] != road_edge:
+				continue
 			if traffic.speed_of(c) <= 0.8:
 				continue
-			var cx := traffic.world_x(c)
-			var cz := traffic.world_z(c)
-			var lateral: float = absf((cx if crossing_along_x else cz) - car_coord)
-			if lateral > field.road_half + 3.0:
-				continue
-			var car_along: float = cz if crossing_along_x else cx
 			var fwd := Heading.forward(traffic.heading_of(c))
-			var car_fwd: float = fwd.z if crossing_along_x else fwd.x
-			var d_pos := (car_along - ped_pos) * signf(car_fwd)
-			if absf(car_along - ped_pos) < safe_dist and d_pos < 3.0:
+			# Положительное — переход ПОЗАДИ машины, отрицательное — впереди.
+			var along := (mid_x - traffic.world_x(c)) * fwd.x \
+				+ (mid_z - traffic.world_z(c)) * fwd.z
+			if along > -3.0 and along < safe_dist:
 				return true
 
 	if absf(_player_speed) > 1.0:
-		var player_on_road: bool = absf((_player_x if crossing_along_x else _player_z) - car_coord) < 9.0
-		if player_on_road:
-			var player_pos: float = _player_z if crossing_along_x else _player_x
-			var dyn_dist: float = maxf(safe_dist, absf(_player_speed) * 2.5)
-			if absf(player_pos - ped_pos) < dyn_dist:
-				return true
+		var pfwd := Heading.forward(_player_heading)
+		var dx := mid_x - _player_x
+		var dz := mid_z - _player_z
+		var ahead := dx * pfwd.x + dz * pfwd.z
+		var lateral := absf(-dx * pfwd.z + dz * pfwd.x)
+		var dyn_dist: float = maxf(safe_dist, absf(_player_speed) * 2.5)
+		if lateral < PLAYER_LATERAL_DANGER and ahead > -3.0 and ahead < dyn_dist:
+			return true
 	return false
 
 
@@ -836,20 +861,19 @@ func _obstacle_at(px: float, pz: float) -> bool:
 
 # --- Реакции на игрока --------------------------------------------------------------
 
-## Кэш позиции/скорости игрока — читают _car_on_road (внутри одного тика
-## update()) без протаскивания параметров через весь стек вызовов.
+## Кэш положения игрока — читает _car_on_road, не протаскивая параметры через
+## весь стек вызовов. Заполняется в начале `update()`, а не по ходу обхода
+## пешеходов: иначе первые в списке читали бы данные прошлого кадра.
 var _player_x := 0.0
 var _player_z := 0.0
 var _player_speed := 0.0
+var _player_heading := 0.0
 
 
 ## Ругань при подрезании + пинок машины игрока — порт _checkNearMissAndKick,
 ## без реплик (нет UI пузырей — придут вместе с этапом juice/UI).
 func _check_player_reaction(i: int, player_x: float, player_z: float,
 		player_speed: float) -> void:
-	_player_x = player_x
-	_player_z = player_z
-	_player_speed = player_speed
 	if knock_t[i] > 0.0 or mode[i] == Mode.FLEE:
 		return
 	var dx := player_x - x[i]

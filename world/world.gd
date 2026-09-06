@@ -34,8 +34,13 @@ var hud: CanvasLayer
 var pause_menu: CanvasLayer
 var map_screen: CanvasLayer
 
-## Точка старта смены: правая полоса проспекта, как в оригинале (0, 20).
-const SPAWN := Vector3(-2.5, 0.0, 20.0)
+## Точка старта смены: правая полоса проспекта Кирова между Цветником и
+## Калинина. Оригинальная точка (0, 20) лежала на вертикальной оси сетки;
+## на настоящей топологии проспект в этом месте идёт с запада на восток,
+## поэтому и точка смещена на его правую полосу, и курс развёрнут на восток.
+const SPAWN := Vector3(-2.5, 0.0, 22.5)
+## Курс на старте: на восток по проспекту (0 — на +Z, PI/2 — на +X).
+const SPAWN_HEADING := PI * 0.5
 ## Сид трафика/пешеходов независим от генерации города (свой fork), чтобы
 ## плотность трафика/пешеходов не сдвигала расстановку зданий/пропсов при
 ## смене баланса.
@@ -65,6 +70,8 @@ func build() -> void:
 	var stats := city.build(Db.balance, Db.districts, Game.world_seed)
 	city.refresh_signal_lenses()
 	collision.build(get_world_3d().space, city.plan, city.field)
+	# Плиты деки и опоры добавляются ПОСЛЕ плана: `build()` стирает тела.
+	collision.build_bridges(get_world_3d().space, city.bridges)
 	stats["collision_shapes"] = collision.shape_count()
 	stats["collision_bodies"] = collision.body_count()
 	_spawn_landmarks()
@@ -99,7 +106,7 @@ func _spawn_player() -> void:
 	player.runtime.upgrade_levels = Game.garage.upgrade_levels_for(active_id)
 	player.runtime.tuning = Game.garage.tuning_for(active_id)
 	player.setup(Db.cars.get_car(active_id), Db.upgrades, city.field)
-	player.place(SPAWN, 0.0)
+	player.place(SPAWN, SPAWN_HEADING)
 	player.crashed.connect(_on_player_crashed)
 	camera.target = player
 	camera.snap_to_target()
@@ -110,7 +117,7 @@ func _spawn_traffic() -> void:
 	traffic.name = "Traffic"
 	add_child(traffic)
 	var rng := SeededRng.new(Game.world_seed).fork(TRAFFIC_SEED_SALT)
-	traffic.setup(Db.traffic, city.field, city.lights, rng, Db.balance.traffic_count,
+	traffic.setup(Db.traffic, city.roads, city.signals, rng, Db.balance.traffic_count,
 		get_world_3d().space, player.global_position.x, player.global_position.z)
 	_apply_gfx_traffic_density()
 
@@ -148,7 +155,7 @@ func _spawn_pedestrians() -> void:
 	pedestrians.name = "Pedestrians"
 	add_child(pedestrians)
 	var rng := SeededRng.new(Game.world_seed).fork(PED_SEED_SALT)
-	pedestrians.setup(Db.peds, city.field, city.graph, city.lights, Db.balance.ped, rng,
+	pedestrians.setup(Db.peds, city.field, city.graph, city.signals, Db.balance.ped, rng,
 		get_world_3d().space, Db.balance.ped_count,
 		player.global_position.x, player.global_position.z)
 	_apply_gfx_ped_density()
@@ -334,10 +341,18 @@ func _process(delta: float) -> void:
 
 
 	t0 = Time.get_ticks_usec()
+	city.signals.advance(delta)
+	# Осевой контроллер ведёт свои часы только ради полиции (единственный его
+	# оставшийся потребитель, см. CityBuilder.lights).
 	city.lights.advance(delta)
-	# Линзы перекрашиваются только при смене фазы, а не каждый кадр:
-	# это запись в 192 инстанса, её нельзя делать по 60 раз в секунду.
-	var phase := int(city.lights.local_time(4) / 2.0)
+	# Линзы перекрашиваются не каждый кадр: это запись в сотни инстансов.
+	# Раньше хватало «смены фазы одного перекрёстка» — у осевой модели сдвиги
+	# фаз были кратны шагу сетки, и все перекрёстки переключались синхронно.
+	# У узловой модели сдвиг волны у каждого узла свой (доли секунды), общей
+	# границы фаз нет вовсе, поэтому опрос идёт по сетке времени 0.1 с: это
+	# заметно чаще самого короткого сигнала (жёлтый — 2 с) и в шесть раз
+	# реже кадра.
+	var phase := int(city.signals.time * 10.0)
 	if phase != _signal_phase:
 		_signal_phase = phase
 		city.refresh_signal_lenses()

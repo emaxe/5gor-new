@@ -13,31 +13,66 @@ const PALETTE_MAT := preload("res://fx/materials/mat_palette.tres")
 const LAYER_WORLD := 1
 
 var field: CityField
+## Граф улиц Пятигорска — первичный источник истины о дорогах. Из него живут
+## полотно, кварталы, трафик, пешеходы, светофоры и разметка.
+var roads: CityGraph
+var topology: PyatigorskTopology
+var blocks: CityBlocks
 var graph: PedGraph
+var signals: NodeSignalController
+var signal_plan: NodeSignalPlan
+var bridges: BridgeGeometry
 var plan: CityPlan
+## Осевой контроллер сеточной эпохи. Живой светофор — `signals`; этот остался
+## единственным потребителем `PoliceManager` (проверка проезда на красный) и
+## умрёт вместе с её переводом на узловую адресацию — отдельная задача.
 var lights: TrafficLightController
 
 var _multimesh_nodes: Array[MultiMeshInstance3D] = []
 var _chunk_nodes: Array[MeshInstance3D] = []
-## Линзы светофоров: индекс инстанса по (перекрёсток, ось, секция).
+## Линзы светофоров: индекс инстанса по стойке (`NodeSignalPlan.lens_index`).
 var _lens_mm: MultiMesh
-var _lens_index: Dictionary[int, int] = {}
 
 
 ## Полная сборка города. world_seed — живой Game.world_seed (сейв/новая игра),
 ## а не balance.world_seed напрямую: BalanceData read-only, а сид должен
 ## меняться между слотами (см. Game.world_seed). Возвращает сводку для лога
 ## и тестов.
+##
+## Порядок фаз задан зависимостями: топология -> граф -> (пешеходная сеть,
+## светофоры, кварталы, полотно) -> разметка -> план пропса -> меши.
+## Топология сама не зависит ни от чего, кроме рельефа поля, и `world_seed`
+## на неё не влияет вовсе — это контент, а не генерация.
 func build(balance: BalanceData, districts: DistrictCatalog, world_seed: int) -> Dictionary:
 	var t_plan := Time.get_ticks_usec()
 	field = CityField.new(balance)
-	graph = PedGraph.new(field)
+	topology = PyatigorskTopology.new()
+	roads = topology.build(field)
+	# С этого момента «на дороге ли» и «что под колёсами» поле отвечает по
+	# графу: у машины игрока, пешего игрока и полиции источник один.
+	field.attach_roads(roads)
+
+	graph = PedGraph.on_graph(roads, topology.signal_nodes, field.sidewalk)
+	signals = NodeSignalController.build(roads, topology.signal_nodes,
+		topology.wave_front_nodes)
+	signal_plan = NodeSignalPlan.build(roads, signals)
 	lights = TrafficLightController.new(field)
-	plan = CityPlanner.new(field, graph, districts).plan(world_seed)
+
+	blocks = CityBlocks.new()
+	blocks.build(roads, topology.node_district, topology.landmark_node)
+
+	var road_mesh := RoadMesh.new(roads, field)
+	var markings := RoadMarkings.new(roads, road_mesh, topology.signal_nodes,
+		graph.crossings)
+	bridges = BridgeGeometry.new(roads, field)
+
+	plan = CityPlanner.new(field, roads, blocks, topology.node_district,
+		districts).plan(world_seed, markings.crossings, signal_plan,
+		topology.landmark_node)
 	var t_mesh := Time.get_ticks_usec()
 
 	var mesher := CityMesher.new(field, plan)
-	var ground := mesher.build_ground()
+	var ground := mesher.build_ground(road_mesh, bridges)
 	var terrain := mesher.build_terrain()
 	var chunks := mesher.build_building_chunks()
 	var t_nodes := Time.get_ticks_usec()
@@ -48,8 +83,7 @@ func build(balance: BalanceData, districts: DistrictCatalog, world_seed: int) ->
 		_add_mesh(chunks[key], "Block_%d_%d" % [key.x, key.y])
 	_build_props()
 	_build_signals()
-	_build_road_markings()
-	_build_crosswalks()
+	_build_markings(markings)
 
 	var t_end := Time.get_ticks_usec()
 	return {
@@ -61,6 +95,9 @@ func build(balance: BalanceData, districts: DistrictCatalog, world_seed: int) ->
 		"multimeshes": _multimesh_nodes.size(),
 		"mesh_nodes": _chunk_nodes.size(),
 		"draw_estimate": _chunk_nodes.size() + _multimesh_nodes.size(),
+		"nodes": roads.node_count(),
+		"edges": roads.edge_count(),
+		"blocks": blocks.count(),
 	}
 
 
@@ -164,6 +201,10 @@ func _build_props() -> void:
 
 ## Стойки светофоров и их линзы. Линзы лежат одним MultiMesh; цвет меняется
 ## записью per-instance, а не обходом узлов.
+##
+## Стойка привязана к ПОДХОДУ узла, а не к «оси перекрёстка»: у узла степени 3
+## или 5 осей не существует. Раскладку задаёт `NodeSignalPlan`, он же и
+## переводит (узел, подход, секция) в индекс инстанса.
 func _build_signals() -> void:
 	var posts: Array[Transform3D] = []
 	for i in plan.signal_pos.size():
@@ -173,93 +214,40 @@ func _build_signals() -> void:
 
 	var lenses: Array[Transform3D] = []
 	var colors := PackedColorArray()
-	_lens_index.clear()
 	for i in plan.signal_pos.size():
 		var basis := Basis.from_euler(Vector3(0.0, plan.signal_yaw[i], 0.0))
-		for section in 3:
+		for section in NodeSignalPlan.SECTIONS:
 			# Секции сверху вниз: красная, жёлтая, зелёная.
 			var local := Vector3(0.0, 4.7 - section * 0.5, 0.41)
 			lenses.append(Transform3D(basis, plan.signal_pos[i] + basis * local))
 			colors.append(_lens_color(section, false))
-		_lens_index[i] = (i * 3)
 	var mmi := _add_multimesh(PropMeshes.signal_lens(), lenses, colors, "SignalLenses")
 	if mmi != null:
 		_lens_mm = mmi.multimesh
 
 
-## Осевая разметка и стоп-линии. Штрихи не рисуются в зоне перекрёстка —
-## там разметка прерывается, как на настоящей дороге.
-func _build_road_markings() -> void:
-	const DASH_STEP := 6.4
-	const INTERSECTION_CLEAR := 10.0
-	var y := CityMesher.Y_MARKING
-	var span := 248.0
-	var dashes: Array[Transform3D] = []
-	var along_z := Basis.IDENTITY
-	var along_x := Basis.from_euler(Vector3(0.0, PI * 0.5, 0.0))
-
-	for c in field.road_axes:
-		var v := -span
-		while v <= span:
-			if not _near_intersection(v, INTERSECTION_CLEAR):
-				dashes.append(Transform3D(along_z, Vector3(c, y, v)))
-				dashes.append(Transform3D(along_x, Vector3(v, y, c)))
-			v += DASH_STEP
-	_add_multimesh(PropMeshes.road_dash(), dashes, PackedColorArray(), "RoadDashes")
-
-	# Стоп-линии перед регулируемыми перекрёстками.
-	var stops: Array[Transform3D] = []
-	for i in PedGraph.AXES:
-		for j in PedGraph.AXES:
-			if not PedGraph.is_signalized(i, j):
-				continue
-			var cx := field.road_axes[i]
-			var cz := field.road_axes[j]
-			for s: float in [-1.0, 1.0]:
-				# На своей половине полотна, перед зеброй.
-				stops.append(Transform3D(along_x.scaled(Vector3(1.0, 1.0, 24.0)),
-					Vector3(cx - s * field.road_half * 0.5, y, cz + s * 10.5)))
-				stops.append(Transform3D(along_z.scaled(Vector3(1.0, 1.0, 24.0)),
-					Vector3(cx + s * 10.5, y, cz + s * field.road_half * 0.5)))
-	_add_multimesh(PropMeshes.road_dash(), stops, PackedColorArray(), "StopLines")
-
-
-## Попадает ли координата вдоль дороги в зону перекрёстка.
-func _near_intersection(v: float, clearance: float) -> bool:
-	for c in field.road_axes:
-		if absf(v - c) < clearance:
-			return true
-	return false
-
-
-func _build_crosswalks() -> void:
-	# Зебра — шесть полос; собирается из списка переходов графа, поэтому
-	# разметка не может разъехаться с логикой ПДД.
-	var stripes: Array[Transform3D] = []
-	for i in plan.crosswalk_pos.size():
-		var yaw := plan.crosswalk_yaw[i]
-		var basis := Basis.from_euler(Vector3(0.0, yaw, 0.0))
-		var center := plan.crosswalk_pos[i]
-		center.y = CityMesher.Y_MARKING
-		for k in 6:
-			var offset := (k - 2.5) * 1.1
-			stripes.append(Transform3D(basis, center + basis * Vector3(offset, 0.0, 0.0)))
-	_add_multimesh(PropMeshes.zebra_stripe(), stripes, PackedColorArray(), "Crosswalks")
+## Осевая разметка, стоп-линии и зебры — готовыми трансформами от
+## `RoadMarkings`: штрих идёт по полилинии ребра, а не по бесконечной прямой,
+## и прерывается перед горловиной узла, а не «в 10 м от координаты оси».
+func _build_markings(markings: RoadMarkings) -> void:
+	_add_multimesh(PropMeshes.road_dash(), markings.dashes,
+		PackedColorArray(), "RoadDashes")
+	_add_multimesh(PropMeshes.road_dash(), markings.stop_lines,
+		PackedColorArray(), "StopLines")
+	_add_multimesh(PropMeshes.zebra_stripe(), markings.zebra,
+		PackedColorArray(), "Crosswalks")
 
 
 ## Перекраска линз по текущей фазе. Вызывается менеджером мира не каждый
 ## кадр, а только когда фаза действительно сменилась.
 func refresh_signal_lenses() -> void:
-	if _lens_mm == null:
+	if _lens_mm == null or signal_plan == null:
 		return
-	for i in plan.signal_pos.size():
-		var isec: int = plan.signal_intersection[i]
-		@warning_ignore("integer_division")
-		var gi: int = isec / PedGraph.AXES
-		var lit := lights.lamp_index(gi, plan.signal_axis[i])
-		var base: int = _lens_index[i]
-		for section in 3:
-			_lens_mm.set_instance_color(base + section,
+	for i in signal_plan.post_count():
+		var lit := signals.lamp_index(signal_plan.post_node[i],
+			signal_plan.post_approach[i])
+		for section in NodeSignalPlan.SECTIONS:
+			_lens_mm.set_instance_color(signal_plan.lens_index(i, section),
 				_lens_color(section, section == lit))
 
 

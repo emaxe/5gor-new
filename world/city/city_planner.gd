@@ -11,17 +11,34 @@ extends RefCounted
 ## SeededRng. В оригинале сидирована только часть (this.rng), а размещение
 ## зданий и деревьев шло через несидированный Math.random() — то есть город
 ## там был разным при каждой загрузке, и выучить его было невозможно.
+##
+## [b]Источник геометрии — граф улиц, а не сетка 9x9 (этап 9).[/b] Раньше
+## каждая фаза шла циклом `for c in field.road_axes` и ставила пропс на
+## «полполотна вбок от оси»; на настоящей топологии осей нет вовсе. Теперь
+## курсор идёт по полилинии РЕБРА, а вбок отмеряется полуширина ЭТОГО ребра:
+## на проспекте Кирова (18 м) фонарь встаёт дальше от оси, чем в переулке
+## (8 м). Кварталы — полигоны `CityBlocks`, застройка — `BlockPlanner`.
+##
+## Что осталось прежним: сами правила «сколько чего и как часто», цвета,
+## пороги свободного места и порядок фаз. Менялся источник координат, а не
+## содержание.
 
-## Кварталов по стороне (8x8 внутри сетки 9x9 дорог).
-const BLOCKS := 8
-## Левый нижний угол квартала: -246 = -256 + 10 (отступ от оси дороги).
-const BLOCK_ORIGIN := -246.0
-## Сторона застраиваемой части квартала.
-const BLOCK_SIDE := 44.0
+## Отступ от узла, на котором пропс вдоль улицы не ставится: место занято
+## ПОПЕРЕЧНОЙ улицей с её тротуаром. Тот же расчёт, что у застройщика
+## (`BlockPlanner._corner_margin`).
+const JUNCTION_MARGIN_EXTRA := 1.0
 
-## Деревья: минимальное расстояние до оси дороги во дворах.
-const TREE_ROAD_CLEARANCE := 11.5
+## Радиус поиска дорог вокруг точки, м: самое широкое полотно (18 м) плюс
+## запас. Дальше этой границы полотно до точки не достаёт.
+const ROAD_SEARCH := 40.0
+
+## Деревья: минимальный запас от габарита дерева до КРОМКИ полотна, м.
+## Прежние 11.5 м мерились до ОСИ при полуполотне 6 м — это те же 5.5 м до
+## кромки, только теперь полуширина у каждой улицы своя.
+const TREE_ROAD_CLEARANCE := 5.5
 const TREE_SERP_CLEARANCE := 12.0
+## Попыток попасть случайной точкой внутрь полигона квартала.
+const TREE_TRIES := 6
 ## Деревьев на квартал по районам (citygen.js:2078).
 const TREES_PER_DISTRICT := {
 	&"center": 1, &"kurort": 3, &"prigorod": 2, &"sanatorii": 4,
@@ -30,19 +47,53 @@ const TREES_PER_DISTRICT := {
 const TREES_IN_PARK := 12
 const TREES_FOOTHILL := 70
 const TREES_RING := 280
+## Участок достопримечательности, свободный от посадок, м — то же число, что
+## у застройщика (`BlockPlanner.LANDMARK_PLOT`): сцена лендмарка строит свою
+## геометрию вокруг точки, и дерево посреди неё лишнее.
+const LANDMARK_PLOT := 20.0
 
-## Фонари: шаг вдоль дороги и вынос на внешний край тротуара.
-const LAMP_STEP := 48.0
-const LAMP_OFFSET := 9.0
-const LAMP_FROM := -200.0
-const LAMP_TO := 248.0
+## Фонари: шаг вдоль улицы и вынос за кромку полотна.
+##
+## Шаг вдвое мельче прежних 48 м: на сетке улица тянулась через весь город и
+## 48 м давали десяток фонарей на ней, а рёбра настоящего графа — 30-130 м,
+## и на большинстве из них при шаге 48 м уместился бы один фонарь на улицу.
+const LAMP_STEP := 26.0
+## Вынос фонаря за кромку полотна, м. При полотне оригинала (полуширина 6 м)
+## прежний абсолютный вынос 9 м от оси — это ровно 3 м за кромку.
+const LAMP_EDGE_OFFSET := 3.0
 
-## Точки подачи: шаг вдоль дороги.
+## Точки подачи: шаг вдоль улицы.
 const PICKUP_STEP := 48.0
-const PICKUP_RANGE := 208.0
 
-## Стойки светофоров стоят по углам, отступ 8.2 от центра перекрёстка.
-const SIGNAL_OFFSET := 8.2
+## Сдвиг первой станции каждого семейства пропса от горловины узла, м.
+##
+## Разные семейства обязаны идти вразнобой: на сетке они разъезжались сами —
+## у каждого цикла было своё начало (-208 у точек подачи, -200 у фонарей,
+## -216 у урн), — а на графе все стартуют от одной горловины, и без сдвига
+## фонарь вставал бы ровно в зарезервированную точку подачи и не ставился
+## вовсе. Числа взяты так, чтобы продольный зазор между любыми двумя
+## семействами был больше их суммарных радиусов резервирования (3.7 м —
+## самый большой, у точки подачи).
+const PICKUP_PHASE := 0.0
+const LAMP_PHASE := 13.0
+const FURNITURE_PHASE := 6.0
+## Лавка идёт по тем же станциям, что урна, но со сдвигом на пол-шага: иначе
+## урна, поставленная первой, занимает место и лавки не остаётся ни одной.
+## На сетке этот сдвиг был записан прямо в координату (`v + 6.0`).
+const BENCH_PHASE := 18.0
+const PARKED_PHASE := 7.0
+
+## Шаг урн и лавок вдоль улицы, м, и шаг парковки у бордюра. Шаг парковки
+## мельче прежних 28 м по той же причине, что и у фонарей: рёбра короче осей.
+const FURNITURE_STEP := 24.0
+const PARKED_STEP := 14.0
+## Насколько машина у бордюра заходит внутрь полотна от кромки, м.
+const PARKED_CURB_INSET := 1.2
+
+## Кустов во дворах на весь город и полоса, в которой они разбрасываются, м.
+const BUSHES := 220
+const BUSH_SPREAD := 500.0
+const BUSH_ROAD_CLEARANCE := 4.0
 
 ## Цвета мелкого пропса (citygen.js).
 const COLOR_BIN := Color("#7a7a72")
@@ -62,8 +113,12 @@ const PARKED_COLORS: PackedColorArray = [
 ]
 
 var field: CityField
-var graph: PedGraph
+var roads: CityGraph
+var blocks: CityBlocks
 var districts: DistrictCatalog
+## Район каждого узла графа (`PyatigorskTopology.node_district`) — по нему
+## определяется район произвольной точки города.
+var node_district: Array[StringName]
 
 var _plan: CityPlan
 var _rng: SeededRng
@@ -71,100 +126,179 @@ var _rng: SeededRng
 var _blockers: SpatialHash2D
 var _pickup_hash: SpatialHash2D
 var _crosswalk_hash: SpatialHash2D
+## Рёбра, вдоль которых расставляется уличный пропс: рядовые улицы нулевого
+## яруса. У серпантина, пандуса и деки тротуаров нет (`RoadMesh` их тоже не
+## строит), а значит некуда ставить фонарь, урну и точку подачи.
+var _street_edges: PackedInt32Array = PackedInt32Array()
 
 
-func _init(city_field: CityField, ped_graph: PedGraph,
+func _init(city_field: CityField, city_roads: CityGraph, city_blocks: CityBlocks,
+		districts_by_node: Array[StringName],
 		district_catalog: DistrictCatalog) -> void:
 	field = city_field
-	graph = ped_graph
+	roads = city_roads
+	blocks = city_blocks
+	node_district = districts_by_node
 	districts = district_catalog
 
 
 ## Полный проход планирования.
-func plan(seed_value: int) -> CityPlan:
+##
+## `crossings` — готовая разметка переходов (`RoadMarkings.crossings`): по ней
+## резервируется место, чтобы пропс не встал на зебру. `signals` — стойки
+## светофоров (`NodeSignalPlan`): план их только переносит к себе и резервирует
+## место, считает их узловой контроллер. `landmark_node` — привязки
+## достопримечательностей (`PyatigorskTopology`).
+func plan(seed_value: int, crossings: Array[Dictionary],
+		signals: NodeSignalPlan,
+		landmark_node: Dictionary[StringName, int]) -> CityPlan:
 	_plan = CityPlan.new()
 	_plan.seed_value = seed_value
 	_rng = SeededRng.new(seed_value)
 	_blockers = SpatialHash2D.new(16.0)
 	_pickup_hash = SpatialHash2D.new(16.0)
 	_crosswalk_hash = SpatialHash2D.new(16.0)
+	_collect_street_edges()
+	_reserve_elevated_corridors()
 
 	# Порядок значим: разметка и точки подачи резервируют место до того, как
 	# на тротуар начнут ставить фонари, урны и лавки.
-	_plan_crosswalks()
+	_plan_crosswalks(crossings)
 	_plan_pickups()
-	_plan_signals()
-	_plan_buildings()
-	_plan_trees()
+	_plan_signals(signals)
+	_plan_buildings(landmark_node)
+	_plan_trees(landmark_node)
 	_plan_lamps()
 	_plan_street_furniture()
 	_plan_parked_cars()
 	return _plan
 
 
-# --- Кварталы ---------------------------------------------------------------
-
-## Район квартала. Порт blockDistrict (citygen.js:97).
-static func block_district(bi: int, bj: int) -> StringName:
-	if bi == 3 and bj == 3: return &"center"
-	if bi == 4 and bj == 3: return &"center"
-	if bi == 4 and bj == 4: return &"center"
-	if bi == 3 and bj == 4: return &"center"
-	if bi == 5 and bj == 3: return &"rynok"
-	if bi == 6 and bj == 5: return &"vokzal"
-	if bi == 2 and bj == 1: return &"proval"
-	if bi <= 2 and bj <= 1: return &"mashuk"
-	if bi >= 5 and bj <= 5: return &"sanatorii"
-	if bj >= 6: return &"prigorod"
-	if bi <= 2: return &"kurort"
-	return &"center"
+func _collect_street_edges() -> void:
+	for e in roads.edge_count():
+		if roads.edge_level(e) != 0:
+			continue
+		var kind := roads.edge_kind(e)
+		if kind == CityGraph.EdgeKind.STREET or kind == CityGraph.EdgeKind.AVENUE:
+			_street_edges.append(e)
 
 
-## Особый квартал, застройке не подлежащий. Порт blockSpecial (citygen.js:110).
-static func block_special(bi: int, bj: int) -> StringName:
-	if bi == 3 and bj == 4: return &"park"
-	if bi == 2 and bj == 1: return &"lake"
-	if bi == 5 and bj == 3: return &"rynok"
-	if bi == 6 and bj == 5: return &"vokzal"
-	if bi == 3 and bj == 3: return &"narzan"
-	return &""
+## Полотно рампы и пролёта закрывается от пропса кругами, а не проверкой
+## запаса до дороги: та сравнивает высоты и не видит полотно, поднявшееся над
+## рельефом (подробности — `BlockPlanner.elevated_corridors`). Без этого
+## дерево и фонарь вставали бы в откос насыпи путепровода.
+func _reserve_elevated_corridors() -> void:
+	for c in BlockPlanner.elevated_corridors(roads, field.sidewalk):
+		_blockers.add_point(c.x, c.y, c.z)
 
 
-static func block_rect(bi: int, bj: int) -> Rect2:
-	return Rect2(BLOCK_ORIGIN + bi * 64.0, BLOCK_ORIGIN + bj * 64.0,
-		BLOCK_SIDE, BLOCK_SIDE)
+# --- Ход вдоль улицы --------------------------------------------------------
+
+## Отступ от узла, с которого начинается свободный фронт ребра: полуширина
+## самой широкой ПОПЕРЕЧНОЙ улицы плюс тротуар, у кольца ещё и его радиус.
+func _junction_margin(node: int, along: int) -> float:
+	var widest := 0.0
+	for k in roads.node_degree(node):
+		var e := roads.approach_edge(node, k)
+		if e != along:
+			widest = maxf(widest, roads.edge_width(e))
+	return widest * 0.5 + field.sidewalk + roads.node_radius(node) \
+		+ JUNCTION_MARGIN_EXTRA
+
+
+## Точки вдоль ребра с шагом `step`, между горловинами его узлов. Возвращает
+## накопленные ПЛАНОВЫЕ длины: вбок отмеряется по плану, иначе на уклоне
+## вынос тротуара получился бы короче задуманного.
+##
+## `phase` — сдвиг первой станции; берётся по модулю шага, иначе на коротком
+## ребре сдвинутое семейство пропало бы целиком.
+func _stations(e: int, step: float, phase: float) -> PackedFloat32Array:
+	var out := PackedFloat32Array()
+	var ends := roads.edge_ends(e)
+	var total := _plan_length(e)
+	var from := _junction_margin(ends.x, e) + fmod(phase, step)
+	var to := total - _junction_margin(ends.y, e)
+	var s := from
+	while s <= to:
+		out.append(s)
+		s += step
+	return out
+
+
+func _plan_length(e: int) -> float:
+	var acc := 0.0
+	for k in range(1, roads.edge_point_count(e)):
+		acc += _plan_dist(roads.edge_point(e, k - 1), roads.edge_point(e, k))
+	return acc
+
+
+static func _plan_dist(a: Vector3, b: Vector3) -> float:
+	return Vector2(b.x - a.x, b.z - a.z).length()
+
+
+## Точка полилинии ребра на плановой длине `s` от его начала.
+func _point_at(e: int, s: float) -> Vector3:
+	var acc := 0.0
+	var n := roads.edge_point_count(e)
+	for k in range(1, n):
+		var p0 := roads.edge_point(e, k - 1)
+		var p1 := roads.edge_point(e, k)
+		var seg := _plan_dist(p0, p1)
+		if seg <= 0.0:
+			continue
+		if acc + seg >= s:
+			return p0.lerp(p1, (s - acc) / seg)
+		acc += seg
+	return roads.edge_point(e, n - 1)
+
+
+## Единичная касательная ребра на плановой длине `s`, в плоскости (x, z).
+func _tangent_at(e: int, s: float) -> Vector3:
+	var acc := 0.0
+	var n := roads.edge_point_count(e)
+	for k in range(1, n):
+		var p0 := roads.edge_point(e, k - 1)
+		var p1 := roads.edge_point(e, k)
+		var seg := _plan_dist(p0, p1)
+		if seg <= 0.0:
+			continue
+		if acc + seg >= s or k == n - 1:
+			return Vector3(p1.x - p0.x, 0.0, p1.z - p0.z).normalized()
+		acc += seg
+	return Vector3.RIGHT
+
+
+## Правая нормаль к касательной — та же правая тройка, что у
+## `CityGraph.hit_side`: едешь на восток, юг справа.
+static func _right_normal(tangent: Vector3) -> Vector3:
+	return tangent.cross(Vector3.UP)
 
 
 # --- Разметка и точки геймплея ----------------------------------------------
 
-## Зебры рисуются из списка переходов графа: разметка не может разъехаться
-## с логикой ПДД (принцип из проекта capital).
-func _plan_crosswalks() -> void:
-	for c: Dictionary in graph.crossings:
+## Зебры приходят готовыми из `RoadMarkings`: разметка и пешеходная логика
+## выводятся из одного списка переходов (`PedGraph.crossings`), поэтому
+## разъехаться не могут. План их только запоминает и резервирует место.
+func _plan_crosswalks(crossings: Array[Dictionary]) -> void:
+	for c: Dictionary in crossings:
 		var center: Vector3 = c["center"]
-		# Поворот зебры берётся у самого перехода: у произвольного узла нет
-		# «оси дороги», зато есть направление хода пешехода между углами.
+		var width: float = c["width"]
 		_plan.crosswalk_pos.append(center)
 		_plan.crosswalk_yaw.append(float(c["yaw"]))
-		_crosswalk_hash.add_point(center.x, center.z, field.road_half + 1.0)
+		_crosswalk_hash.add_point(center.x, center.z, width * 0.5 + 1.0)
 
 
-## Точки подачи такси вдоль каждой дороги. Порт _collectPickupPoints.
+## Точки подачи такси вдоль улиц. Порт _collectPickupPoints: шаг тот же,
+## вынос — середина тротуара своей улицы, а не константа сетки.
 func _plan_pickups() -> void:
-	var side_offset := field.road_half + field.sidewalk * 0.5
-	for c in field.road_axes:
-		var v := -PICKUP_RANGE
-		while v <= PICKUP_RANGE:
-			for s: float in [-1.0, 1.0]:
-				# Вдоль вертикальной дороги.
-				var px := c + s * side_offset
-				if field.dist_to_road(px, v) >= field.road_half:
-					_add_pickup(px, v)
-				# Вдоль горизонтальной.
-				var pz := c + s * side_offset
-				if field.dist_to_road(v, pz) >= field.road_half:
-					_add_pickup(v, pz)
-			v += PICKUP_STEP
+	for e in _street_edges:
+		var lateral := roads.edge_width(e) * 0.5 + field.sidewalk * 0.5
+		for s in _stations(e, PICKUP_STEP, PICKUP_PHASE):
+			var p := _point_at(e, s)
+			var n := _right_normal(_tangent_at(e, s))
+			for side: float in [-1.0, 1.0]:
+				var q := p + n * (side * lateral)
+				_add_pickup(q.x, q.z)
 
 
 func _add_pickup(x: float, z: float) -> void:
@@ -173,164 +307,66 @@ func _add_pickup(x: float, z: float) -> void:
 	_pickup_hash.add_point(x, z, 2.0)
 
 
+## Район точки — район ближайшего узла графа. Топология задаёт район на узле
+## (`node_district`), а не по индексам квартала: квартал у настоящего города
+## не квадрат 64x64 и индексов не имеет.
 func _district_index_at(x: float, z: float) -> int:
-	var bi := clampi(floori((x + 256.0) / 64.0), 0, BLOCKS - 1)
-	var bj := clampi(floori((z + 256.0) / 64.0), 0, BLOCKS - 1)
-	var id := block_district(bi, bj)
+	var node := roads.nearest_node(Vector3(x, field.height_at(x, z), z))
+	if node < 0 or node >= node_district.size():
+		return 0
+	return _district_index(node_district[node])
+
+
+func _district_index(id: StringName) -> int:
 	for i in districts.items.size():
 		if districts.items[i].id == id:
 			return i
 	return 0
 
 
-## Стойки светофоров — по четырём углам регулируемых перекрёстков.
-func _plan_signals() -> void:
-	for i in PedGraph.AXES:
-		for j in PedGraph.AXES:
-			if not PedGraph.is_signalized(i, j):
-				continue
-			var cx := field.road_axes[i]
-			var cz := field.road_axes[j]
-			# Каждый угол обслуживает одну ось: стойка смотрит на ту дорогу,
-			# движение по которой она регулирует (citygen.js:2693).
-			var corners := [
-				{"x": cx + SIGNAL_OFFSET, "z": cz + SIGNAL_OFFSET,
-					"axis": TrafficLightController.Axis.Z_ROAD, "yaw": PI},
-				{"x": cx + SIGNAL_OFFSET, "z": cz - SIGNAL_OFFSET,
-					"axis": TrafficLightController.Axis.X_ROAD, "yaw": -PI * 0.5},
-				{"x": cx - SIGNAL_OFFSET, "z": cz - SIGNAL_OFFSET,
-					"axis": TrafficLightController.Axis.Z_ROAD, "yaw": 0.0},
-				{"x": cx - SIGNAL_OFFSET, "z": cz + SIGNAL_OFFSET,
-					"axis": TrafficLightController.Axis.X_ROAD, "yaw": PI * 0.5},
-			]
-			for c: Dictionary in corners:
-				_plan.signal_pos.append(Vector3(c["x"], 0.0, c["z"]))
-				_plan.signal_yaw.append(c["yaw"])
-				_plan.signal_intersection.append(i * PedGraph.AXES + j)
-				_plan.signal_axis.append(int(c["axis"]))
-				_blockers.add_point(c["x"], c["z"], 0.45)
+## Стойки светофоров приходят от `NodeSignalPlan`: сколько у регулируемого
+## узла подходов, столько и стоек. План их переносит к себе (по ним строятся
+## меш и коллизия) и резервирует место под пропс.
+func _plan_signals(signals: NodeSignalPlan) -> void:
+	for i in signals.post_count():
+		var p := signals.post_pos[i]
+		_plan.signal_pos.append(p)
+		_plan.signal_yaw.append(signals.post_yaw[i])
+		_blockers.add_point(p.x, p.z, 0.45)
 
 
 # --- Застройка --------------------------------------------------------------
 
-## Периметральная застройка: дома стоят вдоль улиц, внутри квартала двор.
-##
-## В оригинале дома разбрасывались случайно по кварталу (rand по x и z с
-## проверкой на пересечение), и выходило 1-2 дома на квартал — город читался
-## как редкий макет. Пятигорск застроен периметрально, поэтому здесь фасады
-## выстраиваются по фронту улицы, а внутри остаётся двор.
-func _plan_buildings() -> void:
-	for bi in BLOCKS:
-		for bj in BLOCKS:
-			if not block_special(bi, bj).is_empty():
-				continue
-			var district_id := block_district(bi, bj)
-			var d := districts.get_district(district_id)
-			if d == null:
-				continue
-			_plan_block(block_rect(bi, bj), d)
-
-
-func _plan_block(r: Rect2, d: DistrictData) -> void:
-	var placed: Array[Rect2] = []
-	# Чем плотнее район, тем реже разрывы во фронте и глубже корпуса.
-	var density := clampf(d.density / 4.0, 0.25, 1.0)
-	var side_chance := 0.55 + 0.4 * density
-	for side in 4:
-		if not _rng.chance(side_chance):
-			continue
-		_plan_block_side(r, side, d, density, placed)
-	# Дворовый корпус — в плотных районах.
-	if _rng.chance(0.25 * density) and placed.size() > 0:
-		var w := _rng.randf_range(9.0, 15.0)
-		var dep := _rng.randf_range(9.0, 15.0)
-		var x := r.position.x + (r.size.x - w) * 0.5 + _rng.randf_range(-3.0, 3.0)
-		var z := r.position.y + (r.size.y - dep) * 0.5 + _rng.randf_range(-3.0, 3.0)
-		_try_place_building(Rect2(x, z, w, dep), d, placed, 2.5)
-
-
-## Ряд домов вдоль одной стороны квартала. side: 0 — север (-Z), 1 — восток
-## (+X), 2 — юг (+Z), 3 — запад (-X).
-func _plan_block_side(r: Rect2, side: int, d: DistrictData, density: float,
-		placed: Array[Rect2]) -> void:
-	var along_len: float = r.size.x if side == 0 or side == 2 else r.size.y
-	var cursor := _rng.randf_range(0.0, 5.0)
-	var guard := 0
-	while cursor < along_len - 8.0 and guard < 16:
-		guard += 1
-		var w: float = minf(_rng.randf_range(9.0, 22.0), along_len - cursor)
-		if w < 8.0:
-			break
-		var depth := _rng.randf_range(9.0, 9.0 + 8.0 * density)
-		var rect := _side_rect(r, side, cursor, w, depth)
-		_try_place_building(rect, d, placed, 1.0)
-		# Разрыв между домами: в плотной застройке фасады смыкаются.
-		cursor += w + _rng.randf_range(0.5, 2.0 + 6.0 * (1.0 - density))
-
-
-func _side_rect(r: Rect2, side: int, offset: float, w: float,
-		depth: float) -> Rect2:
-	match side:
-		0:
-			return Rect2(r.position.x + offset, r.position.y, w, depth)
-		1:
-			return Rect2(r.end.x - depth, r.position.y + offset, depth, w)
-		2:
-			return Rect2(r.position.x + offset, r.end.y - depth, w, depth)
-		_:
-			return Rect2(r.position.x, r.position.y + offset, depth, w)
-
-
-func _try_place_building(rect: Rect2, d: DistrictData, placed: Array[Rect2],
-		gap: float) -> void:
-	if _overlaps_placed(placed, rect, gap):
-		return
-	placed.append(rect)
-	var facade := _rng.pick_color(d.palette.facades)
-	var height := _rng.randf_range(d.height_min, d.height_max)
-	# Скатная кровля бывает только у малоэтажных домов: на восьмиэтажке
-	# в Пятигорске плоская крыша.
-	var roof_kind := 1 if height < 13.0 and _rng.chance(0.55) else 0
-	_plan.add_building(
-		Vector4(rect.position.x, rect.position.y, rect.end.x, rect.end.y),
-		height,
-		facade,
-		d.palette.roof_color(_rng.pick_color(d.palette.facades)),
-		_district_index_at(rect.get_center().x, rect.get_center().y),
-		roof_kind)
-	_blockers.add_rect(rect.position.x, rect.position.y, rect.end.x, rect.end.y)
-
-
-static func _overlaps_placed(placed: Array[Rect2], rect: Rect2, gap: float) -> bool:
-	var grown := rect.grow(gap)
-	for p in placed:
-		if grown.intersects(p):
-			return true
-	return false
+## Периметральная застройка полигональных кварталов — целиком за
+## `BlockPlanner` (этап 5). Здесь только запуск и регистрация габаритов в
+## хеше занятых мест: дальше по этому хешу проверяют место деревья и пропс.
+func _plan_buildings(landmark_node: Dictionary[StringName, int]) -> void:
+	BlockPlanner.new(blocks, field, districts).plan(_plan, _rng, landmark_node)
+	for i in _plan.building_count():
+		var r := _plan.building_world_aabb(i)
+		_blockers.add_rect(r.position.x, r.position.y, r.end.x, r.end.y)
 
 
 # --- Озеленение -------------------------------------------------------------
 
-func _plan_trees() -> void:
-	for bi in BLOCKS:
-		for bj in BLOCKS:
-			var special := block_special(bi, bj)
-			if special == &"rynok":
-				continue # рынок мощён и обнесён оградой
-			var district_id := block_district(bi, bj)
-			var r := block_rect(bi, bj)
-			var n: int = TREES_IN_PARK if special == &"park" \
-				else int(TREES_PER_DISTRICT.get(district_id, 2))
-			for k in n:
-				var x := r.position.x + _rng.randf_to(BLOCK_SIDE)
-				var z := r.position.y + _rng.randf_to(BLOCK_SIDE)
-				if special == &"park":
-					# Не сажаем на площади и радиальных дорожках Цветника.
-					if MathUtils.dist_2d(x, z, -32.0, 32.0) < 18.0:
-						continue
-					if absf(x + 32.0) < 3.4 or absf(z - 32.0) < 3.4:
-						continue
-				_try_add_tree(x, z, _rng.chance(0.75), special == &"park")
+func _plan_trees(landmark_node: Dictionary[StringName, int]) -> void:
+	for b in blocks.count():
+		var special := blocks.special(b)
+		var n: int = TREES_IN_PARK if not special.is_empty() \
+			else int(TREES_PER_DISTRICT.get(blocks.district(b), 2))
+		# Участок самой достопримечательности остаётся свободным: её сцена
+		# строит там свою геометрию (скамьи Цветника, ряды рынка).
+		var plot := Vector2(INF, INF)
+		if not special.is_empty() and landmark_node.has(special):
+			var lp := roads.node_position(landmark_node[special])
+			plot = Vector2(lp.x, lp.z)
+		for k in n:
+			var p := _point_in_block(b)
+			if is_inf(p.x):
+				continue
+			if p.distance_to(plot) < LANDMARK_PLOT:
+				continue
+			_try_add_tree(p.x, p.y, _rng.chance(0.75), not special.is_empty())
 
 	# Опушка Машука и предгорье.
 	for k in TREES_FOOTHILL:
@@ -345,8 +381,28 @@ func _plan_trees() -> void:
 		_try_add_tree(cos(a) * dd, sin(a) * dd, _rng.chance(0.65), true)
 
 
+## Случайная точка внутри полигона квартала: бросок в габарит с проверкой на
+## принадлежность. `Vector2(INF, INF)` — за `TREE_TRIES` попыток не попали
+## (узкий вытянутый квартал у подножия Машука).
+func _point_in_block(b: int) -> Vector2:
+	var poly := blocks.polygon(b)
+	if poly.is_empty():
+		return Vector2(INF, INF)
+	var lo := poly[0]
+	var hi := poly[0]
+	for p in poly:
+		lo = Vector2(minf(lo.x, p.x), minf(lo.y, p.y))
+		hi = Vector2(maxf(hi.x, p.x), maxf(hi.y, p.y))
+	for _attempt in TREE_TRIES:
+		var q := Vector2(lo.x + _rng.randf_to(hi.x - lo.x),
+			lo.y + _rng.randf_to(hi.y - lo.y))
+		if blocks.contains(b, q):
+			return q
+	return Vector2(INF, INF)
+
+
 func _try_add_tree(x: float, z: float, deciduous: bool, in_park: bool) -> void:
-	if not in_park and field.dist_to_road(x, z) < TREE_ROAD_CLEARANCE:
+	if not in_park and _road_clearance(x, z) < TREE_ROAD_CLEARANCE:
 		return
 	if not _is_free(x, z, 1.8):
 		return
@@ -364,49 +420,58 @@ func _try_add_tree(x: float, z: float, deciduous: bool, in_park: bool) -> void:
 
 # --- Уличное оборудование ---------------------------------------------------
 
+## Фонари вдоль улиц, стороны чередуются. Кронштейн смотрит на дорогу:
+## курс отсчитывается от направления «к оси улицы», а не от мировых осей —
+## на бульваре Гагарина улица идёт под углом, и фонарь вдоль X светил бы мимо.
 func _plan_lamps() -> void:
-	for c in field.road_axes:
+	for e in _street_edges:
+		var lateral := roads.edge_width(e) * 0.5 + LAMP_EDGE_OFFSET
 		var side := 1.0
-		var v := LAMP_FROM
-		while v <= LAMP_TO:
-			# Вдоль вертикальной дороги: фонарь на внешнем краю тротуара.
-			var lx := c - LAMP_OFFSET * side
-			if _is_free(lx, v, 0.5):
-				_plan.lamp_pos.append(Vector3(lx, field.height_at(lx, v), v))
-				_plan.lamp_yaw.append(0.0 if side > 0.0 else PI)
-				_blockers.add_point(lx, v, 0.25)
-			# Вдоль горизонтальной.
-			var lz := c - LAMP_OFFSET * side
-			if _is_free(v, lz, 0.5):
-				_plan.lamp_pos.append(Vector3(v, field.height_at(v, lz), lz))
-				_plan.lamp_yaw.append(-side * PI * 0.5)
-				_blockers.add_point(v, lz, 0.25)
+		for s in _stations(e, LAMP_STEP, LAMP_PHASE):
+			var p := _point_at(e, s)
+			var n := _right_normal(_tangent_at(e, s))
+			var q := p + n * (side * lateral)
+			if _is_free(q.x, q.z, 0.5):
+				_plan.lamp_pos.append(Vector3(q.x, p.y, q.z))
+				_plan.lamp_yaw.append(_facing_yaw(-n * side))
+				_blockers.add_point(q.x, q.z, 0.25)
 			side = -side
-			v += LAMP_STEP
+
+
+## Курс объекта, «лицо» которого смотрит вдоль `dir` в плоскости (x, z).
+## Меши пропса авторены лицом в +X (как фонарь оригинала при yaw = 0),
+## а поворот вокруг Y переводит +X в (cos yaw, -sin yaw) — отсюда знак.
+static func _facing_yaw(dir: Vector3) -> float:
+	return -atan2(dir.z, dir.x)
 
 
 func _plan_street_furniture() -> void:
-	var side_offset := field.road_half + field.sidewalk * 0.5
-	for c in field.road_axes:
-		var v := -216.0
-		while v <= 216.0:
-			for s: float in [-1.0, 1.0]:
-				var bx := c + s * side_offset
-				if _rng.chance(0.35) and _is_free(bx, v, 0.6):
-					_add_bin(bx, v)
-				if _rng.chance(0.25) and _is_free(v, c + s * side_offset, 0.6):
-					_add_bin(v, c + s * side_offset)
-				if _rng.chance(0.22) and _is_free(bx, v + 6.0, 1.0):
-					_add_bench(bx, v + 6.0, 0.0 if s > 0.0 else PI)
-				if _rng.chance(0.18) and _is_free(v + 6.0, c + s * side_offset, 1.0):
-					_add_bench(v + 6.0, c + s * side_offset, PI * 0.5)
-			v += 24.0
+	for e in _street_edges:
+		var lateral := roads.edge_width(e) * 0.5 + field.sidewalk * 0.5
+		for s in _stations(e, FURNITURE_STEP, FURNITURE_PHASE):
+			var p := _point_at(e, s)
+			var n := _right_normal(_tangent_at(e, s))
+			for side: float in [-1.0, 1.0]:
+				var q := p + n * (side * lateral)
+				if _rng.chance(0.30) and _is_free(q.x, q.z, 0.6):
+					_add_bin(q.x, q.z, p.y)
+	for e in _street_edges:
+		var lateral := roads.edge_width(e) * 0.5 + field.sidewalk * 0.5
+		for s in _stations(e, FURNITURE_STEP, BENCH_PHASE):
+			var p := _point_at(e, s)
+			var n := _right_normal(_tangent_at(e, s))
+			for side: float in [-1.0, 1.0]:
+				var q := p + n * (side * lateral)
+				# Лавка стоит спинкой к дороге — как и в сетке, где сторона
+				# `+1` получала курс 0, то есть «лицом наружу».
+				if _rng.chance(0.22) and _is_free(q.x, q.z, 1.0):
+					_add_bench(q.x, q.z, p.y, _facing_yaw(n * side))
 
 	# Кусты во дворах — там же, где деревья, но ближе к домам.
-	for k in 220:
-		var x := (_rng.next() - 0.5) * 500.0
-		var z := (_rng.next() - 0.5) * 500.0
-		if field.dist_to_road(x, z) < 10.0:
+	for k in BUSHES:
+		var x := (_rng.next() - 0.5) * BUSH_SPREAD
+		var z := (_rng.next() - 0.5) * BUSH_SPREAD
+		if _road_clearance(x, z) < BUSH_ROAD_CLEARANCE:
 			continue
 		if not _is_free(x, z, 1.0):
 			continue
@@ -415,40 +480,44 @@ func _plan_street_furniture() -> void:
 		_blockers.add_point(x, z, 0.9, 1.2)
 
 
-func _add_bin(x: float, z: float) -> void:
-	_plan.bin_pos.append(Vector3(x, field.height_at(x, z), z))
+func _add_bin(x: float, z: float, y: float) -> void:
+	_plan.bin_pos.append(Vector3(x, y, z))
 	_blockers.add_point(x, z, 0.45)
 
 
-func _add_bench(x: float, z: float, yaw: float) -> void:
-	_plan.bench_pos.append(Vector3(x, field.height_at(x, z), z))
+func _add_bench(x: float, z: float, y: float, yaw: float) -> void:
+	_plan.bench_pos.append(Vector3(x, y, z))
 	_plan.bench_yaw.append(yaw)
 	_blockers.add_point(x, z, 1.0)
 
 
-## Припаркованные машины стоят у бордюра, носом вдоль дороги.
+## Припаркованные машины стоят у бордюра, носом ПО ХОДУ своей полосы:
+## при правостороннем движении полоса справа от оси идёт по касательной,
+## слева — против неё.
 func _plan_parked_cars() -> void:
-	var curb := field.road_half - 1.2
-	for c in field.road_axes:
-		var v := -200.0
-		while v <= 200.0:
-			for s: float in [-1.0, 1.0]:
+	for e in _street_edges:
+		var lateral := roads.edge_width(e) * 0.5 - PARKED_CURB_INSET
+		if lateral <= 0.0:
+			continue
+		for s in _stations(e, PARKED_STEP, PARKED_PHASE):
+			var tangent := _tangent_at(e, s)
+			var p := _point_at(e, s)
+			var n := _right_normal(tangent)
+			for side: float in [-1.0, 1.0]:
+				if not _rng.chance(0.30):
+					continue
+				var q := p + n * (side * lateral)
 				# Стоянка у бордюра — единственный пропс, который НАХОДИТСЯ
 				# на проезжей части, поэтому проверка места без условия
 				# «подальше от дороги».
-				if _rng.chance(0.30):
-					var px := c + s * curb
-					if _is_free_on_road(px, v, 2.4):
-						_add_parked(px, v, 0.0 if s > 0.0 else PI)
-				if _rng.chance(0.30):
-					var pz := c + s * curb
-					if _is_free_on_road(v, pz, 2.4):
-						_add_parked(v, pz, PI * 0.5 if s > 0.0 else -PI * 0.5)
-			v += 28.0
+				if not _is_free_on_road(q.x, q.z, 2.4):
+					continue
+				_add_parked(q.x, q.z, p.y,
+					Heading.from_vector(tangent * side))
 
 
-func _add_parked(x: float, z: float, yaw: float) -> void:
-	_plan.parked_pos.append(Vector3(x, field.height_at(x, z), z))
+func _add_parked(x: float, z: float, y: float, yaw: float) -> void:
+	_plan.parked_pos.append(Vector3(x, y, z))
 	_plan.parked_yaw.append(yaw)
 	_plan.parked_color.append(_rng.pick_color(PARKED_COLORS))
 	_plan.parked_kind.append(_rng.randi_below(3))
@@ -457,10 +526,16 @@ func _add_parked(x: float, z: float, yaw: float) -> void:
 
 # --- Проверка места ---------------------------------------------------------
 
+## Запас от точки до КРОМКИ ближайшего полотна, м. Отрицательное значение —
+## точка на проезжей части.
+func _road_clearance(x: float, z: float) -> float:
+	return roads.road_clearance(Vector3(x, field.height_at(x, z), z), ROAD_SEARCH)
+
+
 ## Порт isPositionValid: не на проезжей части, не в здании, не на точке
 ## подачи, не на зебре и не поверх другого пропса.
 func _is_free(x: float, z: float, radius: float) -> bool:
-	if field.dist_to_road(x, z) < field.road_half + radius + 0.3:
+	if _road_clearance(x, z) < radius + 0.3:
 		return false
 	return _is_free_on_road(x, z, radius)
 

@@ -34,7 +34,6 @@ var _beacon_red: Array[MeshInstance3D] = []
 var _beacon_blue: Array[MeshInstance3D] = []
 var _visible_count := 0
 var _space: RID
-var _field: CityField
 var _roll: PackedFloat32Array = PackedFloat32Array()
 var _pitch: PackedFloat32Array = PackedFloat32Array()
 var _shadow_mm: MultiMeshInstance3D
@@ -42,18 +41,15 @@ var _shadow_mm: MultiMeshInstance3D
 
 ## Строит SoA-состояние, узлы и коллайдеры. space — get_world_3d().space,
 ## вызывается после появления игрока (нужна его позиция для первой расстановки).
-func setup(catalog: TrafficCatalog, field: CityField, lights: TrafficLightController,
-		rng: SeededRng, traffic_count: int, space: RID,
-		player_x: float, player_z: float) -> void:
+func setup(catalog: TrafficCatalog, roads: CityGraph,
+		signals: NodeSignalController, rng: SeededRng, traffic_count: int,
+		space: RID, player_x: float, player_z: float) -> void:
 	_space = space
-	_field = field
-	# Граф трафика строится из тех же девяти осей поля, что и прежняя
-	# рельсовая модель: настоящий граф Пятигорска попадёт сюда на этапе 9,
-	# и тогда изменится только источник этой строки (см. CityGraphGrid).
-	# Список регулируемых узлов — оттуда же и по той же причине: пока город
-	# сеточный, регулируются ровно те перекрёстки, что и раньше.
-	manager.setup(catalog, field, CityGraphGrid.from_field(field), lights, rng,
-		traffic_count, CityGraphGrid.signalized_nodes(field))
+	# Граф и светофоры приходят готовыми от `CityBuilder`: машины едут по той
+	# же топологии Пятигорска, по которой построены полотно, кварталы и
+	# пешеходная сеть, и слушают тот же экземпляр контроллера, который красит
+	# линзы. Двух источников истины о дорогах в живой сцене больше нет.
+	manager.setup(catalog, roads, signals, rng, traffic_count)
 	manager.place_all_near(player_x, player_z)
 	_roll.resize(manager.count)
 	_roll.fill(0.0)
@@ -180,7 +176,9 @@ func tick(delta: float, player_x: float, player_z: float, density: float) -> voi
 			continue
 		var wx: float = manager.world_x(i)
 		var wz: float = manager.world_z(i)
-		var wy: float = ((_field.height_at(wx, wz) if wz <= -260.0 else 0.0) if _field != null else 0.0) + CityMesher.Y_ROAD
+		# Отметка своего ребра, а не рельефа: на деке путепровода рельеф под
+		# машиной нулевой, а полотно на +6.5 м.
+		var wy := manager.world_road_y(i) + CityMesher.Y_ROAD
 		var ang_vel := manager.angular_vel_of(i)
 		var spd := manager.speed_of(i)
 		var acc := manager.accel_of(i)

@@ -198,7 +198,9 @@ func _physics_process(delta: float) -> void:
 
 	# Машина едет колёсами по поверхности (дорога 0.05, тротуар 0.15, Машук).
 	# Плавная подвеска гасит ступени бордюров при заезде на тротуар.
-	var target_y := field.surface_height_at(global_position.x, global_position.z)
+	# Высота своего яруса: под путепроводом остаётся улица, на деке — дека.
+	var target_y := field.surface_height_at(global_position.x, global_position.z,
+		global_position.y)
 	global_position.y = MathUtils.damp(global_position.y, target_y, 0.45, delta)
 	motion.position = global_position
 
@@ -210,8 +212,10 @@ func _physics_process(delta: float) -> void:
 
 
 func _sample_surface() -> void:
-	_surface.on_road = field.on_road(global_position.x, global_position.z)
-	_surface.ground_height = field.surface_height_at(global_position.x, global_position.z)
+	_surface.on_road = field.on_road(global_position.x, global_position.z,
+		global_position.y)
+	_surface.ground_height = field.surface_height_at(
+		global_position.x, global_position.z, global_position.y)
 
 
 
@@ -285,7 +289,7 @@ func place(pos: Vector3, heading: float) -> void:
 	motion.velocity = Vector3.ZERO
 	motion.heading = heading
 	motion.speed = 0.0
-	var y := field.surface_height_at(pos.x, pos.z) if field != null else pos.y
+	var y := field.surface_height_at(pos.x, pos.z, pos.y) if field != null else pos.y
 	global_position = Vector3(pos.x, y, pos.z)
 	basis = Heading.basis_of(heading)
 	reset_physics_interpolation()

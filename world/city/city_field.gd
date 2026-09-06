@@ -51,6 +51,20 @@ var road_axes: PackedFloat32Array = PackedFloat32Array()
 ## Перекрёстки — декартово произведение осей.
 var intersections: PackedVector2Array = PackedVector2Array()
 
+## Граф улиц города. Пока он не подключён (`attach_roads`), «на дороге ли» и
+## «какая под ногами поверхность» отвечает СЕТОЧНАЯ модель — этим путём
+## пользуются юнит-тесты сеточной эпохи и мост `CityGraphGrid`. Живой город с
+## этапа 9 подключает настоящую топологию сразу после её построения, и оба
+## запроса начинают отвечать по рёбрам графа.
+##
+## Рельеф (`height_at`, `base_height`, серпантин) остаётся за полем при любом
+## раскладе: у высоты земли один владелец, граф её только читает.
+var roads: CityGraph = null
+
+## Ширина бордюрного камня, м — та же, что у мешера (`RoadMesh.CURB_WIDTH`).
+## Живёт здесь, потому что по ней проходит ступенька в `surface_height_at`.
+const CURB_WIDTH := 0.5
+
 ## Точки оси серпантина: x, z, накопленная длина s, высота y.
 var _serp_x := PackedFloat32Array()
 var _serp_z := PackedFloat32Array()
@@ -102,8 +116,35 @@ func dist_to_road(x: float, z: float) -> float:
 	return best
 
 
+## Подключает граф улиц: с этого момента `on_road`/`surface_height_at`
+## отвечают по нему, а не по сетке. Зовётся один раз, сразу после построения
+## топологии (`CityBuilder.build`).
+func attach_roads(graph: CityGraph) -> void:
+	roads = graph
+
+
+## Высота, с которой опрашивается граф. Ярус развязки различается по ней:
+## вызывающий, который знает свою высоту (машина, пешеход), передаёт её
+## `y_hint`, остальные получают отметку рельефа — то есть НИЖНИЙ ярус.
+func _probe_y(x: float, z: float, y_hint: float) -> float:
+	return height_at(x, z) if is_nan(y_hint) else y_hint
+
+
 ## Проезжая часть города или полотно серпантина.
-func on_road(x: float, z: float) -> bool:
+##
+## На графе «дорога» — полотно плюс тротуар: прежняя сеточная модель считала
+## дорогой полосу `road_half + sidewalk + 3` (13 м при полотне 12 м), и
+## сцепление с звуком не должны переключаться от сантиметра на кромке.
+## Полуширина теперь у каждого ребра своя.
+func on_road(x: float, z: float, y_hint: float = NAN) -> bool:
+	if roads != null:
+		var probe := Vector3(x, _probe_y(x, z, y_hint), z)
+		var e := roads.query_nearest_edge(probe)
+		if e < 0:
+			return false
+		if absf(probe.y - roads.hit_point.y) > CityGraph.LEVEL_TOLERANCE:
+			return false
+		return roads.hit_dist <= roads.edge_width(e) * 0.5 + sidewalk
 	if dist_to_road(x, z) < road_half + sidewalk + 3.0:
 		return true
 	return dist_to_serp(x, z) < SERP_ROAD_HALF
@@ -162,7 +203,31 @@ func dist_to_serp(x: float, z: float) -> float:
 
 ## Реальная высота поверхности под колёсами в точке (x, z):
 ## полотно дороги, тротуар, бордюр или рельеф Машука.
-func surface_height_at(x: float, z: float) -> float:
+##
+## На графе профиль поперёк улицы тот же, что кладёт мешер: полотно на
+## `Y_ROAD` над полилинией ребра, бордюр на `Y_CURB`, тротуар на
+## `Y_SIDEWALK`, дальше — земля. Бордюр и тротуар выдаются только рядовой
+## улице: у серпантина, рампы и деки их не строит и `RoadMesh`
+## (`side_has_sidewalk`), и вернуть здесь ступеньку значило бы приподнять
+## машину над несуществующей плитой.
+func surface_height_at(x: float, z: float, y_hint: float = NAN) -> float:
+	if roads != null:
+		var ground := height_at(x, z)
+		var probe := Vector3(x, ground if is_nan(y_hint) else y_hint, z)
+		var e := roads.query_nearest_edge(probe)
+		if e >= 0 and absf(probe.y - roads.hit_point.y) <= CityGraph.LEVEL_TOLERANCE:
+			var deck := roads.hit_point.y
+			var half := roads.edge_width(e) * 0.5
+			if roads.hit_dist <= half:
+				return deck + Y_ROAD
+			var kind := roads.edge_kind(e)
+			if kind == CityGraph.EdgeKind.STREET or kind == CityGraph.EdgeKind.AVENUE:
+				if roads.hit_dist <= half + CURB_WIDTH:
+					return deck + Y_CURB
+				if roads.hit_dist <= half + sidewalk:
+					return deck + Y_SIDEWALK
+		return ground + Y_GROUND
+
 	if z <= TERRAIN_Z_MAX:
 		var h := height_at(x, z)
 		if on_road(x, z) and h < 2.0:

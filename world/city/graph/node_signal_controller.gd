@@ -52,6 +52,13 @@ const OPPOSITE_TOL := PI * 0.25
 ## Полоса западного фронта волны, м: узел считается стоящим на фронте, если
 ## его x не дальше этого от самого западного узла графа. Меньше метра —
 ## «тот же ряд», а не «соседний квартал».
+##
+## [b]Запасной путь, а не модель.[/b] Полоса работает ровно там, где узлы
+## стоят столбцом, — на сетке 9x9 она даёт весь западный ряд и сводит формулу
+## к осевой `TrafficLightController.phase_offset()` (закреплено тестом
+## паритета). На настоящей топологии столбца нет, и фронт задаётся ЯВНЫМ
+## списком узлов (`build(..., front_nodes)`); полоса остаётся только для
+## синтетических графов без такого списка.
 const FRONT_BAND := 0.5
 
 ## Позиция внутри цикла, с. Владелец времени — вызывающий (в живой игре это
@@ -86,13 +93,19 @@ var _compatible: PackedByteArray = PackedByteArray()
 ## `signal_nodes` — ЯВНЫЙ список из топологии города, а не вычисление вроде
 ## `is_signalized(i, j)` по чётности индексов сетки (`ped_graph.gd:149`):
 ## какие перекрёстки Пятигорска регулируются, знает топология, а не арифметика.
-static func build(graph: CityGraph, signal_nodes: PackedInt32Array) -> NodeSignalController:
+##
+## `front_nodes` — узлы, от которых расходится зелёная волна, тоже явными
+## данными топологии (`PyatigorskTopology.wave_front_nodes`). Пустой список
+## означает «вывести фронт из габарита» — см. `FRONT_BAND`.
+static func build(graph: CityGraph, signal_nodes: PackedInt32Array,
+		front_nodes: PackedInt32Array = PackedInt32Array()) -> NodeSignalController:
 	var c := NodeSignalController.new()
-	c._build(graph, signal_nodes)
+	c._build(graph, signal_nodes, front_nodes)
 	return c
 
 
-func _build(graph: CityGraph, signal_nodes: PackedInt32Array) -> void:
+func _build(graph: CityGraph, signal_nodes: PackedInt32Array,
+		front_nodes: PackedInt32Array) -> void:
 	_graph = graph
 	var n := graph.node_count()
 	_slot.resize(n)
@@ -100,7 +113,7 @@ func _build(graph: CityGraph, signal_nodes: PackedInt32Array) -> void:
 	if n == 0:
 		return
 
-	var wave := _wave_distances()
+	var wave := _wave_distances(front_nodes)
 	var origin := wave[_wave_reference()]
 	if is_inf(origin):
 		origin = 0.0
@@ -206,20 +219,16 @@ func _pair_opposites(node: int, degree: int) -> PackedInt32Array:
 ## диагонали, а линзы (их до этапа 9 красит осевой контроллер) показывали бы
 ## не то, что видят машины.
 ##
-## [b]FRONT_BAND настроен на сетку и сам по себе не обобщается.[/b] На сетке
-## 9x9 в полосу 0.5 м попадает весь западный столбец узлов — ровно тот фронт,
-## который нужен. На настоящей топологии Пятигорска узлы стоят не в столбец,
-## и в такую полосу попадёт скорее всего ОДИН самый западный узел, то есть
-## сработает та самая вырожденная ситуация, от которой предостерегает абзац
-## выше: волна пойдёт по диагонали. Это не поломка (город остаётся живым, а
-## волна — существующей), но и не то, что задумано. Когда живой конвейер
-## перейдёт на настоящий граф (этап 9), фронт надо задавать явно — списком
-## узлов западного въезда в город, как задаётся список регулируемых узлов, —
-## а не выводить его из габарита.
+## [b]Откуда берётся фронт.[/b] Настоящая топология задаёт его явным списком
+## (`front_nodes`, этап 9): на ней узлы стоят не столбцом, и полоса
+## `FRONT_BAND` поймала бы ОДИН самый западный узел — расстояние выродилось бы
+## в манхэттенское от точки, и волна пошла бы радиально от края карты, а не
+## вдоль проспекта. Полоса остаётся запасным путём для графов без списка
+## (сетка 9x9 тестов, синтетические графы).
 ##
 ## Дейкстра плотной формы (O(V²)) без кучи: узлов сотни, строится один раз на
 ## этапе планирования города, и куча стоила бы дороже самого поиска.
-func _wave_distances() -> PackedFloat32Array:
+func _wave_distances(front_nodes: PackedInt32Array) -> PackedFloat32Array:
 	var n := _graph.node_count()
 	var dist := PackedFloat32Array()
 	dist.resize(n)
@@ -227,12 +236,17 @@ func _wave_distances() -> PackedFloat32Array:
 	var visited := PackedByteArray()
 	visited.resize(n)
 
-	var min_x := INF
-	for i in n:
-		min_x = minf(min_x, _graph.node_position(i).x)
-	for i in n:
-		if _graph.node_position(i).x <= min_x + FRONT_BAND:
-			dist[i] = 0.0
+	if front_nodes.is_empty():
+		var min_x := INF
+		for i in n:
+			min_x = minf(min_x, _graph.node_position(i).x)
+		for i in n:
+			if _graph.node_position(i).x <= min_x + FRONT_BAND:
+				dist[i] = 0.0
+	else:
+		for i in front_nodes:
+			if i >= 0 and i < n:
+				dist[i] = 0.0
 
 	for _step in n:
 		var u := -1

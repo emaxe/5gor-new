@@ -45,10 +45,6 @@ extends RefCounted
 ## (`pyatigorsk_topology.gd:51-54`), и заводить их «на будущее» здесь нечего.
 
 enum Edge { WALK, CROSS, JWALK }
-## Ось дороги, которую пересекает переход: Z_ROAD — дорога, по которой машины
-## едут вдоль Z (пешеход идёт поперёк, вдоль X). Понятие осевое и живёт только
-## в мосте к `TrafficLightController` (см. `gate_axial`).
-enum CrossAxis { Z_ROAD, X_ROAD }
 
 ## Штраф за пересечение проезжей части по зебре, в единицах стоимости
 ## (порт pedgraph.js: cross 2.0, jwalk 3.0).
@@ -109,9 +105,15 @@ const GATE_STRIDE := 16
 ## сеточной адресации, живущий до перехода живого конвейера на топологию.
 const AXES := 9
 
-var ped_side := 8.0
-## Оси сеточного города — только для `gate_axial()`; на настоящем графе пусты.
-var axes: PackedFloat32Array = PackedFloat32Array()
+## Ширина тротуара, м (`CityField.sidewalk`). Вынос тротуарной точки от оси
+## улицы считается ОТ НЕЁ и полуширины конкретного ребра, а не одной
+## константой на весь город: топология хранит ширину per-edge (переулок 8 м,
+## проспект Кирова 18 м), и общая константа 8 м провела бы ленту тротуара
+## Кирова на метр ВНУТРИ полотна — нарушение инварианта по всей длине
+## проспекта, а не в крайнем случае.
+var walk_width := 4.0
+## Вынос тротуарной точки для каждого ребра графа улиц, м.
+var _side: PackedFloat32Array = PackedFloat32Array()
 
 ## Граф без jwalk — для законопослушных пешеходов.
 var legal: PedAStar
@@ -121,19 +123,15 @@ var full: PedAStar
 ## Переходы как данные: из этого списка рисуются зебры, стойки и линзы —
 ## разметка не может разъехаться с логикой.
 ##
-## [b]Подмена `RoadMarkings._stub_crossings()` отложена на этап 9.[/b]
-## `road_markings.gd:12-19` (этап 4b) обязывает заменить заглушку этим
-## списком, но сам `RoadMarkings` в живом конвейере ещё не работает — точка
-## подключения та же, где живой город переходит на топологию. Обещанной
-## заменой «в одну строку» это не будет, и вот чего не хватает:
-##
-## - формы записи: здесь `{a, b, gate, node, approach, center, yaw}`, а
-##   `RoadMarkings._build_zebra()` читает ещё `edge` (ребро рукава) и `width`
-##   (ширина полотна, от неё считается число полос зебры);
-## - соглашения о `yaw`: `RoadMarkings` берёт `atan2(dir.x, dir.z)` от
-##   направления рукава, здесь — `-atan2(dz, dx)` от направления хода
-##   пешехода, то есть ПОПЕРЁК рукава. Значения расходятся, сводить их
-##   придётся при подмене.
+## [b]Связь с разметкой (этап 9).[/b] `RoadMarkings` берёт отсюда ТОЛЬКО
+## множество переходов — пару (`node`, `approach`), — а геометрию зебры
+## (вынос от горловины узла, ширину, поворот полос) считает сам по `RoadMesh`.
+## Так и расходятся две записи: здесь `center` — середина отрезка между
+## кербовыми точками (там, где пешеход реально ступает), а `yaw` —
+## `-atan2(dz, dx)` направления ХОДА пешехода; разметке же нужен центр,
+## отодвинутый от кромки перекрёстка на `ZEBRA_SETBACK`, и поворот полос
+## ВДОЛЬ движения машин. Сводить эти числа не нужно и вредно: у них разный
+## смысл, общая у них только адресация (узел, подход).
 var crossings: Array[Dictionary] = []
 
 var poi_nodes: PackedInt32Array = PackedInt32Array()
@@ -144,6 +142,11 @@ var _positions: PackedVector3Array = PackedVector3Array()
 var _edge_kind: Dictionary[int, int] = {}
 var _edge_cost: Dictionary[int, float] = {}
 var _edge_gate: Dictionary[int, int] = {}
+## Ребро графа УЛИЦ, которое пересекает пешеходное ребро (зебра или jwalk).
+## Им трафик и пешеход говорят об одной и той же дороге по id, а не по
+## совпадению координат: ребро моста и ребро улицы под ним разные по
+## построению, и сравнение по id никогда их не спутает.
+var _edge_road: Dictionary[int, int] = {}
 
 ## Первый угловой (кербовый) узел тротуара для узла графа улиц; сами углы
 ## лежат подряд, поэтому таблица нужна одна.
@@ -200,18 +203,18 @@ func _init(field: CityField = null) -> void:
 	full.bind_graph(self)
 	if field == null:
 		return
-	axes = field.road_axes
 	_setup(CityGraphGrid.from_field(field),
-		CityGraphGrid.signalized_nodes(field),
-		field.road_half + field.sidewalk * 0.5)
+		CityGraphGrid.signalized_nodes(field), field.sidewalk)
 
 
 ## Пешеходный граф поверх произвольного графа улиц: настоящая топология
 ## (этап 9), синтетические полигоны тестов.
+## `sidewalk` — ширина тротуара, м; вынос считается per-edge из неё и ширины
+## самого ребра (см. `side_of_edge`).
 static func on_graph(graph: CityGraph, signal_nodes: PackedInt32Array,
-		side: float) -> PedGraph:
+		sidewalk: float) -> PedGraph:
 	var g := PedGraph.new()
-	g._setup(graph, signal_nodes, side)
+	g._setup(graph, signal_nodes, sidewalk)
 	return g
 
 
@@ -254,9 +257,10 @@ static func is_signalized(i: int, j: int) -> bool:
 # --- Построение -------------------------------------------------------------
 
 func _setup(graph: CityGraph, signal_nodes: PackedInt32Array,
-		side: float) -> void:
+		sidewalk: float) -> void:
 	_graph = graph
-	ped_side = side
+	walk_width = sidewalk
+	_build_sides()
 	_build_regulated(signal_nodes)
 	_build_corners()
 	_build_ribbons()
@@ -267,6 +271,36 @@ func _setup(graph: CityGraph, signal_nodes: PackedInt32Array,
 	_build_hash()
 	if is_inf(_h_scale):
 		_h_scale = 0.0
+
+
+## Вынос тротуарной точки каждого ребра: полуширина полотна плюс половина
+## тротуара. Из построения следует главное свойство, на которое опирается весь
+## класс: вынос СТРОГО больше полуширины ровно на `walk_width / 2` — тротуарная
+## точка всегда снаружи полотна своего ребра, какой бы ширины оно ни было.
+func _build_sides() -> void:
+	_side.resize(_graph.edge_count())
+	for e in _graph.edge_count():
+		_side[e] = _graph.edge_width(e) * 0.5 + walk_width * 0.5
+
+
+## Вынос тротуарной точки от оси ребра, м.
+func side_of_edge(edge: int) -> float:
+	return _side[edge]
+
+
+## Вынос для подхода `k` узла `n` — тот же, что у ребра этого подхода.
+func _side_of_approach(node: int, k: int) -> float:
+	return _side[_graph.approach_edge(node, k)]
+
+
+## Самый большой вынос среди подходов узла. Им задаётся радиус тротуара
+## вокруг кольца и вынос УГЛА, общего у двух соседних подходов: угол обязан
+## лежать снаружи полотна обоих, значит считается по более широкому.
+func _side_of_node(node: int) -> float:
+	var widest := 0.0
+	for k in _graph.node_degree(node):
+		widest = maxf(widest, _side_of_approach(node, k))
+	return widest
 
 
 ## Регулируемые узлы — ЯВНЫЙ список (этап 7), а не чётность индексов сетки.
@@ -312,12 +346,17 @@ func _build_corners() -> void:
 
 ## Угол между подходами k и k+1: точка пересечения внешних кромок этих двух
 ## рукавов. Она лежит на биссектрисе угла между ними на расстоянии
-## `ped_side / sin(половина угла)` — при 90° это привычные (±8, ±8) сетки,
-## при развёрнутых 180° (проход насквозь) — ровно `ped_side` вбок.
+## `side / sin(половина угла)` — при 90° это привычные (±8, ±8) сетки,
+## при развёрнутых 180° (проход насквозь) — ровно `side` вбок.
 ##
-## Расстояние ВСЕГДА не меньше `ped_side`, поэтому САМ УГОЛ гарантированно
-## лежит вне полотна обоих рукавов (`ped_side = road_half + sidewalk/2 >
-## road_half`). Зовётся только при степени >= 2 и не для кольца.
+## `side` — БОЛЬШИЙ из выносов двух рукавов: угол общий у обоих, и лежать
+## снаружи он обязан у обоих. На стыке переулка (вынос 6 м) с проспектом
+## Кирова (вынос 11 м) вынос по переулку увёл бы угол внутрь полотна
+## проспекта.
+##
+## Расстояние ВСЕГДА не меньше `side`, поэтому САМ УГОЛ гарантированно
+## лежит вне полотна обоих рукавов (`side = width/2 + sidewalk/2 > width/2`).
+## Зовётся только при степени >= 2 и не для кольца.
 ##
 ## [b]Что отсюда следует, а что нет.[/b] Конструкция доказывает свойство
 ## ТОЧЕК, а главный инвариант ПДД — свойство ОТРЕЗКОВ между ними. Второе
@@ -345,11 +384,13 @@ func _corner_pos(node: int, k: int) -> Vector3:
 	var gap := fposmod(a1 - a0, TAU)
 	var half := clampf(gap * 0.5, MIN_CORNER_HALF, PI - MIN_CORNER_HALF)
 	var ang := a0 + gap * 0.5
-	return c + Vector3(cos(ang), 0.0, sin(ang)) * (ped_side / sin(half))
+	var side: float = maxf(_side_of_approach(node, k),
+		_side_of_approach(node, (k + 1) % d))
+	return c + Vector3(cos(ang), 0.0, sin(ang)) * (side / sin(half))
 
 
 ## Кербовая точка тупика: сбоку от единственного рукава, вровень с узлом, на
-## `ped_side` от его оси. Поворот на +90° от направления рукава — правая
+## вынос этого рукава от его оси. Поворот на +90° от направления рукава — правая
 ## сторона (та же правая тройка, что у `_edge_mid_frame`: на восток идёшь —
 ## юг справа), поэтому лента с этой стороны приходит сюда без разворота.
 ##
@@ -360,29 +401,37 @@ func _corner_pos(node: int, k: int) -> Vector3:
 func _dead_end_kerb_pos(node: int, right: bool) -> Vector3:
 	var c := _graph.node_position(node)
 	var a := _graph.approach_angle(node, 0) + (PI * 0.5 if right else -PI * 0.5)
-	return c + Vector3(cos(a), 0.0, sin(a)) * ped_side
+	return c + Vector3(cos(a), 0.0, sin(a)) * _side_of_approach(node, 0)
 
 
-## Кербовая точка кольца: тротуар идёт по окружности `radius + ped_side`
-## снаружи аннулюса, а точки перехода через рукав отстоят от его оси на
-## `ped_side` — то есть на угол `asin(ped_side / R)` от оси рукава.
+## Кербовая точка кольца: тротуар идёт по окружности `radius + side_max`
+## снаружи аннулюса (`side_max` — самый большой вынос среди рукавов, чтобы
+## окружность была снаружи полотна ВСЕХ), а точка перехода через рукав k
+## отстоит от его оси ровно на вынос этого рукава — то есть на угол
+## `asin(side_k / ring)` от его оси.
 ##
-## Хорда такого перехода отстоит от центра кольца на
-## `sqrt(ring² - ped_side²)`, где `ring = radius + ped_side`. Это ВСЕГДА
-## больше `radius` (раскрывается в `2 * radius * ped_side > 0`), то есть
-## пешеход пересекает РУКАВ, а не сам аннулюс.
+## Хорда такого перехода отстоит от центра кольца на `sqrt(ring² - side_k²)`,
+## где `ring = radius + side_max >= radius + side_k`. Это ВСЕГДА больше
+## `radius` (при side_max = side_k раскрывается в `2 * radius * side_k > 0`,
+## при большем — тем более), то есть пешеход пересекает РУКАВ, а не аннулюс.
 func _ring_kerb_pos(node: int, k: int, right: bool) -> Vector3:
 	var c := _graph.node_position(node)
-	var ring := _graph.node_radius(node) + ped_side
-	var delta := _ring_delta(node)
+	var ring := _ring_radius(node)
+	var delta := _ring_delta(node, k)
 	var a := _graph.approach_angle(node, k) + (delta if right else -delta)
 	return c + Vector3(cos(a), 0.0, sin(a)) * ring
 
 
-## Угловое смещение кербовой точки от оси рукава. Зовётся только для колец,
-## у которых радиус строго положителен (`_is_ring`), — деления на ноль нет.
-func _ring_delta(node: int) -> float:
-	return asin(clampf(ped_side / (_graph.node_radius(node) + ped_side), 0.0, 1.0))
+## Радиус тротуарной окружности кольца.
+func _ring_radius(node: int) -> float:
+	return _graph.node_radius(node) + _side_of_node(node)
+
+
+## Угловое смещение кербовой точки рукава k от его оси. Зовётся только для
+## колец, у которых радиус строго положителен (`_is_ring`), — деления на ноль
+## нет.
+func _ring_delta(node: int, k: int) -> float:
+	return asin(clampf(_side_of_approach(node, k) / _ring_radius(node), 0.0, 1.0))
 
 
 func _is_ring(node: int) -> bool:
@@ -431,7 +480,7 @@ func _build_ribbons() -> void:
 
 
 ## Середина ленты по обе стороны ребра: точка на половине ДЛИНЫ полилинии,
-## смещённая на `ped_side` по нормали. Возвращает [левая, правая] или пустой
+## смещённая на вынос этого ребра по нормали. Возвращает [левая, правая] или пустой
 ## массив, если у ребра нет ни одного невырожденного в плане сегмента.
 func _edge_mid_frame(e: int) -> PackedVector3Array:
 	var count := _graph.edge_point_count(e)
@@ -453,7 +502,7 @@ func _edge_mid_frame(e: int) -> PackedVector3Array:
 		# Правая нормаль к направлению (dx, dz) в плоскости (x, z) — та же
 		# правая тройка, что у `CityGraph.hit_side`: на восток едешь, юг
 		# справа.
-		var nrm := Vector3(-dz / flat, 0.0, dx / flat) * ped_side
+		var nrm := Vector3(-dz / flat, 0.0, dx / flat) * _side[e]
 		return PackedVector3Array([p - nrm, p + nrm])
 	return PackedVector3Array()
 
@@ -476,6 +525,7 @@ func _build_crossings() -> void:
 				continue
 			var gate := gate_id(node, k) if is_regulated(node) else -1
 			_link(l, r, Edge.CROSS, gate)
+			_edge_road[edge_key(l, r)] = _graph.approach_edge(node, k)
 			var a_pos := _positions[l]
 			var b_pos := _positions[r]
 			crossings.append({
@@ -503,36 +553,40 @@ func _build_ring_walks() -> void:
 		if not _is_ring(node):
 			continue
 		var d := _graph.node_degree(node)
-		var delta := _ring_delta(node)
 		for k in d:
+			var next := (k + 1) % d
 			var from_kerb := kerb_node(node, k, true)
-			var to_kerb := kerb_node(node, (k + 1) % d, false)
+			var to_kerb := kerb_node(node, next, false)
 			if from_kerb == to_kerb:
 				continue
+			# Дугу из сектора вырезают ДВЕ кербовые точки, у каждой свой вынос:
+			# на рукаве-переулке она ближе к оси, на проспекте дальше.
+			var delta := _ring_delta(node, k)
+			var delta_next := _ring_delta(node, next)
 			var arm_gap := TAU if d == 1 else fposmod(
-				_graph.approach_angle(node, (k + 1) % d)
+				_graph.approach_angle(node, next)
 				- _graph.approach_angle(node, k), TAU)
-			if arm_gap <= delta * 2.0:
+			if arm_gap <= delta + delta_next:
 				# Рукава сошлись теснее, чем ширина двух переходов: дуги между
 				# ними нет, кербовые точки смыкаются напрямую.
 				_link(from_kerb, to_kerb, Edge.WALK)
 				continue
-			var ring := _graph.node_radius(node) + ped_side
+			var ring := _ring_radius(node)
 			var mid_ang := _graph.approach_angle(node, k) + delta \
-				+ (arm_gap - delta * 2.0) * 0.5
+				+ (arm_gap - delta - delta_next) * 0.5
 			var mid := _add_node(_graph.node_position(node)
 				+ Vector3(cos(mid_ang), 0.0, sin(mid_ang)) * ring)
 			_link(from_kerb, mid, Edge.WALK)
 			_link(mid, to_kerb, Edge.WALK)
 
 
-## Обвод торца тупиковой улицы: ломаная по дуге радиуса `ped_side` вокруг
+## Обвод торца тупиковой улицы: ломаная по дуге радиуса выноса рукава вокруг
 ## узла, от левой кербовой точки за торец к правой. Это единственный законный
 ## способ перейти тупиковую улицу — перехода (`Edge.CROSS`) у степени 1 нет.
 ##
 ## Прямая хорда между кербовыми точками не годится: она прошла бы через сам
 ## узел, то есть через торец полотна. У дуги же каждая точка отстоит от узла
-## ровно на `ped_side`, а для всего, что позади торца, узел и есть ближайшая
+## ровно на вынос рукава, а для всего, что позади торца, узел и есть ближайшая
 ## точка полилинии — значит весь обвод снаружи полотна.
 func _build_dead_end_caps() -> void:
 	for node in _graph.node_count():
@@ -540,6 +594,7 @@ func _build_dead_end_caps() -> void:
 			continue
 		var c := _graph.node_position(node)
 		var a0 := _graph.approach_angle(node, 0)
+		var side := _side_of_approach(node, 0)
 		var steps := _dead_end_cap_steps(node)
 		var prev := kerb_node(node, 0, false)
 		for s in range(1, steps + 1):
@@ -547,21 +602,27 @@ func _build_dead_end_caps() -> void:
 			# последнем шаге угол приходит ровно в правую (a0 + PI/2).
 			var ang := a0 - PI * 0.5 - PI * float(s) / float(steps)
 			var next := kerb_node(node, 0, true) if s == steps \
-				else _add_node(c + Vector3(cos(ang), 0.0, sin(ang)) * ped_side)
+				else _add_node(c + Vector3(cos(ang), 0.0, sin(ang)) * side)
 			_link(prev, next, Edge.WALK)
 			prev = next
 
 
 ## Сколько звеньев нужно обводу торца, чтобы каждая хорда прошла снаружи
 ## полотна: хорда, стягивающая угол `phi`, отстоит от узла на
-## `ped_side * cos(phi / 2)`, и это обязано быть больше полуширины полотна.
-## Отсюда `phi < 2 * acos(half / ped_side)`, а всего обвод покрывает PI.
+## `side * cos(phi / 2)`, и это обязано быть больше полуширины полотна.
+## Отсюда `phi < 2 * acos(half / side)`, а всего обвод покрывает PI.
+##
+## `assert`, а не молчаливый потолок `DEAD_END_CAP_MAX`: вынос считается
+## per-edge (`_build_sides`) и по построению равен `half + walk / 2`, поэтому
+## `half * 1.05 >= half + walk / 2` требует `half >= 10 * walk` — 40 м
+## полуполотна при тротуаре 4 м, чего в городе быть не может. Раньше потолок
+## клал хорды обвода ВНУТРЬ полотна без единой ошибки в консоли.
 func _dead_end_cap_steps(node: int) -> int:
+	var side := _side_of_approach(node, 0)
 	var half := _graph.edge_width(_graph.approach_edge(node, 0)) * 0.5 \
 		* DEAD_END_CLEARANCE
-	if half >= ped_side:
-		return DEAD_END_CAP_MAX
-	return clampi(ceili(PI / (2.0 * acos(half / ped_side))), 1, DEAD_END_CAP_MAX)
+	assert(half < side, "PedGraph: тупик %d — полуполотно %.2f м не меньше выноса тротуара %.2f м, обвод торца лёг бы на проезжую часть" % [node, half, side])
+	return clampi(ceili(PI / (2.0 * acos(half / side))), 1, DEAD_END_CAP_MAX)
 
 
 ## Переход в неположенном месте — посреди ленты, между её серединными узлами.
@@ -573,6 +634,7 @@ func _build_jwalks() -> void:
 			continue
 		if rng.chance(JWALK_CHANCE):
 			_link(m, m + 1, Edge.JWALK)
+			_edge_road[edge_key(m, m + 1)] = e
 
 
 func _build_hash() -> void:
@@ -684,6 +746,12 @@ func edge_gate(a: int, b: int) -> int:
 	return _edge_gate.get(edge_key(a, b), -1)
 
 
+## Ребро графа улиц, которое пересекает это пешеходное ребро, или -1, если
+## ребро идёт вдоль тротуара и проезжую часть не пересекает.
+func road_edge_of(a: int, b: int) -> int:
+	return _edge_road.get(edge_key(a, b), -1)
+
+
 ## Нерегулируемый переход: разметка есть, светофора нет.
 func is_unsignalized_crossing(a: int, b: int) -> bool:
 	return edge_kind(a, b) == int(Edge.CROSS) and edge_gate(a, b) < 0
@@ -711,36 +779,6 @@ func is_regulated(node: int) -> bool:
 ## допустимость, но оценка полуторакратно информативнее, то есть A* быстрее.
 func heuristic(from_id: int, to_id: int) -> float:
 	return _positions[from_id].distance_to(_positions[to_id]) * _h_scale
-
-
-# --- Мост к осевому светофору (умирает на этапе 9) --------------------------
-
-## Гейт в адресации осевого `TrafficLightController`: (индекс оси
-## перекрёстка, `CrossAxis` пересекаемой дороги).
-##
-## Живой город до этапа 9 красит линзы и считает фазы осевым контроллером, а
-## гейт пешехода с этого этапа адресует (узел, подход). Перевод одной модели
-## в другую живёт здесь, потому что здесь же лежит и знание о сеточном
-## происхождении графа (`axes`). На этапе 9 метод уходит вместе с осевым
-## контроллером: `NodeSignalController` принимает (узел, подход) напрямую.
-func gate_axial(gate: int) -> Vector2i:
-	var node := gate_node(gate)
-	# Рукав вдоль ±Z означает дорогу, по которой машины едут вдоль Z.
-	var ang := _graph.approach_angle(node, gate_approach(gate))
-	var axis := CrossAxis.Z_ROAD if absf(sin(ang)) >= absf(cos(ang)) \
-		else CrossAxis.X_ROAD
-	return Vector2i(_axis_index(_graph.node_position(node).x), int(axis))
-
-
-func _axis_index(v: float) -> int:
-	var best := 0
-	var best_d := INF
-	for i in axes.size():
-		var d := absf(axes[i] - v)
-		if d < best_d:
-			best_d = d
-			best = i
-	return best
 
 
 # --- Поиск узлов ------------------------------------------------------------

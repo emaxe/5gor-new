@@ -142,7 +142,6 @@ class LightInfo extends RefCounted:
 var count := 0
 
 var catalog: TrafficCatalog
-var field: CityField
 ## Сеть, по которой едут машины: производный вид графа города, где кольца
 ## развёрнуты в дуги (`TrafficRoadView`). СОБСТВЕННОЕ id-пространство — эти
 ## id нельзя подставлять в граф, переданный в `setup()`.
@@ -151,15 +150,12 @@ var graph: CityGraph
 ## читать Packed-массив, чем ходить через объект вида.
 var _arc: PackedByteArray = PackedByteArray()
 var _one_way: PackedByteArray = PackedByteArray()
-## Часы светофоров города: узловой контроллер (`signals`) считает фазу из
-## времени, а ведёт это время владелец осевого контроллера (`World._process`).
-## Общий отсчёт обязателен, пока линзы красит осевая модель: разойдись часы,
-## машина стояла бы на зелёную линзу.
-var lights: TrafficLightController
-## Регулирование перекрёстков по узлам и подходам (этап 7). Менеджер строит
-## его сам — так же, как владеет своим `TrafficRoadView`: контроллер целиком
-## выводится из графа и списка регулируемых узлов, и навязывать его сборку
-## каждому вызову `setup()` было бы лишней связностью.
+## Регулирование перекрёстков по узлам и подходам (этап 7). Приходит ГОТОВЫМ
+## снаружи и владельца имеет одного — `CityBuilder`: тот же экземпляр красит
+## линзы светофоров и пропускает пешеходов, а часы ему ведёт `World._process`
+## вызовом `advance()`. Собирать контроллер здесь заново значило бы завести
+## вторые часы, которые пришлось бы синхронизировать руками, — ровно так и
+## жил этап 7 (`signals.time = lights.time`).
 ##
 ## Построен на ГРАФЕ ГОРОДА, а не на виде трафика: фаза — свойство
 ## перекрёстка города. Id узлов вида совпадают с городскими для всех узлов,
@@ -279,17 +275,15 @@ var chase_target_z := 0.0
 ## топологией явно). Параметр необязательный и последний: пустой список значит
 ## «регулирования нет вовсе», и вызывающие, которым светофоры не нужны
 ## (тесты синтетических графов, полигон полиции), остаются без правок.
-func setup(catalog_: TrafficCatalog, field_: CityField, graph_: CityGraph,
-		lights_: TrafficLightController, rng_: SeededRng, traffic_count: int,
-		signal_nodes: PackedInt32Array = PackedInt32Array()) -> void:
+func setup(catalog_: TrafficCatalog, graph_: CityGraph,
+		signals_: NodeSignalController, rng_: SeededRng,
+		traffic_count: int) -> void:
 	catalog = catalog_
-	field = field_
 	var view := TrafficRoadView.build(graph_)
 	graph = view.graph
 	_arc = view.arc
 	_one_way = view.one_way
-	lights = lights_
-	signals = NodeSignalController.build(graph_, signal_nodes)
+	signals = signals_
 	rng = rng_
 	count = maxi(0, traffic_count)
 	_resize(count)
@@ -599,9 +593,6 @@ func _rand_road(player_x: float, player_z: float) -> void:
 ## Порт TrafficManager.update() (traffic.js:317-579). Пешеходные правила
 ## (4-7 из плана) вернутся вместе с этапом 8.
 func update(delta: float, player_x: float, player_z: float, density: float) -> void:
-	# Фаза узлового контроллера считается из этого времени; ведёт часы
-	# владелец осевого контроллера, см. поле `signals`.
-	signals.time = lights.time
 	_beacon_t = fmod(_beacon_t + delta, BEACON_PERIOD)
 	beacon_red_on = _beacon_t < BEACON_PERIOD * 0.5
 	_turn_blink_t = fmod(_turn_blink_t + delta, TURN_BLINK_PERIOD)
@@ -773,7 +764,7 @@ func _rule_yield_crossing_ped(i: int) -> void:
 		# (в пределах ширины дороги). Пешеход, ожидающий на тротуаре,
 		# не должен вызывать остановку трафика.
 		var lateral := absf(-dx * fwd.z + dz * fwd.x)
-		if lateral > field.road_half:
+		if lateral > graph.edge_width(edge_id[i]) * 0.5:
 			continue
 		var d := dx * fwd.x + dz * fwd.z
 		if d <= 0.0 or d >= PED_YIELD_LONGITUDINAL:
@@ -1476,6 +1467,14 @@ func world_x(i: int) -> float:
 
 func world_z(i: int) -> float:
 	return render_z[i]
+
+
+## Отметка ПОЛОТНА под машиной: высота полилинии её ребра в точке `t`.
+## Слой рендера не вправе выводить её из рельефа — под путепроводом и на
+## его деке рельеф один и тот же, а полотна два.
+func world_road_y(i: int) -> float:
+	_sample_edge(edge_id[i], t[i])
+	return _s_point.y
 
 
 func heading_of(i: int) -> float:
