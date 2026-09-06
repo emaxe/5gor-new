@@ -77,7 +77,21 @@ func test_same_seed_gives_identical_plan() -> void:
 
 func test_different_seed_gives_different_city() -> void:
 	var other := _make(12345)
-	assert_int(other.building_count()).is_not_equal(_plan.building_count())
+	# Сверяется ЗАСТРОЙКА, а не её количество. Число домов — слабый признак:
+	# два сида законно дают одно и то же количество при совершенно разных
+	# домах, и после правки топологии на привокзальной площади так и вышло —
+	# 56 против 56, хотя ни один дом не совпал.
+	var same := other.building_count() == _plan.building_count()
+	if same:
+		for i in _plan.building_count():
+			if other.building_rect[i] != _plan.building_rect[i]:
+				same = false
+				break
+	assert_bool(same)\
+		.override_failure_message(
+			"сид 12345 дал ту же застройку, что и %d: %d домов, все прямоугольники совпали"
+			% [Db.balance.world_seed, _plan.building_count()])\
+		.is_false()
 
 
 func test_city_is_built_at_the_density_of_its_blocks() -> void:

@@ -26,7 +26,8 @@ func _plan(balance: BalanceData, districts: DistrictCatalog) -> CityPlan:
 	var topology := PyatigorskTopology.new()
 	var roads := topology.build(field)
 	field.attach_roads(roads)
-	var ped := PedGraph.on_graph(roads, topology.signal_nodes, field.sidewalk)
+	var ped := PedGraph.on_graph(roads, topology.signal_nodes, field.sidewalk,
+		RoadMesh.new(roads, field).walk_room_flags())
 	var signals := NodeSignalController.build(roads, topology.signal_nodes,
 		topology.wave_front_nodes)
 	var blocks := CityBlocks.new()

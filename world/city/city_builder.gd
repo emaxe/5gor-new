@@ -54,7 +54,12 @@ func build(balance: BalanceData, districts: DistrictCatalog, world_seed: int) ->
 	# графу: у машины игрока, пешего игрока и полиции источник один.
 	field.attach_roads(roads)
 
-	graph = PedGraph.on_graph(roads, topology.signal_nodes, field.sidewalk)
+	# Мешер полотна строится ДО пешеходного графа: он владеет ответом на
+	# «есть ли на этой стороне улицы место под тротуар», и пешеходный граф
+	# берёт этот ответ, а не считает свой (`PedGraph._side_has_walk_room`).
+	var road_mesh := RoadMesh.new(roads, field)
+	graph = PedGraph.on_graph(roads, topology.signal_nodes, field.sidewalk,
+		road_mesh.walk_room_flags())
 	signals = NodeSignalController.build(roads, topology.signal_nodes,
 		topology.wave_front_nodes)
 	signal_plan = NodeSignalPlan.build(roads, signals)
@@ -63,7 +68,6 @@ func build(balance: BalanceData, districts: DistrictCatalog, world_seed: int) ->
 	blocks = CityBlocks.new()
 	blocks.build(roads, topology.node_district, topology.landmark_node)
 
-	var road_mesh := RoadMesh.new(roads, field)
 	var markings := RoadMarkings.new(roads, road_mesh, topology.signal_nodes,
 		graph.crossings)
 	bridges = BridgeGeometry.new(roads, field)

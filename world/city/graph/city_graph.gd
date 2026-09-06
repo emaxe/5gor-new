@@ -91,6 +91,15 @@ const MIN_CLEARANCE := 4.5
 ## Меньше сантиметра различий — не выбор, а дрожание float.
 const TIE_EPSILON := 0.05
 
+## Полотно кольца наследует ширину самого широкого подхода с этим
+## коэффициентом: кольцевая проезжая часть уже прямого проспекта (по кольцу
+## едут в две полосы на пониженной скорости), но шире переулка.
+const RING_WIDTH_FACTOR := 0.7
+## Границы ширины полотна кольца, м: две полосы 4 м — минимум, 12 м — потолок,
+## дальше кольцо перестаёт читаться кольцом и становится площадью.
+const RING_WIDTH_MIN := 8.0
+const RING_WIDTH_MAX := 12.0
+
 # --- Узлы (SoA) -------------------------------------------------------------
 var _node_pos: PackedVector3Array = PackedVector3Array()
 var _node_level: PackedInt32Array = PackedInt32Array()
@@ -369,6 +378,20 @@ func node_radius(id: int) -> float:
 
 func node_degree(id: int) -> int:
 	return _approach_start[id + 1] - _approach_start[id]
+
+
+## Полуширина полотна аннулюса кольца, м.
+##
+## Живёт здесь, а не у мешера, потому что у ширины проезжей части один
+## владелец: по этому же числу `RoadMesh` строит полотно кольца, а `PedGraph`
+## — тротуарную окружность вокруг него. Пока формула стояла в мешере, второй
+## считал вынос тротуара по САМОМУ ШИРОКОМУ РУКАВУ и резервировал вокруг всего
+## кольца место, нужное только там, где этот рукав к кольцу подходит.
+func ring_half(id: int) -> float:
+	var widest := 0.0
+	for k in node_degree(id):
+		widest = maxf(widest, edge_width(approach_edge(id, k)))
+	return clampf(widest * RING_WIDTH_FACTOR, RING_WIDTH_MIN, RING_WIDTH_MAX) * 0.5
 
 
 ## Ребро k-го подхода узла в порядке возрастания угла.

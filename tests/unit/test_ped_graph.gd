@@ -376,52 +376,41 @@ func test_invariant_holds_on_degree_3_5_and_ring_nodes() -> void:
 		.is_greater(200)
 
 
-## Потолок известных нарушений инварианта на настоящей топологии, см.
-## `test_real_topology_sidewalks_stay_off_the_roadway`. Число измеренное,
-## а не подобранное: сегодня их ровно 8 из 532 тротуарных рёбер.
-const REAL_TOPOLOGY_KNOWN_VIOLATIONS := 8
-
-
 ## Инвариант «тротуар не заходит на проезжую часть» на НАСТОЯЩЕЙ топологии
 ## Пятигорска — той, что с этапа 9 работает в живой игре.
 ##
-## [b]Тут он держится не полностью, и это измеренный факт, а не недосмотр.[/b]
-## Было 20 рёбер из 405; после разбора причин (задача 9f) осталось 8 из 532.
-## Закрыты три из пяти причин, и все три — в конструкции пешеходного графа:
+## [b]Храповика здесь больше нет: инвариант восстановлен полностью.[/b] Было
+## 20 нарушенных рёбер из 405 (этап 9А), стало 0 из 525. У тех 20 нашлось
+## ПЯТЬ разных причин, и закрыты все пять (задача 9f):
 ##
 ##  1. зажатый угол на секторе острее 45.8° и на секторе шире 314°
 ##     (`PedGraph._corner_pos` — честный митр и обвод вместо `clampf`), 9 рёбер;
 ##  2. угол, посчитанный по выносу ДВУХ рукавов сектора, тогда как через узел
-##     проходит третий, более широкий (`_side_of_node`), 2 ребра;
+##     проходит третий, более широкий (`PedGraph._side_of_node`), 2 ребра;
 ##  3. лента, срезавшая излом полилинии прямой хордой (станции ленты на
-##     изломах, `_ribbon_frame`), 3 ребра.
+##     изломах, `PedGraph._ribbon_frame`), 3 ребра;
+##  4. лента на стороне, где видимого тротуара нет вовсе (переулок к Гроту
+##     Лермонтова: 22 м под 42° к проспекту Кирова, внутренняя сторона целиком
+##     в полотне проспекта). Теперь ответ «есть ли тут тротуар» у обоих один —
+##     `RoadMesh.walk_room_flags()`, 2 ребра;
+##  5. дефект самой топологии: связка `kir_e1 - krn_m` шла хордой в 22.0 м от
+##     центра привокзального кольца радиусом ровно 22 м, то есть её полотно
+##     накрывало аннулюс. Уведена дугой, 4 ребра.
 ##
-## Оставшиеся 8 в конструкции тротуара не лечатся — это наложение самих
-## проезжих частей:
-##
-##  - 6 рёбер: безымянная улица `kir_e1 - krn_m` проходит в 22.0 м от центра
-##    кольца привокзальной площади при радиусе кольца ровно 22 м и расходится
-##    с проспектом Кирова всего на 32°. Её полотно физически накрывает и
-##    аннулюс кольца, и место тротуара проспекта;
-##  - 2 ребра: переулок к Гроту Лермонтова (22 м) отходит от проспекта Кирова
-##    под 42°, и вся внутренняя сторона переулка у развилки лежит в полотне
-##    проспекта — тротуара там нет и быть не может (`RoadMesh` его в этом
-##    месте тоже не рисует, `MIN_WALK_RIBBON`).
-##
-## Тест — храповик: он фиксирует ровно нынешнее число и падает, если станет
-## хуже. Убрать его в ноль значит править ТОПОЛОГИЮ, а не пешеходный граф.
-##
-## [b]Что этот тест доказывает уже сейчас.[/b] Без per-edge выноса (прежняя
-## константа `road_half + sidewalk/2` = 8 м) нарушений было бы в разы больше:
-## у 17 рёбер топологии полуполотно 8 или 9 м (улица Калинина 16 м, проспект
-## Кирова 18 м), и одни только их ленты тротуара — 68 рёбер — прошли бы ПО
-## полотну по всей длине обеих магистралей, не считая углов.
+## [b]Что этот тест доказывает.[/b] Без per-edge выноса (прежняя константа
+## `road_half + sidewalk/2` = 8 м) нарушений было бы в разы больше: у 17 рёбер
+## топологии полуполотно 8 или 9 м (улица Калинина 16 м, проспект Кирова 18 м),
+## и одни только их ленты тротуара — 68 рёбер — прошли бы ПО полотну по всей
+## длине обеих магистралей, не считая углов.
 func test_real_topology_sidewalks_stay_off_the_roadway() -> void:
 	var topology := PyatigorskTopology.new()
 	var street := topology.build(_field)
-	var graph := PedGraph.on_graph(street, topology.signal_nodes, _field.sidewalk)
+	# Флаги от мешера — та же связка, что в `CityBuilder`: пешеход не ходит по
+	# стороне улицы, на которой видимого тротуара нет.
+	var graph := PedGraph.on_graph(street, topology.signal_nodes, _field.sidewalk,
+		RoadMesh.new(street, _field).walk_room_flags())
 	var total := 0
-	var bad := 0
+	var bad := PackedStringArray()
 	for a in graph.node_count():
 		for b in graph.full.get_point_connections(a):
 			if b < a or graph.edge_kind(a, b) != int(PedGraph.Edge.WALK):
@@ -429,15 +418,47 @@ func test_real_topology_sidewalks_stay_off_the_roadway() -> void:
 			total += 1
 			if _segment_enters_roadway_on_its_level(street,
 					graph.position_of(a), graph.position_of(b)):
-				bad += 1
+				bad.append("%s -> %s"
+					% [graph.position_of(a), graph.position_of(b)])
 	assert_int(total)\
 		.override_failure_message("проверено всего %d тротуарных рёбер" % total)\
 		.is_greater(200)
-	assert_int(bad)\
+	assert_int(bad.size())\
 		.override_failure_message(
-			"тротуарных рёбер в полотне: %d из %d (потолок %d)"
-			% [bad, total, REAL_TOPOLOGY_KNOWN_VIOLATIONS])\
-		.is_less_equal(REAL_TOPOLOGY_KNOWN_VIOLATIONS)
+			"тротуарных рёбер в полотне %d из %d, инвариант обязан держаться полностью: %s"
+			% [bad.size(), total, ", ".join(bad)])\
+		.is_equal(0)
+
+
+## Пешеходный граф и мешер полотна обязаны сходиться в том, ГДЕ ЕСТЬ тротуар:
+## иначе пешеход идёт по стороне улицы, на которой мешер асфальта не положил.
+## Ответ один на двоих (`RoadMesh.walk_room_flags`), и тест это фиксирует —
+## расхождение вернулось бы, если кто-то заведёт в `PedGraph` собственный счёт
+## места под ленту (замер до объединения: 6 расходящихся сторон из 178).
+func test_ped_ribbons_agree_with_road_mesh_sidewalks() -> void:
+	var topology := PyatigorskTopology.new()
+	var street := topology.build(_field)
+	var mesh := RoadMesh.new(street, _field)
+	var graph := PedGraph.on_graph(street, topology.signal_nodes, _field.sidewalk,
+		mesh.walk_room_flags())
+	var checked := 0
+	for e in street.edge_count():
+		var kind := street.edge_kind(e)
+		if kind != CityGraph.EdgeKind.STREET and kind != CityGraph.EdgeKind.AVENUE:
+			continue
+		for i in 2:
+			var right := i == 1
+			checked += 1
+			assert_bool(graph.mid_node(e, right) >= 0)\
+				.override_failure_message(
+					"ребро %d «%s», сторона %s: лента %s, а видимый тротуар %s"
+					% [e, street.edge_name(e), "правая" if right else "левая",
+					"есть" if graph.mid_node(e, right) >= 0 else "отсутствует",
+					"есть" if mesh.side_has_sidewalk(e, right) else "отсутствует"])\
+				.is_equal(mesh.side_has_sidewalk(e, right))
+	assert_int(checked)\
+		.override_failure_message("проверено сторон улиц: %d" % checked)\
+		.is_greater(100)
 
 
 func test_dead_end_sidewalk_wraps_the_end_instead_of_cutting_it() -> void:
