@@ -36,8 +36,8 @@ var _fuel_target := Vector2.INF
 var _from_pos := Vector2.INF
 
 
-func _init(field: CityField, districts: DistrictCatalog, balance: BalanceData) -> void:
-	graph = RoadGraph.new(field)
+func _init(roads: CityGraph, districts: DistrictCatalog, balance: BalanceData) -> void:
+	graph = RoadGraph.new(roads)
 	fuel_stations = districts.fuel_stations if districts != null else PackedVector2Array()
 	low_fuel_ratio = balance.low_fuel_ratio if balance != null else 0.25
 
