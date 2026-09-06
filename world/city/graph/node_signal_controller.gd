@@ -46,6 +46,16 @@ const WAVE_SPEED := 40.0
 ## поворота», что `TrafficManager.STRAIGHT_TOL`: пара подходов, расходящихся
 ## меньше чем на 45° от развёрнутой прямой, читается водителем как одна
 ## улица, идущая насквозь.
+##
+## [b]Проверено на живой топологии[/b] (задача 9f). Оба скошенных регулируемых
+## узла проходят с запасом: у `kal_s1` верная пара (Калинина насквозь)
+## отклоняется на 1.4°, а ближайший ложный кандидат — съезд на путепровод —
+## на 35.6°; у `krn_m` верная пара (улица Крайнего насквозь) — 21.7°, ближайший
+## ложный — 54.0°, то есть уже за порогом. Сужать нечего: у обоих узлов запас
+## между верной и ложной парой больше 13°, и сужение под них выбросило бы
+## законную пару `krn_m`. Ошибка спаривания, которая на этих числах
+## действительно возможна, — не в пороге, а в ПОРЯДКЕ перебора, и лечится в
+## `_pair_opposites`.
 const OPPOSITE_TOL := PI * 0.25
 
 ## Полоса западного фронта волны, м: узел считается стоящим на фронте, если
@@ -175,7 +185,42 @@ func _add_node(node: int, wave: PackedFloat32Array, origin: float) -> void:
 ## На узле степени 4 из двух пар противоположных подходов правило даёт ровно
 ## две привычные фазы, на степени 3 — две (пара + одиночка), на степени 5 —
 ## три (две пары + одиночка).
+## [b]Пары берутся в порядке возрастания отклонения[/b], а не в порядке номера
+## подхода. Жадность «по номеру» отдаёт рукав ПЕРВОМУ подходящему кандидату, а
+## не лучшему, и на скошенном узле высокой степени это рвёт улицу по фазам: на
+## `kir_cvetnik` (степень 5) переулок к Гроту Лермонтова (отклонение 22.5°)
+## перехватывал восточный рукав проспекта Кирова раньше, чем до него доходил
+## западный (19.3°), — проспект оказывался в двух разных фазах, и зелёная волна
+## вдоль него рассыпалась. На симметричных фикстурах (`_tee`, `_cross`,
+## `_star5`) оба порядка дают одно и то же разбиение.
 func _pair_opposites(node: int, degree: int) -> PackedInt32Array:
+	var mate := PackedInt32Array()
+	mate.resize(degree)
+	mate.fill(-1)
+	while true:
+		var best_dev := OPPOSITE_TOL
+		var best_a := -1
+		var best_b := -1
+		for a in degree:
+			if mate[a] >= 0:
+				continue
+			var opposite := _graph.approach_angle(node, a) + PI
+			for b in range(a + 1, degree):
+				if mate[b] >= 0:
+					continue
+				var dev := absf(Heading.delta(opposite,
+					_graph.approach_angle(node, b)))
+				if dev < best_dev:
+					best_dev = dev
+					best_a = a
+					best_b = b
+		if best_a < 0:
+			break
+		mate[best_a] = best_b
+		mate[best_b] = best_a
+
+	# Номера фаз раздаются по возрастанию номера подхода: у фазы 0 обязательно
+	# есть подход 0 — на это опирается сверка с осевой моделью сетки.
 	var groups := PackedInt32Array()
 	groups.resize(degree)
 	groups.fill(-1)
@@ -184,18 +229,8 @@ func _pair_opposites(node: int, degree: int) -> PackedInt32Array:
 		if groups[a] >= 0:
 			continue
 		groups[a] = phase
-		var opposite := _graph.approach_angle(node, a) + PI
-		var best := -1
-		var best_dev := OPPOSITE_TOL
-		for b in range(a + 1, degree):
-			if groups[b] >= 0:
-				continue
-			var dev := absf(Heading.delta(opposite, _graph.approach_angle(node, b)))
-			if dev < best_dev:
-				best_dev = dev
-				best = b
-		if best >= 0:
-			groups[best] = phase
+		if mate[a] >= 0:
+			groups[mate[a]] = phase
 		phase += 1
 	return groups
 
