@@ -543,6 +543,43 @@ func test_ring_crossing_goes_over_the_arm_not_the_annulus() -> void:
 		.is_equal(street.node_degree(RING_NODE))
 
 
+## `test_ring_crossing_goes_over_the_arm_not_the_annulus` гоняет синтетику с
+## одинаковыми ширинами рукавов (`_mixed_graph`) и сверяет хорду перехода
+## только с радиусом ОСТРОВА (`node_radius`), а не с внешней кромкой аннулюса
+## (`node_radius + ring_half`) — той же величиной, которую `_ring_radius`
+## обязана держать снаружи по формуле в `_ring_kerb_pos`. На живой топологии
+## Пятигорска рукава колец разной ширины, и именно там честный порог однажды
+## не сошёлся на 9 см (регрессия задачи 9f, `_ring_radius` без проверки
+## хорды): эта проверка стоит на самой строгой из двух формул, чтобы
+## расхождение между «доказано в комментарии» и «выполняется в коде» не
+## прошло тихо второй раз.
+func test_real_topology_ring_crossings_stay_off_the_annulus() -> void:
+	var topology := PyatigorskTopology.new()
+	var street := topology.build(_field)
+	var graph := PedGraph.on_graph(street, topology.signal_nodes, _field.sidewalk,
+		RoadMesh.new(street, _field).walk_room_flags())
+	var checked := 0
+	for c: Dictionary in graph.crossings:
+		var node: int = c["node"]
+		if street.node_radius(node) <= 0.0:
+			continue
+		checked += 1
+		var center := street.node_position(node)
+		var outer := street.node_radius(node) + street.ring_half(node)
+		var a: Vector3 = graph.position_of(c["a"])
+		var b: Vector3 = graph.position_of(c["b"])
+		var d := _point_to_segment(Vector2(center.x, center.z),
+			Vector2(a.x, a.z), Vector2(b.x, b.z))
+		assert_float(d)\
+			.override_failure_message(
+				"переход кольца %d (подход %d) проходит в %.3f м от центра, внешняя кромка аннулюса — %.3f м"
+				% [node, int(c["approach"]), d, outer])\
+			.is_greater(outer)
+	assert_int(checked)\
+		.override_failure_message("проверено переходов колец: %d" % checked)\
+		.is_greater(0)
+
+
 ## Аннулюс кольца — проезжая часть, на которую пешеход не выходит НИКОГДА,
 ## даже по переходу: переходы кольца идут через рукава. Поэтому здесь, в
 ## отличие от главного инварианта, проверяются все отрезки подряд.
