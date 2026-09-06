@@ -6,6 +6,19 @@ extends RefCounted
 ## и в прямой видимости (здания не пропускают взгляд). Погоня (wanted >= 4)
 ## — новый функционал: ближайший патруль выходит из потока трафика и
 ## преследует игрока по дорожному графу.
+##
+## [b]Отложено сознательно: «въезд на кольцо без уступания».[/b] На кольце
+## светофора нет вовсе (`NodeSignalController` пропускает узлы вида
+## `ROUNDABOUT`), поэтому `check_red_light` там молча не срабатывает — это
+## правильно, а не пробел в проверке. Отдельного нарушения «не уступил тому,
+## кто уже на дуге» здесь НЕТ: правило приоритета кольца живёт в трафике
+## (`TrafficManager._rule_intersection_priority`, `RING_YIELD_DIST`) и знает
+## о дугах через приватный `_arc`, которого у полиции нет. Чтобы штрафовать
+## за него, пришлось бы либо открыть трафику новый публичный запрос «есть ли
+## машина на дуге в N метрах от узла», либо продублировать разметку дуг здесь
+## — и то и другое дороже самого нарушения. Пункт открытый, а не закрытый:
+## увидев его в плане следующего этапа, начинать надо с публичного запроса к
+## `TrafficManager`, а не с копии данных.
 
 ## Штраф зафиксирован — на него подписывается StyleService, чтобы оборвать
 ## комбо заказов (game.js:472).
@@ -107,6 +120,20 @@ class BuildingHash extends RefCounted:
 		return t_enter <= t_exit and t_exit >= 0.0 and t_enter <= 1.0
 
 
+## Радиус зоны фиксации проезда на красный вокруг узла, м. Прежняя сеточная
+## проверка ловила игрока не дальше 8 м до оси перекрёстка (порт police.js), и
+## окно сохранено ровно таким: на графе те же 8 м отмеряются от позиции узла.
+## Для масштаба: трафик останавливается у стоп-линии в 6.5 м
+## (`TrafficManager.STOP_LINE`), то есть окно штрафа начинается там, где
+## законопослушная машина уже стоит.
+const RED_LIGHT_ZONE := 8.0
+
+## Скорость, ниже которой проезд на красный не считается проездом, м/с
+## (значение из police.js). Медленнее — игрок докатывается к стоп-линии и
+## тормозит, а не проскакивает перекрёсток.
+const RED_LIGHT_MIN_SPEED := 3.0
+
+
 ## Нарушение ПДД.
 class Violation extends RefCounted:
 	var id: StringName
@@ -144,19 +171,21 @@ var _chase_t := 0.0
 
 var _traffic: TrafficManager
 var _field: CityField
-var _lights: TrafficLightController
+var _roads: CityGraph
+var _signals: NodeSignalController
 var _wanted: WantedConfig
 var _building_hash: BuildingHash
 var _escape_pending := false
 var _escape_peak := 0
 
 
-func setup(traffic: TrafficManager, field: CityField,
-		lights: TrafficLightController, wanted_cfg: WantedConfig,
+func setup(traffic: TrafficManager, field: CityField, roads: CityGraph,
+		signals: NodeSignalController, wanted_cfg: WantedConfig,
 		plan: CityPlan) -> void:
 	_traffic = traffic
 	_field = field
-	_lights = lights
+	_roads = roads
+	_signals = signals
 	_wanted = wanted_cfg if wanted_cfg != null else WantedConfig.new()
 	_building_hash = BuildingHash.new()
 	if plan != null:
@@ -165,21 +194,21 @@ func setup(traffic: TrafficManager, field: CityField,
 
 # --- Вспомогательные --------------------------------------------------------
 
-func _nearest_isec_x(v: float) -> float:
-	return _field.road_axes[clampi(
-		roundi((v - _field.road_axes[0]) / _field.cell), 0,
-		_field.road_axes.size() - 1)]
-
-
-func _isec_pos(isec_i: int) -> Vector2:
-	var ax: float = _field.road_axes[isec_i]
-	return Vector2(ax, ax)
-
-
-func _light_state(isec_i: int, axis: int) -> TrafficLightController.State:
-	return _lights.car_state(isec_i, axis)
-
-
+## Прямая видимость патруля до игрока. Перекрывают её только ЗДАНИЯ:
+## `BuildingHash` строится из `CityPlan.building_*` и ничего другого из плана
+## не читает.
+##
+## Из этого следуют оба ответа на вопрос «мосты и видимость» (этап 9) — и оба
+## уже верны без правок:
+##  - дека путепровода (`BridgeGeometry`) в `CityPlan.building_*` не попадает
+##    вовсе, поэтому патруль под мостом видит игрока на той стороне — ровно
+##    то поведение, которого требует план;
+##  - опоры моста (`BridgeGeometry.pier_*`) тоже не попадают, как и фонарные
+##    столбы (`CityPlan.lamp_pos`): и те и другие живут только в
+##    `CityCollision` — физика, в которую можно въехать, а не преграда для
+##    взгляда. Столб опоры радиусом 0.54 м перекрывал бы линию взгляда на
+##    доли градуса; модель здесь простая и намеренная — «дома перекрывают,
+##    уличная мебель нет», и опора моста относится ко второй категории.
 func _has_los(x0: float, z0: float, x1: float, z1: float) -> bool:
 	return not _building_hash.segment_hits(x0, z0, x1, z1)
 
@@ -216,56 +245,61 @@ func _on_cooldown(v: Violation) -> bool:
 
 # --- Проверки нарушений -----------------------------------------------------
 
-func check_speeding(px: float, pz: float, speed: float, heading: float) -> void:
+## `py` — высота игрока: без неё `on_road` опрашивает граф с отметки рельефа
+## и на деке путепровода отвечает «не на дороге» (`CityField._probe_y`).
+func check_speeding(px: float, py: float, pz: float, speed: float) -> void:
 	if _on_cooldown(_v_speeding):
 		return
 	if absf(speed) < _wanted.speed_threshold:
 		return
-	if _field != null and not _field.on_road(px, pz):
+	if _field != null and not _field.on_road(px, pz, py):
 		return
 	if not _police_nearby(px, pz):
 		return
 	_fine(_v_speeding)
 
 
-func check_red_light(px: float, pz: float, speed: float, heading: float) -> void:
+## Проезд на красный: ближайший регулируемый узел графа + подход, на который
+## выезжает игрок.
+##
+## Осевой адресации «индекс сетки + одна из двух осей» здесь больше нет: у
+## узла степени 3 или 5 понятие «ось» не определено, а сравнение курса с
+## `absf(cos_h) > absf(sin_h)` предполагало прямоугольную решётку. Подход
+## находится по УГЛУ — тем же приёмом, что у трафика
+## (`TrafficManager._light_ahead`).
+func check_red_light(px: float, py: float, pz: float, speed: float,
+		heading: float) -> void:
 	if _on_cooldown(_v_red_light):
 		return
-	if absf(speed) < 3.0:
+	if absf(speed) < RED_LIGHT_MIN_SPEED:
 		return
-	if _field != null and not _field.on_road(px, pz):
+	if _field != null and not _field.on_road(px, pz, py):
+		return
+	if _roads == null or _signals == null:
 		return
 	if not _police_nearby(px, pz):
 		return
 
-	var cos_h := cos(heading)
-	var sin_h := sin(heading)
-	var moving_z := absf(cos_h) > absf(sin_h)
-	var dir_z := cos_h
-	var dir_x := sin_h
-
-	for i: int in _lights.axes.size():
-		var isec_coord: float = _lights.axes[i]
-		var cross_offset: float = absf(
-			pz - isec_coord if moving_z else px - isec_coord)
-		if cross_offset > 13.0:
-			continue
-		var ahead: float = 0.0
-		if moving_z:
-			ahead = isec_coord - pz if dir_z > 0.0 else pz - isec_coord
-		else:
-			ahead = isec_coord - px if dir_x > 0.0 else px - isec_coord
-		if ahead <= 0.0:
-			continue
-		if MathUtils.dist_2d(px, pz,
-				isec_coord if moving_z else px,
-				pz if moving_z else isec_coord) > 8.0:
-			continue
-		var axis_enum := (TrafficLightController.Axis.Z_ROAD if moving_z
-			else TrafficLightController.Axis.X_ROAD)
-		if _light_state(i, axis_enum) == TrafficLightController.State.RED:
-			_fine(_v_red_light)
-			return
+	# Ближайший узел, а не перебор регулируемых: `nearest_node` разводит ярусы
+	# по высоте, и на деке путепровода игрок не привяжется к перекрёстку под
+	# ней. Нерегулируемый узел отказывает сам — в том числе кольцо, где
+	# светофора не бывает вовсе (см. заметку об отложенном нарушении вверху).
+	var node := _roads.nearest_node(Vector3(px, py, pz))
+	if node < 0 or not _signals.is_regulated(node):
+		return
+	var np := _roads.node_position(node)
+	if MathUtils.dist_2d(px, pz, np.x, np.z) > RED_LIGHT_ZONE:
+		return
+	# Узел обязан быть ВПЕРЕДИ по курсу: выехавшего с перекрёстка не штрафуют
+	# второй раз на выезде (прежняя проверка `ahead > 0`).
+	var fwd := Heading.forward(heading)
+	if (np.x - px) * fwd.x + (np.z - pz) * fwd.z <= 0.0:
+		return
+	# Подход, по которому игрок ПОДЪЕЗЖАЕТ, отходит от узла назад по его
+	# курсу: углы подходов заданы как atan2(dz, dx) направления ОТ узла.
+	var approach := _signals.approach_at_angle(node, atan2(-fwd.z, -fwd.x))
+	if _signals.car_state(node, approach) == NodeSignalController.State.RED:
+		_fine(_v_red_light)
 
 
 func check_hit_ped(px: float, pz: float) -> void:
@@ -319,7 +353,9 @@ func _fine(v: Violation) -> void:
 	violation_fined.emit(v.id)
 
 
-func update(delta: float, px: float, pz: float, in_car: bool,
+## `py` — высота игрока, нужна проверкам нарушений для дизамбигуации яруса
+## развязки (см. `check_speeding`).
+func update(delta: float, px: float, py: float, pz: float, in_car: bool,
 		speed: float = 0.0, heading: float = 0.0) -> void:
 	_decay_paused = in_car and _police_nearby(px, pz)
 
@@ -329,8 +365,8 @@ func update(delta: float, px: float, pz: float, in_car: bool,
 	_cd_ped_punch = maxf(0.0, _cd_ped_punch - delta)
 
 	if in_car:
-		check_speeding(px, pz, speed, heading)
-		check_red_light(px, pz, speed, heading)
+		check_speeding(px, py, pz, speed)
+		check_red_light(px, py, pz, speed, heading)
 
 	_update_chase(delta, px, pz)
 
