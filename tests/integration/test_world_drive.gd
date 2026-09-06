@@ -149,13 +149,29 @@ func test_camera_follows_the_car() -> void:
 
 
 ## У узла произвольной степени «двух осей» нет, поэтому инвариант формулируется
-## по таблице конфликтов: одновременно зелёные подходы обязаны быть совместимы.
+## ГЕОМЕТРИЧЕСКИ: одновременно зелёными бывают только рукава, расходящиеся почти
+## на развёрнутый угол, — то есть одна улица, идущая через узел насквозь.
+##
+## Именно углы, а не `may_go_together()`. Таблица конфликтов заполняется как
+## `groups[a] == groups[b]`, `car_state()` пускает подход, только если его
+## `groups` совпал с активной фазой, — значит «оба зелёные ⟹ совместимы»
+## тождественно истинно при любом графе и любой ошибке. Такой ассерт не может
+## упасть. Здесь же сторона проверки считается по `approach_angle` независимо
+## от контроллера, и тест впервые ловит на ЖИВОМ городе то, ради чего он
+## написан: `_pair_opposites` спаривает рукава с допуском `OPPOSITE_TOL`, и на
+## косых узлах настоящей топологии (`kal_s1` — Калинина плюс рампа Козлова,
+## `krn_m` — три улицы под неправильными углами) в одну фазу могла бы попасть
+## пара, расходящаяся всего на 140°.
 func test_traffic_lights_cycle_and_never_open_conflicting_approaches() -> void:
 	var signals := _world.city.signals
 	var roads := _world.city.roads
 	assert_int(signals.regulated_nodes().size())\
 		.override_failure_message("в городе не оказалось регулируемых узлов")\
 		.is_greater(0)
+	# Минимальное расхождение пары, которую модель вправе пустить вместе:
+	# `_pair_opposites` спаривает подход с тем, чей угол ближе `OPPOSITE_TOL`
+	# к развёрнутому.
+	var min_spread := PI - NodeSignalController.OPPOSITE_TOL
 	for i in 60:
 		await _runner.simulate_frames(3)
 		for node in signals.regulated_nodes():
@@ -163,37 +179,50 @@ func test_traffic_lights_cycle_and_never_open_conflicting_approaches() -> void:
 			for a in degree:
 				if not signals.is_open_for_cars(node, a):
 					continue
-				for b in degree:
+				for b in range(a + 1, degree):
 					if not signals.is_open_for_cars(node, b):
 						continue
-					assert_bool(signals.may_go_together(node, a, b))\
+					var spread := absf(Heading.delta(
+						roads.approach_angle(node, a), roads.approach_angle(node, b)))
+					assert_float(spread)\
 						.override_failure_message(
-							"узел %d: подходы %d и %d зелёные одновременно" % [node, a, b])\
-						.is_true()
+							"узел %d: подходы %d и %d зелёные вместе, а расходятся на %.1f° (нужно >= %.1f°)"
+							% [node, a, b, rad_to_deg(spread), rad_to_deg(min_spread)])\
+						.is_greater_equal(min_spread)
 
 
 ## Зелёная волна: фронт задан узлом топологии, и сдвиг фазы обязан расти вдоль
 ## проспекта с запада на восток, а не расходиться радиально от края карты.
+##
+## Узлы сортируются по x ЗДЕСЬ, а не берутся в порядке `regulated_nodes()`:
+## тот отдаёт их в порядке объявления в `PyatigorskTopology._bind_signals()`,
+## и проверка «монотонно по этому порядку» говорила бы о порядке строк в
+## литерале, а не о географии. После сортировки тест ловит именно то, ради
+## чего написан: сдвинь узел по x — и монотонность обязана поехать.
 func test_green_wave_runs_along_kirov_avenue() -> void:
 	var signals := _world.city.signals
 	var roads := _world.city.roads
-	var prev := INF
-	var checked := 0
+	var avenue: Array[int] = []
 	for node in signals.regulated_nodes():
-		if roads.node_position(node).z > 45.0 or roads.node_position(node).z < 5.0:
+		var p := roads.node_position(node)
+		if p.z > 45.0 or p.z < 5.0:
 			continue # только узлы самого проспекта
+		avenue.append(node)
+	avenue.sort_custom(func(l: int, r: int) -> bool:
+		return roads.node_position(l).x < roads.node_position(r).x)
+	assert_int(avenue.size())\
+		.override_failure_message("узлов проспекта в проверке: %d" % avenue.size())\
+		.is_greater_equal(4)
+	var prev := INF
+	for node in avenue:
 		var offset := signals.phase_offset(node)
 		if prev < INF:
 			assert_float(offset)\
 				.override_failure_message(
-					"сдвиг фазы на узле %d (%.2f) не позже предыдущего (%.2f)"
-						% [node, offset, prev])\
+					"узел %d (x=%.0f): сдвиг фазы %.2f не позже предыдущего %.2f"
+						% [node, roads.node_position(node).x, offset, prev])\
 				.is_less(prev)
 		prev = offset
-		checked += 1
-	assert_int(checked)\
-		.override_failure_message("узлов проспекта в проверке: %d" % checked)\
-		.is_greater_equal(4)
 
 
 func test_landmarks_are_placed_on_terrain() -> void:

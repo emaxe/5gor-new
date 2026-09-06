@@ -131,9 +131,15 @@ func test_pickup_points_are_on_sidewalks() -> void:
 	for p in _plan.pickup_pos:
 		var d := _clearance(p.x, p.y)
 		# Точка стоит на тротуаре: не на проезжей части и не в глубине двора.
+		#
+		# Верхняя граница — ПОЛОВИНА тротуара, а не весь: точка ставится на
+		# `half + sidewalk / 2` от оси своего ребра, то есть ровно посередине
+		# тротуара, и запас до кромки этого ребра равен `sidewalk / 2`. Граница
+		# в целый тротуар была бы недостижима сверху по построению и не
+		# проверяла бы ничего.
 		assert_float(d)\
 			.override_failure_message("точка подачи %s: запас до кромки %.2f м" % [p, d])\
-			.is_between(-0.01, _field.sidewalk + 0.01)
+			.is_between(-0.01, _field.sidewalk * 0.5 + 0.01)
 
 
 func test_every_district_has_pickup_points() -> void:
@@ -148,6 +154,50 @@ func test_crosswalks_come_from_the_pedestrian_graph() -> void:
 	# не может разъехаться с логикой ПДД.
 	assert_int(_plan.crosswalk_pos.size()).is_equal(_markings.crossings.size())
 	assert_int(_plan.crosswalk_pos.size()).is_greater(0)
+
+
+## Потолок расхождения центров зебры и пешеходного перехода, м. Число
+## измеренное: сегодня медиана около 2 м, максимум 10.65 м (узел 34, бульвар
+## Гагарина), см. `test_zebra_and_pedestrian_crossing_do_not_drift_apart`.
+const ZEBRA_VS_CROSSING_MAX := 12.0
+
+
+## Зебра и пешеходный переход — две НЕЗАВИСИМЫЕ записи одного места, и это
+## сознательное решение этапа 9: у `PedGraph` центр стоит там, где пешеход
+## сходит с тротуара, у `RoadMarkings` — там, где полосы ложатся перед
+## горловиной узла (`cut_point + dir * ZEBRA_SETBACK`). Сводить их нечем,
+## общая у них только адресация (узел, подход).
+##
+## Ровно поэтому нужна страховка: ничто не мешает правке `ZEBRA_SETBACK`,
+## `MIN_CORNER_HALF` или геометрии горловины молча развести их так, что
+## пешеход станет переходить в стороне от нарисованной зебры. Тест — храповик
+## на расстояние между ними, а не требование совпадения.
+func test_zebra_and_pedestrian_crossing_do_not_drift_apart() -> void:
+	var ped_center: Dictionary[int, Vector3] = {}
+	for c: Dictionary in _ped.crossings:
+		ped_center[MathUtils.hash_key(int(c["node"]), int(c["approach"]))] = c["center"]
+	var pairs := 0
+	for m: Dictionary in _markings.crossings:
+		var key := MathUtils.hash_key(int(m["node"]), int(m["approach"]))
+		assert_bool(ped_center.has(key))\
+			.override_failure_message(
+				"зебра на узле %d подходе %d нарисована там, где пешеходного перехода нет"
+				% [m["node"], m["approach"]])\
+			.is_true()
+		if not ped_center.has(key):
+			continue
+		pairs += 1
+		var a: Vector3 = m["center"]
+		var b: Vector3 = ped_center[key]
+		var d := Vector2(a.x - b.x, a.z - b.z).length()
+		assert_float(d)\
+			.override_failure_message(
+				"узел %d подход %d: зебра и переход разошлись на %.2f м"
+				% [m["node"], m["approach"], d])\
+			.is_less_equal(ZEBRA_VS_CROSSING_MAX)
+	assert_int(pairs)\
+		.override_failure_message("сверено пар зебра-переход: %d" % pairs)\
+		.is_greater(100)
 
 
 func test_signal_posts_serve_every_approach_of_every_regulated_node() -> void:
