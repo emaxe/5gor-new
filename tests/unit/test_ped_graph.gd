@@ -372,6 +372,54 @@ func test_invariant_holds_on_degree_3_5_and_ring_nodes() -> void:
 		.is_greater(200)
 
 
+func test_dead_end_sidewalk_wraps_the_end_instead_of_cutting_it() -> void:
+	# Тупик — единственный случай, где правило «угол между парой соседних
+	# подходов» вырождается: пары подходов нет. Единственный угол на оси улицы
+	# (как было до правки) заставлял обе ленты резать полотно наискось, причём
+	# ОБА конца такого отрезка лежали снаружи полотна — проверка по концам
+	# этого не видела.
+	var street := _dead_end_star()
+	var side := _field.road_half + _field.sidewalk * 0.5
+	var graph := PedGraph.on_graph(street, PackedInt32Array(), side)
+	var ends := 0
+	for node in street.node_count():
+		if street.node_degree(node) != 1:
+			continue
+		ends += 1
+		var left := graph.kerb_node(node, 0, false)
+		var right := graph.kerb_node(node, 0, true)
+		assert_int(left)\
+			.override_failure_message("у тупика %d одна кербовая точка на оси улицы"
+				% node)\
+			.is_not_equal(right)
+		# Кербовые точки стоят по разные стороны рукава, каждая в ped_side от оси.
+		var span := graph.position_of(left).distance_to(graph.position_of(right))
+		assert_float(span)\
+			.override_failure_message("кербовые точки тупика %d разнесены на %.2f м, ожидалось %.2f"
+				% [node, span, 2.0 * side])\
+			.is_equal_approx(2.0 * side, 1e-3)
+		# Перейти тупиковую улицу можно только вокруг торца: перехода
+		# (Edge.CROSS) у степени 1 нет, значит путь целиком из тротуара.
+		var path := graph.find_path(left, right, false)
+		assert_int(path.size())\
+			.override_failure_message("обвода торца у тупика %d нет: путь из %d узлов"
+				% [node, path.size()])\
+			.is_greater(2)
+		for k in range(1, path.size()):
+			assert_int(graph.edge_kind(path[k - 1], path[k]))\
+				.override_failure_message(
+					"обвод торца тупика %d идёт не по тротуару" % node)\
+				.is_equal(int(PedGraph.Edge.WALK))
+	assert_int(ends)\
+		.override_failure_message("тупиков в полигоне %d, ожидалось %d"
+			% [ends, DEAD_END_ANGLES.size()])\
+		.is_equal(DEAD_END_ANGLES.size())
+	var checked := _assert_walk_edges_stay_off_the_roadway(graph, street)
+	assert_int(checked)\
+		.override_failure_message("проверено тротуарных рёбер: %d" % checked)\
+		.is_greater(20)
+
+
 func test_ring_crossing_goes_over_the_arm_not_the_annulus() -> void:
 	var street := _mixed_graph()
 	var graph := PedGraph.on_graph(street, PackedInt32Array(),
@@ -470,8 +518,13 @@ func _mixed_graph() -> CityGraph:
 	for k in 3:
 		var a := TAU * float(k) / 3.0
 		g.add_node(ring_pos + Vector3(cos(a), 0.0, sin(a)) * (MIXED_CELL * 0.9))
-	# Конец диагонального луча из центра сетки.
-	g.add_node(Vector3(MIXED_CELL * 1.8, 0.0, MIXED_CELL * 1.8))
+	# Конец диагонального луча из центра сетки. 1.5 клетки, а не 1.8: на 1.8
+	# торец луча оказывался в 12.8 м от осей улиц (4,5)-(8) и (4,7)-(8) —
+	# полотна почти касались, и тротуар СОСЕДНЕЙ улицы законно проходил по
+	# торцу этого полотна. Это дефект геометрии полигона, а не пешеходного
+	# графа: две проезжие части нельзя сводить ближе чем на две полуширины
+	# плюс тротуар.
+	g.add_node(Vector3(MIXED_CELL * 1.5, 0.0, MIXED_CELL * 1.5))
 
 	for i in 3:
 		for j in 3:
@@ -487,6 +540,30 @@ func _mixed_graph() -> CityGraph:
 		CityGraphGrid.LANE_WIDTH)
 	# Кольцо к городу: западный узел сетки цепляется к первому рукаву.
 	g.add_edge(0, RING_NODE + 1, PackedVector3Array(), CityGraphGrid.LANE_WIDTH)
+	g.build()
+	return g
+
+
+# --- Полигон из тупиковых лучей ---------------------------------------------
+
+## Углы лучей звезды тупиков, рад. Намеренно не кратны 90° и разнесены
+## неравномерно: тупик обязан огибаться при любой ориентации улицы. Все
+## сектора между лучами шире 1.1 рад — иначе в дело вмешается отсечка
+## `PedGraph.MIN_CORNER_HALF`, а тест не про неё.
+const DEAD_END_ANGLES: Array[float] = [0.0, 1.1, 2.3, 3.6, 5.0]
+## Длина луча, м: заметно больше двух выносов тротуара, чтобы у ребра была
+## настоящая лента с серединными узлами.
+const DEAD_END_ARM := 90.0
+
+
+## Звезда: центральный узел степени 5 и пять узлов степени 1 вокруг.
+func _dead_end_star() -> CityGraph:
+	var g := CityGraph.new()
+	g.add_node(Vector3.ZERO)
+	for a in DEAD_END_ANGLES:
+		g.add_node(Vector3(cos(a), 0.0, sin(a)) * DEAD_END_ARM)
+	for k in DEAD_END_ANGLES.size():
+		g.add_edge(0, k + 1, PackedVector3Array(), CityGraphGrid.LANE_WIDTH)
 	g.build()
 	return g
 
@@ -524,29 +601,68 @@ func _sweep_routes(graph: PedGraph, street: CityGraph, attempts: int,
 	return checked
 
 
+## Проверка КОНСТРУКЦИИ, а не выборки маршрутов: каждое ребро типа WALK
+## обязано целиком лежать вне полотна любой улицы. Переходы и jwalk исключены —
+## им пересекать полотно положено. Возвращает число проверенных рёбер.
+func _assert_walk_edges_stay_off_the_roadway(graph: PedGraph,
+		street: CityGraph) -> int:
+	var checked := 0
+	for a in graph.node_count():
+		for b in graph.full.get_point_connections(a):
+			if b < a or graph.edge_kind(a, b) != int(PedGraph.Edge.WALK):
+				continue
+			checked += 1
+			assert_bool(_segment_enters_roadway(street,
+					graph.position_of(a), graph.position_of(b)))\
+				.override_failure_message(
+					"тротуарное ребро %s -> %s заходит в полотно"
+					% [graph.position_of(a), graph.position_of(b)])\
+				.is_false()
+	return checked
+
+
 ## Пересекает ли отрезок полотно какого-нибудь ребра графа улиц.
 ##
-## Общая геометрия вместо коридора вокруг оси: отрезок нарушает ПДД, если он
-## пересекает полилинию ребра (перешёл с одной стороны дороги на другую) либо
-## если его конец лежит внутри полотна (стоит посреди дороги). Полуширина
-## ребра — тот самый буфер вокруг полилинии, о котором говорит план этапа.
+## Общая геометрия вместо коридора вокруг оси: полотно ребра — это буфер
+## полуширины вокруг его полилинии, и отрезок нарушает ПДД, если он подходит
+## к полилинии ближе полуширины ХОТЬ ГДЕ-НИБУДЬ по своей длине.
+##
+## Расстояние считается честно, отрезок против отрезка, а не «концы отрезка
+## против полилинии»: отрезок, обходящий КОНЕЦ улицы и ныряющий в полотно
+## серединой, ось не пересекает (заходит за её конец), а оба его конца лежат
+## снаружи буфера — проверка по концам его не видит вовсе. Именно такой
+## отрезок пешеходный граф порождает на тупиковом узле.
 func _segment_enters_roadway(street: CityGraph, a: Vector3, b: Vector3) -> bool:
 	var pa := Vector2(a.x, a.z)
 	var pb := Vector2(b.x, b.z)
 	for e in street.edge_count():
+		# Отдельная проверка на пересечение осей: она не зависит от ширины и
+		# ловит нарушение даже у вырожденного полотна нулевой ширины.
 		if _crosses_edge(street, e, a, b):
 			return true
 		var half := street.edge_width(e) * 0.5 - 1e-6
 		for i in street.edge_point_count(e) - 1:
 			var p0 := street.edge_point(e, i)
 			var p1 := street.edge_point(e, i + 1)
-			var q0 := Vector2(p0.x, p0.z)
-			var q1 := Vector2(p1.x, p1.z)
-			if _point_to_segment(pa, q0, q1) < half:
-				return true
-			if _point_to_segment(pb, q0, q1) < half:
+			if _segment_to_segment(pa, pb, Vector2(p0.x, p0.z),
+					Vector2(p1.x, p1.z)) < half:
 				return true
 	return false
+
+
+## Минимальное расстояние между двумя отрезками в плане.
+##
+## Если отрезки пересекаются — ноль; иначе минимум достигается на конце одного
+## из них (стандартный факт планарной геометрии: функция расстояния между
+## точками двух отрезков выпуклая, и без пересечения её минимум лежит на
+## границе области параметров), поэтому четырёх проекций достаточно.
+static func _segment_to_segment(a: Vector2, b: Vector2, c: Vector2,
+		d: Vector2) -> float:
+	if _segments_cross(a, b, c, d):
+		return 0.0
+	return minf(
+		minf(_point_to_segment(a, c, d), _point_to_segment(b, c, d)),
+		minf(_point_to_segment(c, a, b), _point_to_segment(d, a, b)))
 
 
 func _crosses_edge(street: CityGraph, e: int, a: Vector3, b: Vector3) -> bool:
