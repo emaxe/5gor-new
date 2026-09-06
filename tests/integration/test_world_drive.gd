@@ -351,6 +351,58 @@ func test_player_ped_exit_and_enter_car() -> void:
 	assert_bool(_world.player.is_active).is_true()
 
 
+func test_gps_routes_to_an_order_through_a_roundabout() -> void:
+	# Сценарий готовности этапа 9: заказ в центре, игрок на южном выезде
+	# Калинина, между ними единственный проезд — через кольцо kal_s2 (30, 172).
+	# Кольца есть только у живой топологии, поэтому этот тест ловит и то, что
+	# GPS остался бы на сетке 9x9.
+	#
+	# Кадры мира здесь не крутятся намеренно: World._process() каждый кадр
+	# кормит GPS состоянием OrderManager, и без принятого заказа маршрут
+	# немедленно сбрасывается. Движение игрока поэтому имитируется двумя
+	# вызовами update() из разных точек — ровно то, что делает мир.
+	var from := Vector2(34.0, 232.0)
+	var drop := Vector2(24.0, 22.0)
+	_world.player.place(Vector3(from.x, 0.0, from.y), PI)
+	_world.gps.update(GpsRouter.RECOMPUTE_INTERVAL, from, true, true, drop, 1.0)
+
+	assert_bool(_world.gps.has_target())\
+		.override_failure_message("маршрут до заказа не построился")\
+		.is_true()
+	var roads := _world.city.roads
+	var rings := 0
+	for p in _world.gps.route:
+		var id := _world.gps.graph.nearest_node_id(p)
+		if _world.gps.graph.node_position(id).distance_to(p) < 0.01 \
+				and roads.node_kind(id) == CityGraph.NodeKind.ROUNDABOUT:
+			rings += 1
+	assert_int(rings)\
+		.override_failure_message("маршрут %s -> %s не прошёл ни одного кольца"
+			% [from, drop])\
+		.is_equal(1)
+
+	# Стрелка HUD целится в следующую точку маршрута: машина стоит носом на
+	# север (курс PI), кольцо прямо перед ней — глиф обязан смотреть «вперёд»
+	# (-PI/2 в конвенции ui.js), а не вбок и не назад.
+	var ang := GpsRouter.arrow_angle(from, _world.player.motion.heading,
+		_world.gps.next_waypoint())
+	assert_float(ang)\
+		.override_failure_message("стрелка повёрнута на %.2f рад вместо %.2f"
+			% [ang, -PI / 2.0])\
+		.is_equal_approx(-PI / 2.0, 0.2)
+
+	# Проехали 60 м на север — остаток пути обязан сократиться примерно на
+	# столько же, а маршрут остаться тем же.
+	var before := _world.gps.remaining_distance()
+	var moved := Vector2(32.0, 172.0)
+	_world.gps.update(GpsRouter.RECOMPUTE_INTERVAL, moved, true, true, drop, 1.0)
+	var after := _world.gps.remaining_distance()
+	assert_float(before - after)\
+		.override_failure_message("остаток пути изменился на %.1f м за 60 м пути"
+			% (before - after))\
+		.is_between(40.0, 80.0)
+
+
 func test_world_unloads_without_leaks() -> void:
 	var before := Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)
 	_world.collision.clear()

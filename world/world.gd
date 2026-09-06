@@ -260,10 +260,10 @@ func _on_order_event_style(kind: StringName, _order_id: int, data: Dictionary) -
 
 
 ## Этап 13 (GPS): дорожный граф + маршрутизация до цели заказа/заправки.
-## Строится сразу после City (нужен только field), но после StyleService по
-## порядку вызовов из build() — зависимостей между ними нет.
+## Строится сразу после City (нужен только граф улиц), но после StyleService
+## по порядку вызовов из build() — зависимостей между ними нет.
 func _spawn_gps() -> void:
-	gps = GpsRouter.new(city.field, Db.districts, Db.balance)
+	gps = GpsRouter.new(city.roads, Db.districts, Db.balance)
 
 
 func _spawn_hud() -> void:

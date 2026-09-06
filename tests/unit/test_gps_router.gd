@@ -13,7 +13,10 @@ const INTERVAL := 0.5
 
 func before() -> void:
 	_field = CityField.new(Db.balance)
-	_router = GpsRouter.new(_field, Db.districts, Db.balance)
+	# Регулярная сетка, а не топология Пятигорска: здесь проверяется выбор
+	# цели и троттлинг пересчёта, а координаты сетки видно руками. Маршрут по
+	# живому графу — дело test_road_graph.gd.
+	_router = GpsRouter.new(CityGraphGrid.from_field(_field), Db.districts, Db.balance)
 
 
 func test_no_target_without_order_and_with_fuel() -> void:
