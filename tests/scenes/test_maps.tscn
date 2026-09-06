@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://tests/scenes/test_maps.gd" id="1_maps"]
+[ext_resource type="PackedScene" path="res://world/sky/sky_rig.tscn" id="2_sky"]
+
+[node name="TestMaps" type="Node3D"]
+script = ExtResource("1_maps")
+
+[node name="SkyRig" parent="." instance=ExtResource("2_sky")]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+near = 0.5
+far = 1400.0

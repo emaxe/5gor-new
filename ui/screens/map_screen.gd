@@ -5,9 +5,19 @@ extends CanvasLayer
 
 const UiTheme = preload("res://ui/theme/ui_theme.gd")
 
+## Поле вокруг габарита города, px: метка заказа или лендмарка у самой кромки
+## иначе наполовину уезжает за край холста.
+const MAP_PAD_PX := 24.0
+
+## Минимальная толщина линии дороги, px — та же причина, что у миникарты:
+## тоньше линия распадается на пунктир сглаживания.
+const MIN_ROAD_PX := 1.5
+
 var _root: Control
 var _canvas: Control
 var _redraw_timer := 0.0
+## Проекция графа улиц: строится один раз на город (см. CityMapLines).
+var _lines: CityMapLines = null
 
 
 func _ready() -> void:
@@ -74,28 +84,45 @@ func _on_canvas_draw() -> void:
 
 	var size := _canvas.size
 	var center := size * 0.5
-	var draw_r: float = minf(center.x, center.y) - 12.0
-	if draw_r <= 10.0:
+	if minf(center.x, center.y) - MAP_PAD_PX <= 10.0:
 		return
 
-	var b: BalanceData = Db.balance
-	var half_span: float = (b.grid_n * b.cell) if b != null else 256.0
-	var scale_factor: float = draw_r / (half_span + 60.0)
-	var to_screen := func(wp: Vector2) -> Vector2:
-		return center + wp * scale_factor
+	var city: CityBuilder = w.city
+	if city.roads == null or not city.roads.is_built():
+		return
+	if _lines == null or _lines.roads != city.roads:
+		_lines = CityMapLines.of(city.roads)
 
 	_canvas.draw_rect(Rect2(Vector2.ZERO, size), Color(0.06, 0.08, 0.11, 0.9))
 
-	var field: CityField = w.city.field
-	if field != null and b != null:
-		var grid_c: float = field.cell
-		var num_roads: int = b.grid_n * 2 + 1
-		var hs: float = (num_roads - 1) * 0.5 * grid_c
-		var road_color := Color(0.30, 0.35, 0.45, 0.7)
-		for i in num_roads:
-			var c: float = -hs + i * grid_c
-			_canvas.draw_line(to_screen.call(Vector2(c, -hs)), to_screen.call(Vector2(c, hs)), road_color, 2.0)
-			_canvas.draw_line(to_screen.call(Vector2(-hs, c)), to_screen.call(Vector2(hs, c)), road_color, 2.0)
+	# Масштаб — по габариту реального города, а не по сеточному
+	# `grid_n * cell`: Пятигорск занимает 376 x 704 м, при старой формуле
+	# (половина пролёта 256 м) север и юг города уезжали за края холста.
+	# Множитель один на обе оси, иначе карта растянет город по широкому экрану.
+	var bounds := _lines.bounds
+	var scale_factor: float = minf(
+		(size.x - MAP_PAD_PX * 2.0) / bounds.size.x,
+		(size.y - MAP_PAD_PX * 2.0) / bounds.size.y)
+	var world_center := bounds.get_center()
+	var to_screen := func(wp: Vector2) -> Vector2:
+		return center + (wp - world_center) * scale_factor
+
+	for e in _lines.edge_count():
+		var pen: float = maxf(MIN_ROAD_PX, _lines.width[e] * scale_factor)
+		var col: Color = _lines.color[e]
+		var from: int = _lines.start[e]
+		var to: int = _lines.start[e + 1]
+		var prev: Vector2 = to_screen.call(_lines.points[from])
+		for i in range(from + 1, to):
+			var cur: Vector2 = to_screen.call(_lines.points[i])
+			_canvas.draw_line(prev, cur, col, pen)
+			prev = cur
+
+	# Кольца — залитые круги по внешней кромке полотна, как на миникарте.
+	for k in _lines.ring_pos.size():
+		var rc: Vector2 = to_screen.call(_lines.ring_pos[k])
+		var paved: float = _lines.ring_radius[k] + _lines.ring_width[k] * 0.5
+		_canvas.draw_circle(rc, paved * scale_factor, CityMapLines.COLOR_ROAD)
 
 	if Db.districts != null:
 		for lm: LandmarkData in Db.districts.landmarks:
