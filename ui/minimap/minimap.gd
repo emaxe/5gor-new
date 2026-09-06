@@ -2,9 +2,16 @@ class_name Minimap
 extends Control
 ## Миникарта города (Heading-Up / ориентация по направлению движения).
 
+## Минимальная толщина линии дороги, px. Полотно переулка (8 м) при радиусе
+## 220 м в панели 180 px даёт 3 px, но миникарта живёт и в меньшей панели:
+## тоньше этого линия распадается на пунктир сглаживания.
+const MIN_ROAD_PX := 1.5
+
 var world: Node3D
 var radius_m: float = 220.0
 var _update_timer: float = 0.0
+## Проекция графа улиц: строится один раз на город (см. CityMapLines).
+var _lines: CityMapLines = null
 
 
 func _process(delta: float) -> void:
@@ -39,28 +46,46 @@ func _draw() -> void:
 	var cos_a := cos(rot_ang)
 	var sin_a := sin(rot_ang)
 
-	var field: CityField = world.city.field if world.city != null else null
-	if field != null:
-		var grid_c: float = field.cell
-		var num_roads: int = 9
-		var half_span: float = (num_roads - 1) * 0.5 * grid_c
-		var road_width: float = 4.0 * scale_factor * 2.0
-		var road_color: Color = Color(0.28, 0.32, 0.42, 0.6)
-		for i: int in num_roads:
-			var c: float = -half_span + i * grid_c
-			# Вертикальная дорога (по оси Z)
-			var v1_rel: Vector2 = Vector2(c, -half_span - 60.0) - p_pos
-			var v2_rel: Vector2 = Vector2(c, half_span + 60.0) - p_pos
-			var v1: Vector2 = center + Vector2(v1_rel.x * cos_a - v1_rel.y * sin_a, v1_rel.x * sin_a + v1_rel.y * cos_a) * scale_factor
-			var v2: Vector2 = center + Vector2(v2_rel.x * cos_a - v2_rel.y * sin_a, v2_rel.x * sin_a + v2_rel.y * cos_a) * scale_factor
-			_draw_clipped(v1, v2, center, r, road_color, road_width)
+	# 2. Улицы — реальные полилинии рёбер графа в видимом радиусе.
+	var city: CityBuilder = world.city
+	if city.roads != null and city.roads.is_built():
+		if _lines == null or _lines.roads != city.roads:
+			_lines = CityMapLines.of(city.roads)
+		for e in _lines.edge_count():
+			if not _lines.touches(e, p_pos, radius_m):
+				continue
+			var pen: float = maxf(MIN_ROAD_PX, _lines.width[e] * scale_factor)
+			var col: Color = _lines.color[e]
+			var from: int = _lines.start[e]
+			var to: int = _lines.start[e + 1]
+			var prev_rel: Vector2 = _lines.points[from] - p_pos
+			var prev := center + Vector2(prev_rel.x * cos_a - prev_rel.y * sin_a,
+				prev_rel.x * sin_a + prev_rel.y * cos_a) * scale_factor
+			for i in range(from + 1, to):
+				var rel: Vector2 = _lines.points[i] - p_pos
+				var cur := center + Vector2(rel.x * cos_a - rel.y * sin_a,
+					rel.x * sin_a + rel.y * cos_a) * scale_factor
+				_draw_clipped(prev, cur, center, r, col, pen)
+				prev = cur
 
-			# Горизонтальная дорога (по оси X)
-			var h1_rel: Vector2 = Vector2(-half_span - 60.0, c) - p_pos
-			var h2_rel: Vector2 = Vector2(half_span + 60.0, c) - p_pos
-			var h1: Vector2 = center + Vector2(h1_rel.x * cos_a - h1_rel.y * sin_a, h1_rel.x * sin_a + h1_rel.y * cos_a) * scale_factor
-			var h2: Vector2 = center + Vector2(h2_rel.x * cos_a - h2_rel.y * sin_a, h2_rel.x * sin_a + h2_rel.y * cos_a) * scale_factor
-			_draw_clipped(h1, h2, center, r, road_color, road_width)
+		# Кольцо — залитый круг по внешней кромке полотна. В мире это аннулюс
+		# с приподнятым островком (`RoadMesh._ring_mesh`), но внешний диаметр
+		# самого большого кольца города — 22 px на миникарте HUD: островка в
+		# нём не разглядеть, а кольцевая ломаная из коротких звеньев толщиной
+		# в ширину полотна вырождается в шестерёнку.
+		#
+		# `draw_circle` не обрезается краем циферблата, поэтому кольцо, не
+		# помещающееся целиком, не рисуется вовсе: подходящие к нему улицы
+		# всё равно обрезаются штатно, и место перекрёстка видно по ним.
+		for k in _lines.ring_pos.size():
+			var ring: Vector2 = _lines.ring_pos[k]
+			var paved: float = _lines.ring_radius[k] + _lines.ring_width[k] * 0.5
+			if p_pos.distance_to(ring) + paved > radius_m:
+				continue
+			var rel: Vector2 = ring - p_pos
+			var rc := center + Vector2(rel.x * cos_a - rel.y * sin_a,
+				rel.x * sin_a + rel.y * cos_a) * scale_factor
+			draw_circle(rc, paved * scale_factor, CityMapLines.COLOR_ROAD)
 
 	# 3. Достопримечательности (зеленые ромбы)
 	if Db.districts != null:
