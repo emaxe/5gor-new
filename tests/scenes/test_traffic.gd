@@ -5,8 +5,6 @@ extends Node3D
 
 const ROW_COUNT := 8
 
-var _field: CityField
-var _lights: TrafficLightController
 var _layer: TrafficLayer
 var _city: CityBuilder
 
@@ -17,14 +15,12 @@ func _ready() -> void:
 	add_child(_city)
 	_city.build(Db.balance, Db.districts, Db.balance.world_seed)
 	_city.refresh_signal_lenses()
-	_field = _city.field
-	_lights = _city.lights
 
 	_layer = TrafficLayer.new()
 	_layer.name = "Traffic"
 	add_child(_layer)
 	var rng := SeededRng.new(1234)
-	_layer.setup(Db.traffic, _field, _lights, rng, Db.balance.traffic_count,
+	_layer.setup(Db.traffic, _city.roads, _city.signals, rng, Db.balance.traffic_count,
 		get_world_3d().space, 0.0, 20.0)
 	_place_showcase_row()
 	_place_camera()
@@ -60,7 +56,7 @@ func _place_showcase_row() -> void:
 
 
 func _process(delta: float) -> void:
-	_city.lights.advance(delta)
+	_city.signals.advance(delta)
 	_city.refresh_signal_lenses()
 	if _layer != null:
 		_layer.tick(delta, 0.0, 20.0, 1.0)

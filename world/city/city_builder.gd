@@ -23,12 +23,6 @@ var signals: NodeSignalController
 var signal_plan: NodeSignalPlan
 var bridges: BridgeGeometry
 var plan: CityPlan
-## Осевой контроллер сеточной эпохи. Живой светофор — `signals`; в самой игре
-## потребителей у этого не осталось вовсе с этапа 9 (полиция перешла на
-## `signals`, пешеходы — раньше). Держится только ради полигонов
-## `tests/scenes/*`, которые всё ещё передают его в `PedLayer.setup()`;
-## умрёт вместе с их переводом на `signals` — отдельная задача.
-var lights: TrafficLightController
 
 var _multimesh_nodes: Array[MultiMeshInstance3D] = []
 var _chunk_nodes: Array[MeshInstance3D] = []
@@ -63,7 +57,6 @@ func build(balance: BalanceData, districts: DistrictCatalog, world_seed: int) ->
 	signals = NodeSignalController.build(roads, topology.signal_nodes,
 		topology.wave_front_nodes)
 	signal_plan = NodeSignalPlan.build(roads, signals)
-	lights = TrafficLightController.new(field)
 
 	blocks = CityBlocks.new()
 	blocks.build(roads, topology.node_district, topology.landmark_node)

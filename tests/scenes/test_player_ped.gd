@@ -91,7 +91,7 @@ func _spawn_pedestrians() -> void:
 	pedestrians.name = "Pedestrians"
 	add_child(pedestrians)
 	var rng := SeededRng.new(2026)
-	pedestrians.setup(Db.peds, city.field, city.graph, city.lights, Db.balance.ped, rng,
+	pedestrians.setup(Db.peds, city.field, city.graph, city.signals, Db.balance.ped, rng,
 		get_world_3d().space, 20, -2.5, 20.0)
 
 	# Ставим троих NPC рядом с игроком для проверки драки
@@ -113,7 +113,7 @@ func _process(delta: float) -> void:
 		camera.target_ground = tf.origin.y
 
 
-	city.lights.advance(delta)
+	city.signals.advance(delta)
 	var p_pos := player_car.global_position if in_car else player_ped.global_position
 	var p_h := player_car.motion.heading if in_car else player_ped.logic.heading
 	var p_sp := player_car.motion.speed if in_car else player_ped.logic.speed

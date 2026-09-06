@@ -205,95 +205,147 @@ func test_degree_five_node_offers_every_exit() -> void:
 
 # --- Светофор ---------------------------------------------------------------
 
-## Ставит одну машину на подъезде к перекрёстку (1,1) — обе координаты
-## нечётные, значит регулируемый (PedGraph.is_signalized) — и выставляет
-## на нём красный для оси Z.
-func _place_approaching_red_z(mgr: TrafficManager, g: CityGraph,
-		field: CityField) -> void:
-	const ISEC_INDEX := 1
-	var axis_v := field.road_axes[ISEC_INDEX]
-	# Ребро вдоль Z, приходящее в (axis_v, axis_v) с юга карты.
-	var e := g.query_nearest_edge(Vector3(axis_v, 0.0, axis_v - 25.0), 20.0)
-	mgr.place_on_edge(0, e, g.edge_length(e) - 25.0, 1.0)
+## Индекс южного подхода узла 0 в `_cross()` (ребро `c -> s`, см. комментарий
+## фикстуры) — направление вдоль ребра от узла, а не жёстко зашитая ось X/Z:
+## произвольный граф не обязан иметь оси вовсе.
+const _CROSS_SOUTH_EDGE := 1
+
+## Время контроллера, при котором подход `k` узла `node` красный, с запасом
+## от границы фазы в обе стороны (полшага сканирования). Поиск по факту
+## состояния, а не по формуле нарезки фаз, — тест не обязан знать внутреннее
+## устройство `NodeSignalController`, только контракт `car_state`.
+func _find_red_time(s: NodeSignalController, node: int, k: int) -> float:
+	const STEP := 0.1
+	var steps := int(NodeSignalController.CYCLE / STEP)
+	for i in steps:
+		var tt := i * STEP
+		s.time = tt
+		if s.car_state(node, k) != NodeSignalController.State.RED:
+			continue
+		s.time = tt - STEP * 0.5
+		var before_red := s.car_state(node, k) == NodeSignalController.State.RED
+		s.time = tt + STEP * 0.5
+		var after_red := s.car_state(node, k) == NodeSignalController.State.RED
+		if before_red and after_red:
+			return tt
+	assert(false, "NodeSignalController: не нашлось красного окна с запасом для узла %d, подхода %d"
+		% [node, k])
+	return 0.0
+
+
+## Ставит машину 0 на ребро `edge`, в `distance` метрах от `node` (узел стоит
+## в начале ребра у синтетических фикстур этого файла, поэтому расстояние до
+## него равно координате `t` на ребре), едущую к узлу, и красит светофор
+## подхода этого ребра в красный.
+func _place_approaching_red(mgr: TrafficManager, g: CityGraph, node: int,
+		edge: int, distance: float) -> void:
+	var k := -1
+	for cand in g.node_degree(node):
+		if g.approach_edge(node, cand) == edge:
+			k = cand
+			break
+	assert(k >= 0, "ребро %d — не подход узла %d" % [edge, node])
+	mgr.place_on_edge(0, edge, distance, -1.0)
 	mgr.speed[0] = 10.0
 	mgr.target[0] = 10.0
 	mgr.run_red[0] = 0
-	# Ось Z красная 8..16 в локальном времени перекрёстка (citygen.js:3034).
-	# Узлы сетки нумеруются i * 9 + j (`CityGraphGrid.from_field`), а фазы
-	# узловой модели на сетке совпадают с осевыми (тест паритета этапа 7).
-	var node := ISEC_INDEX * field.road_axes.size() + ISEC_INDEX
-	mgr.signals.time = fposmod(9.8 - mgr.signals.phase_offset(node),
-		NodeSignalController.CYCLE)
+	mgr.signals.time = _find_red_time(mgr.signals, node, k)
+
+
+## Расстояние машины `car` от узла `node` в плане — направление-независимая
+## замена сравнения мировой координаты с координатой оси: у произвольного
+## графа «стоп-линия» не лежит на фиксированной оси X/Z.
+func _dist_to_node(mgr: TrafficManager, g: CityGraph, node: int, car: int) -> float:
+	var p := g.node_position(node)
+	return Vector2(mgr.world_x(car) - p.x, mgr.world_z(car) - p.z).length()
 
 
 func test_non_aggressive_car_stops_at_red_light() -> void:
-	var field := _default_field()
-	var g := CityGraphGrid.from_field(field)
+	var g := _cross()
 	var cat := _single_type_catalog(0.0, 0.3)
-	var mgr := _new_manager(cat, 1, 5, g, CityGraphGrid.signalized_nodes(field))
-	mgr.place_all_near(0.0, 0.0)
-	_place_approaching_red_z(mgr, g, field)
+	var mgr := _new_manager(cat, 1, 5, g, PackedInt32Array([0]))
+	_place_approaching_red(mgr, g, 0, _CROSS_SOUTH_EDGE, 25.0)
 
-	var stop_line := field.road_axes[1] - TrafficManager.STOP_LINE
 	# Игрок рядом (не респавнит машину), но вбок — не мешает через правило 9.
 	var player_x := mgr.world_x(0) + 10.0
 	var player_z := mgr.world_z(0)
+	# Минимум за весь прогон, а не расстояние на последнем тике: после проезда
+	# перекрёстка (в тесте на агрессивную машину) оно снова растёт на выходном
+	# ребре и не годится в качестве «подъехала ближе стоп-линии, чем можно».
+	var min_dist := INF
 	for _i in 300:
 		mgr.update(DT, player_x, player_z, 1.0)
+		min_dist = minf(min_dist, _dist_to_node(mgr, g, 0, 0))
 
-	assert_float(mgr.world_z(0))\
-		.override_failure_message("машина проехала на красный: z=%.2f, стоп-линия=%.2f"
-			% [mgr.world_z(0), stop_line])\
-		.is_less(stop_line)
+	assert_float(min_dist)\
+		.override_failure_message(
+			"машина проехала на красный: приблизилась к узлу на %.2f м, стоп-линия — %.2f"
+			% [min_dist, TrafficManager.STOP_LINE])\
+		.is_greater_equal(TrafficManager.STOP_LINE - 1.0)
 	assert_float(mgr.speed_of(0))\
 		.override_failure_message("машина не остановилась: скорость=%.2f" % mgr.speed_of(0))\
 		.is_less(0.5)
 
 
-## Зеркало предыдущего теста: агрессивная машина обязана пересечь стоп-линию.
-## Проверяется именно она, а не выезд за перекрёсток: на графе за узлом
-## машина может уйти в любое из его рёбер, и «проехал прямо» — уже про выбор
-## направления, а не про светофор.
+## Зеркало предыдущего теста: агрессивная машина обязана подъехать к узлу
+## ближе стоп-линии — то есть реально въехать в перекрёсток, а не просто
+## замедлиться рядом с ним. Дальнейшая судьба (какое ребро выберет на выходе)
+## не проверяется: «проехал на красный» — про светофор, не про выбор поворота.
 func test_aggressive_car_runs_clear_red_light() -> void:
-	var field := _default_field()
-	var g := CityGraphGrid.from_field(field)
+	var g := _cross()
 	# aggressive_ratio=1 и red_light_run_chance=1 — детерминированно проезжает,
 	# перекрёсток пуст (единственная машина в пуле), значит проезд гарантирован.
 	var cat := _single_type_catalog(1.0, 1.0)
-	var mgr := _new_manager(cat, 1, 7, g, CityGraphGrid.signalized_nodes(field))
-	mgr.place_all_near(0.0, 0.0)
-	_place_approaching_red_z(mgr, g, field)
+	var mgr := _new_manager(cat, 1, 7, g, PackedInt32Array([0]))
+	_place_approaching_red(mgr, g, 0, _CROSS_SOUTH_EDGE, 25.0)
 	assert_int(mgr.aggressive[0])\
 		.override_failure_message("машина должна быть агрессивной для этого сценария")\
 		.is_equal(1)
 
-	var stop_line := field.road_axes[1] - TrafficManager.STOP_LINE
 	var player_x := mgr.world_x(0) + 10.0
 	var player_z := mgr.world_z(0)
+	var min_dist := INF
 	for _i in 300:
 		mgr.update(DT, player_x, player_z, 1.0)
+		min_dist = minf(min_dist, _dist_to_node(mgr, g, 0, 0))
 
-	assert_float(mgr.world_z(0))\
-		.override_failure_message("агрессивная машина не пересекла стоп-линию: z=%.2f, стоп-линия=%.2f"
-			% [mgr.world_z(0), stop_line])\
-		.is_greater(stop_line)
+	assert_float(min_dist)\
+		.override_failure_message(
+			"агрессивная машина не подъехала ближе стоп-линии: минимум за прогон %.2f м, стоп-линия — %.2f"
+			% [min_dist, TrafficManager.STOP_LINE])\
+		.is_less(TrafficManager.STOP_LINE)
 
 
 # --- Границы и бюджет -------------------------------------------------------
+
+## Максимум |x|/|z| среди всех точек полилиний графа плюс запас, м — форма
+## РЕАЛЬНОГО графа как область в плане, а не квадрат под конкретную сетку
+## (был жёсткий `270.0`, верный только для сетки 9x9 с шагом 64 м). Запас
+## 20 м покрывает вынос дуг кольца и боковое смещение полосы (`LANE_OFFSET`)
+## за пределы полилинии узла.
+func _graph_bound(g: CityGraph) -> float:
+	var bound := 0.0
+	for e in g.edge_count():
+		for i in g.edge_point_count(e):
+			var p := g.edge_point(e, i)
+			bound = maxf(bound, maxf(absf(p.x), absf(p.z)))
+	return bound + 20.0
+
 
 func test_cars_stay_within_map_bounds_over_time() -> void:
 	var field := _default_field()
 	var g := CityGraphGrid.from_field(field)
 	var mgr := _new_manager(Db.traffic, Db.balance.traffic_count, 11, g, CityGraphGrid.signalized_nodes(field))
 	mgr.place_all_near(0.0, 0.0)
+	var bound := _graph_bound(mgr.graph)
 
 	for _step in 900:
 		mgr.update(DT, 0.0, 0.0, 1.0)
 		for c in mgr.count:
 			assert_float(maxf(absf(mgr.world_x(c)), absf(mgr.world_z(c))))\
-				.override_failure_message("машина %d выехала за карту: (%.1f, %.1f)"
-					% [c, mgr.world_x(c), mgr.world_z(c)])\
-				.is_less(270.0)
+				.override_failure_message("машина %d выехала за карту: (%.1f, %.1f), граница графа %.1f"
+					% [c, mgr.world_x(c), mgr.world_z(c), bound])\
+				.is_less(bound)
 
 
 ## Бакетизация по (edge_id, отрезок t) обязана держать апдейт в бюджете даже

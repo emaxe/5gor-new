@@ -32,7 +32,7 @@ func _ready() -> void:
 	_layer.name = "Pedestrians"
 	add_child(_layer)
 	var rng := SeededRng.new(2026)
-	_layer.setup(Db.peds, _city.field, _city.graph, _city.lights, Db.balance.ped, rng,
+	_layer.setup(Db.peds, _city.field, _city.graph, _city.signals, Db.balance.ped, rng,
 		get_world_3d().space, Db.balance.ped_count, 0.0, 20.0)
 	_place_showcase_row()
 	_place_camera()
@@ -63,7 +63,7 @@ func _place_showcase_row() -> void:
 
 
 func _process(delta: float) -> void:
-	_city.lights.advance(delta)
+	_city.signals.advance(delta)
 	_city.refresh_signal_lenses()
 	if _layer != null:
 		_layer.tick(delta, 0.0, 20.0, 0.0, 0.0, 0.0, 0.0, false)
