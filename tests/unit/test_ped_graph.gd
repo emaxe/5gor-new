@@ -167,14 +167,18 @@ func test_gate_approach_matches_city_graph_ordering() -> void:
 			.is_less(_street.node_degree(node))
 
 
-func test_gate_axial_bridges_to_the_axis_controller() -> void:
-	# Мост к осевому контроллеру живого города: переход через северный рукав
-	# перекрёстка (3,3) пересекает дорогу, по которой машины едут вдоль Z.
-	var axial := _graph.gate_axial(PedGraph.gate_id(_node_id(3, 5), N))
-	assert_int(axial.x).is_equal(3)
-	assert_int(axial.y).is_equal(int(PedGraph.CrossAxis.Z_ROAD))
-	var across := _graph.gate_axial(PedGraph.gate_id(_node_id(3, 5), E))
-	assert_int(across.y).is_equal(int(PedGraph.CrossAxis.X_ROAD))
+func test_crossing_knows_which_street_edge_it_crosses() -> void:
+	# Переход помнит ребро УЛИЦЫ, которое пересекает: по нему пешеход сверяет
+	# машины (`PedManager._car_on_road`), а не по совпадению координат.
+	var node := _node_id(3, 5)
+	var ends := _graph.crossing_ends(node, N)
+	assert_int(_graph.road_edge_of(ends.x, ends.y))\
+		.override_failure_message("переход через северный рукав не знает своего ребра")\
+		.is_equal(_street.approach_edge(node, N))
+	# Ребро вдоль тротуара проезжую часть не пересекает.
+	var mid := _graph.mid_node(_south_edge(4, 4), false)
+	assert_int(_graph.road_edge_of(_graph.kerb_node(_node_id(4, 4), S, false), mid))\
+		.is_equal(-1)
 
 
 func test_walk_edges_have_no_gate() -> void:
@@ -372,6 +376,57 @@ func test_invariant_holds_on_degree_3_5_and_ring_nodes() -> void:
 		.is_greater(200)
 
 
+## Потолок известных нарушений инварианта на настоящей топологии, см.
+## `test_real_topology_sidewalks_stay_off_the_roadway`. Число измеренное,
+## а не подобранное: сегодня их ровно 20 из 405 тротуарных рёбер.
+const REAL_TOPOLOGY_KNOWN_VIOLATIONS := 20
+
+
+## Инвариант «тротуар не заходит на проезжую часть» на НАСТОЯЩЕЙ топологии
+## Пятигорска — той, что с этапа 9 работает в живой игре.
+##
+## [b]Тут он держится не полностью, и это измеренный факт, а не недосмотр.[/b]
+## Конструкция углов (`PedGraph._corner_pos`) гарантирует вынос только пока
+## сектор между соседними рукавами шире `2 * MIN_CORNER_HALF` (45.8°); на более
+## острой развилке вынос зажимается потолком, и угол может уйти внутрь полотна
+## одного из рукавов. В сетке 9x9 таких секторов нет вовсе (все углы 90° или
+## 180°), в топологии Пятигорска их шесть — отсюда 20 рёбер из 405 (4.9 %).
+## Ограничение унаследовано от этапа 8, где оно явно записано в
+## doc-комментарии `_corner_pos` как «страхует тест, а не конструкция».
+##
+## Тест — храповик: он фиксирует ровно нынешнее число и падает, если станет
+## хуже. Убрать его в ноль значит переделать размещение углов на острых
+## развилках, а это работа этапа 8, а не врезки живого города.
+##
+## [b]Что этот тест доказывает уже сейчас.[/b] Без per-edge выноса (прежняя
+## константа `road_half + sidewalk/2` = 8 м) нарушений было бы в разы больше:
+## у 17 рёбер топологии полуполотно 8 или 9 м (улица Калинина 16 м, проспект
+## Кирова 18 м), и одни только их ленты тротуара — 68 рёбер — прошли бы ПО
+## полотну по всей длине обеих магистралей, не считая углов.
+func test_real_topology_sidewalks_stay_off_the_roadway() -> void:
+	var topology := PyatigorskTopology.new()
+	var street := topology.build(_field)
+	var graph := PedGraph.on_graph(street, topology.signal_nodes, _field.sidewalk)
+	var total := 0
+	var bad := 0
+	for a in graph.node_count():
+		for b in graph.full.get_point_connections(a):
+			if b < a or graph.edge_kind(a, b) != int(PedGraph.Edge.WALK):
+				continue
+			total += 1
+			if _segment_enters_roadway_on_its_level(street,
+					graph.position_of(a), graph.position_of(b)):
+				bad += 1
+	assert_int(total)\
+		.override_failure_message("проверено всего %d тротуарных рёбер" % total)\
+		.is_greater(200)
+	assert_int(bad)\
+		.override_failure_message(
+			"тротуарных рёбер в полотне: %d из %d (потолок %d)"
+			% [bad, total, REAL_TOPOLOGY_KNOWN_VIOLATIONS])\
+		.is_less_equal(REAL_TOPOLOGY_KNOWN_VIOLATIONS)
+
+
 func test_dead_end_sidewalk_wraps_the_end_instead_of_cutting_it() -> void:
 	# Тупик — единственный случай, где правило «угол между парой соседних
 	# подходов» вырождается: пары подходов нет. Единственный угол на оси улицы
@@ -379,8 +434,11 @@ func test_dead_end_sidewalk_wraps_the_end_instead_of_cutting_it() -> void:
 	# ОБА конца такого отрезка лежали снаружи полотна — проверка по концам
 	# этого не видела.
 	var street := _dead_end_star()
-	var side := _field.road_half + _field.sidewalk * 0.5
-	var graph := PedGraph.on_graph(street, PackedInt32Array(), side)
+	var graph := PedGraph.on_graph(street, PackedInt32Array(), _field.sidewalk)
+	# Вынос кербовой точки считается per-edge: полуширина рукава плюс
+	# полтротуара. У лучей звезды ширина сеточная (12 м), отсюда те же 8 м,
+	# что были у прежней константы поля.
+	var side := street.edge_width(0) * 0.5 + _field.sidewalk * 0.5
 	var ends := 0
 	for node in street.node_count():
 		if street.node_degree(node) != 1:
@@ -644,6 +702,28 @@ func _segment_enters_roadway(street: CityGraph, a: Vector3, b: Vector3) -> bool:
 		for i in street.edge_point_count(e) - 1:
 			var p0 := street.edge_point(e, i)
 			var p1 := street.edge_point(e, i + 1)
+			if _segment_to_segment(pa, pb, Vector2(p0.x, p0.z),
+					Vector2(p1.x, p1.z)) < half:
+				return true
+	return false
+
+
+## То же, но только против полотна СВОЕГО яруса. Тротуар под декой
+## путепровода в плане лежит ровно под ней, и плоская проверка объявила бы
+## его «на проезжей части»; разводит их та же разница высот, что и в
+## `CityGraph.query_nearest_edge`.
+func _segment_enters_roadway_on_its_level(street: CityGraph, a: Vector3,
+		b: Vector3) -> bool:
+	var pa := Vector2(a.x, a.z)
+	var pb := Vector2(b.x, b.z)
+	var walk_y := (a.y + b.y) * 0.5
+	for e in street.edge_count():
+		var half := street.edge_width(e) * 0.5 - 1e-6
+		for i in street.edge_point_count(e) - 1:
+			var p0 := street.edge_point(e, i)
+			var p1 := street.edge_point(e, i + 1)
+			if absf(walk_y - (p0.y + p1.y) * 0.5) > CityGraph.LEVEL_TOLERANCE:
+				continue
 			if _segment_to_segment(pa, pb, Vector2(p0.x, p0.z),
 					Vector2(p1.x, p1.z)) < half:
 				return true

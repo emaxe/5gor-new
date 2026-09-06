@@ -298,6 +298,11 @@ func _plan_pickups() -> void:
 			var n := _right_normal(_tangent_at(e, s))
 			for side: float in [-1.0, 1.0]:
 				var q := p + n * (side * lateral)
+				# Точка подачи обязана лежать на тротуаре, а не на чужой
+				# проезжей части: у перекрёстка тротуар своей улицы попадает
+				# в полотно поперечной, и такси вставало бы посреди неё.
+				if _road_clearance(q.x, q.z, p.y) < 0.0:
+					continue
 				_add_pickup(q.x, q.z)
 
 
@@ -402,14 +407,15 @@ func _point_in_block(b: int) -> Vector2:
 
 
 func _try_add_tree(x: float, z: float, deciduous: bool, in_park: bool) -> void:
-	if not in_park and _road_clearance(x, z) < TREE_ROAD_CLEARANCE:
+	var ground := field.height_at(x, z)
+	if not in_park and _road_clearance(x, z, ground) < TREE_ROAD_CLEARANCE:
 		return
-	if not _is_free(x, z, 1.8):
+	if not _is_free(x, z, ground, 1.8):
 		return
 	if field.dist_to_serp(x, z) < TREE_SERP_CLEARANCE:
 		return
 	var scale := _rng.randf_range(0.75, 1.35)
-	_plan.tree_pos.append(Vector3(x, field.height_at(x, z), z))
+	_plan.tree_pos.append(Vector3(x, ground, z))
 	_plan.tree_scale.append(scale)
 	_plan.tree_kind.append(0 if deciduous else 1)
 	_plan.tree_color.append(_rng.pick_color(
@@ -431,7 +437,7 @@ func _plan_lamps() -> void:
 			var p := _point_at(e, s)
 			var n := _right_normal(_tangent_at(e, s))
 			var q := p + n * (side * lateral)
-			if _is_free(q.x, q.z, 0.5):
+			if _is_free(q.x, q.z, p.y, 0.5):
 				_plan.lamp_pos.append(Vector3(q.x, p.y, q.z))
 				_plan.lamp_yaw.append(_facing_yaw(-n * side))
 				_blockers.add_point(q.x, q.z, 0.25)
@@ -453,7 +459,7 @@ func _plan_street_furniture() -> void:
 			var n := _right_normal(_tangent_at(e, s))
 			for side: float in [-1.0, 1.0]:
 				var q := p + n * (side * lateral)
-				if _rng.chance(0.30) and _is_free(q.x, q.z, 0.6):
+				if _rng.chance(0.30) and _is_free(q.x, q.z, p.y, 0.6):
 					_add_bin(q.x, q.z, p.y)
 	for e in _street_edges:
 		var lateral := roads.edge_width(e) * 0.5 + field.sidewalk * 0.5
@@ -464,18 +470,19 @@ func _plan_street_furniture() -> void:
 				var q := p + n * (side * lateral)
 				# Лавка стоит спинкой к дороге — как и в сетке, где сторона
 				# `+1` получала курс 0, то есть «лицом наружу».
-				if _rng.chance(0.22) and _is_free(q.x, q.z, 1.0):
+				if _rng.chance(0.22) and _is_free(q.x, q.z, p.y, 1.0):
 					_add_bench(q.x, q.z, p.y, _facing_yaw(n * side))
 
 	# Кусты во дворах — там же, где деревья, но ближе к домам.
 	for k in BUSHES:
 		var x := (_rng.next() - 0.5) * BUSH_SPREAD
 		var z := (_rng.next() - 0.5) * BUSH_SPREAD
-		if _road_clearance(x, z) < BUSH_ROAD_CLEARANCE:
+		var ground := field.height_at(x, z)
+		if _road_clearance(x, z, ground) < BUSH_ROAD_CLEARANCE:
 			continue
-		if not _is_free(x, z, 1.0):
+		if not _is_free(x, z, ground, 1.0):
 			continue
-		_plan.bush_pos.append(Vector3(x, field.height_at(x, z), z))
+		_plan.bush_pos.append(Vector3(x, ground, z))
 		_plan.bush_scale.append(_rng.randf_range(0.7, 1.3))
 		_blockers.add_point(x, z, 0.9, 1.2)
 
@@ -528,14 +535,20 @@ func _add_parked(x: float, z: float, y: float, yaw: float) -> void:
 
 ## Запас от точки до КРОМКИ ближайшего полотна, м. Отрицательное значение —
 ## точка на проезжей части.
-func _road_clearance(x: float, z: float) -> float:
-	return roads.road_clearance(Vector3(x, field.height_at(x, z), z), ROAD_SEARCH)
+##
+## `y` — отметка, на которой идёт запрос: она разводит ярусы. У пропса вдоль
+## улицы это высота ПОЛОТНА в точке станции, а не рельефа рядом с ней —
+## тротуар на склоне Машука лежит на одной полке с дорогой, и промер по
+## рельефу в паре метров вбок нашёл бы разницу высот больше допуска и признал
+## бы собственную улицу «другим ярусом».
+func _road_clearance(x: float, z: float, y: float) -> float:
+	return roads.road_clearance(Vector3(x, y, z), ROAD_SEARCH)
 
 
 ## Порт isPositionValid: не на проезжей части, не в здании, не на точке
 ## подачи, не на зебре и не поверх другого пропса.
-func _is_free(x: float, z: float, radius: float) -> bool:
-	if _road_clearance(x, z) < radius + 0.3:
+func _is_free(x: float, z: float, y: float, radius: float) -> bool:
+	if _road_clearance(x, z, y) < radius + 0.3:
 		return false
 	return _is_free_on_road(x, z, radius)
 

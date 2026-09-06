@@ -17,9 +17,23 @@ func before_test() -> void:
 	_districts = Db.districts
 	_balance = Db.balance
 	_field = CityField.new(_balance)
-	var graph := PedGraph.new(_field)
-	var planner = CityPlannerScript.new(_field, graph, _districts)
-	_plan = planner.plan(_balance.world_seed)
+	# Полная фаза A на настоящей топологии: заказам нужны точки подачи, а они
+	# теперь выводятся из рёбер графа, а не из девяти осей сетки.
+	var topology := PyatigorskTopology.new()
+	var roads := topology.build(_field)
+	_field.attach_roads(roads)
+	var ped := PedGraph.on_graph(roads, topology.signal_nodes, _field.sidewalk)
+	var blocks := CityBlocks.new()
+	blocks.build(roads, topology.node_district, topology.landmark_node)
+	var markings := RoadMarkings.new(roads, RoadMesh.new(roads, _field),
+		topology.signal_nodes, ped.crossings)
+	var signals := NodeSignalPlan.build(roads,
+		NodeSignalController.build(roads, topology.signal_nodes,
+			topology.wave_front_nodes))
+	var planner = CityPlannerScript.new(_field, roads, blocks,
+		topology.node_district, _districts)
+	_plan = planner.plan(_balance.world_seed, markings.crossings, signals,
+		topology.landmark_node)
 
 
 func test_catalog_integrity() -> void:

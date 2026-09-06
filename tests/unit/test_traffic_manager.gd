@@ -19,12 +19,16 @@ const RING_RADIUS := 20.0
 ## кольцо) светофоров нет, и правило 10 в них не участвует. Сеточные сценарии
 ## передают список регулируемых узлов сетки — те же перекрёстки, что
 ## регулировала осевая модель.
+##
+## Контроллер светофоров строится здесь же и живёт в `mgr.signals`: с этапа 9
+## менеджер его не собирает, а получает готовым от города — тестам достаётся
+## та же роль владельца часов, что живому `World`.
 func _new_manager(catalog: TrafficCatalog, traffic_count: int, seed_value: int,
-		field: CityField, graph: CityGraph, lights: TrafficLightController,
+		graph: CityGraph,
 		signal_nodes: PackedInt32Array = PackedInt32Array()) -> TrafficManager:
 	var mgr := TrafficManager.new()
-	mgr.setup(catalog, field, graph, lights, SeededRng.new(seed_value), traffic_count,
-		signal_nodes)
+	mgr.setup(catalog, graph, NodeSignalController.build(graph, signal_nodes),
+		SeededRng.new(seed_value), traffic_count)
 	return mgr
 
 
@@ -121,9 +125,8 @@ func _arc_near(mgr: TrafficManager, x: float, z: float) -> int:
 
 func test_setup_spawns_requested_count_with_guaranteed_police() -> void:
 	var field := _default_field()
-	var lights := TrafficLightController.new(field)
-	var mgr := _new_manager(Db.traffic, Db.balance.traffic_count, 42, field,
-		CityGraphGrid.from_field(field), lights, CityGraphGrid.signalized_nodes(field))
+	var mgr := _new_manager(Db.traffic, Db.balance.traffic_count, 42,
+		CityGraphGrid.from_field(field), CityGraphGrid.signalized_nodes(field))
 	mgr.place_all_near(0.0, 0.0)
 
 	assert_int(mgr.count).is_equal(Db.balance.traffic_count)
@@ -147,8 +150,7 @@ func test_setup_spawns_requested_count_with_guaranteed_police() -> void:
 func test_turn_choice_matches_original_split() -> void:
 	var field := _default_field()
 	var g := _cross()
-	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 2026, field, g,
-		TrafficLightController.new(field))
+	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 2026, g)
 	# Машина едет с запада к центру: ребро 2 (центр -> запад) в обратную сторону.
 	mgr.place_on_edge(0, 2, 10.0, -1.0)
 
@@ -182,8 +184,7 @@ func test_turn_choice_matches_original_split() -> void:
 func test_degree_five_node_offers_every_exit() -> void:
 	var field := _default_field()
 	var g := _star5()
-	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 77, field, g,
-		TrafficLightController.new(field))
+	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 77, g)
 	assert_int(g.node_degree(0))\
 		.override_failure_message("центр звезды должен иметь степень 5, получено %d"
 			% g.node_degree(0))\
@@ -207,8 +208,8 @@ func test_degree_five_node_offers_every_exit() -> void:
 ## Ставит одну машину на подъезде к перекрёстку (1,1) — обе координаты
 ## нечётные, значит регулируемый (PedGraph.is_signalized) — и выставляет
 ## на нём красный для оси Z.
-func _place_approaching_red_z(mgr: TrafficManager, g: CityGraph, field: CityField,
-		lights: TrafficLightController) -> void:
+func _place_approaching_red_z(mgr: TrafficManager, g: CityGraph,
+		field: CityField) -> void:
 	const ISEC_INDEX := 1
 	var axis_v := field.road_axes[ISEC_INDEX]
 	# Ребро вдоль Z, приходящее в (axis_v, axis_v) с юга карты.
@@ -218,18 +219,20 @@ func _place_approaching_red_z(mgr: TrafficManager, g: CityGraph, field: CityFiel
 	mgr.target[0] = 10.0
 	mgr.run_red[0] = 0
 	# Ось Z красная 8..16 в локальном времени перекрёстка (citygen.js:3034).
-	lights.time = fposmod(9.8 - lights.phase_offset(ISEC_INDEX), TrafficLightController.CYCLE)
+	# Узлы сетки нумеруются i * 9 + j (`CityGraphGrid.from_field`), а фазы
+	# узловой модели на сетке совпадают с осевыми (тест паритета этапа 7).
+	var node := ISEC_INDEX * field.road_axes.size() + ISEC_INDEX
+	mgr.signals.time = fposmod(9.8 - mgr.signals.phase_offset(node),
+		NodeSignalController.CYCLE)
 
 
 func test_non_aggressive_car_stops_at_red_light() -> void:
 	var field := _default_field()
 	var g := CityGraphGrid.from_field(field)
-	var lights := TrafficLightController.new(field)
 	var cat := _single_type_catalog(0.0, 0.3)
-	var mgr := _new_manager(cat, 1, 5, field, g, lights,
-		CityGraphGrid.signalized_nodes(field))
+	var mgr := _new_manager(cat, 1, 5, g, CityGraphGrid.signalized_nodes(field))
 	mgr.place_all_near(0.0, 0.0)
-	_place_approaching_red_z(mgr, g, field, lights)
+	_place_approaching_red_z(mgr, g, field)
 
 	var stop_line := field.road_axes[1] - TrafficManager.STOP_LINE
 	# Игрок рядом (не респавнит машину), но вбок — не мешает через правило 9.
@@ -254,14 +257,12 @@ func test_non_aggressive_car_stops_at_red_light() -> void:
 func test_aggressive_car_runs_clear_red_light() -> void:
 	var field := _default_field()
 	var g := CityGraphGrid.from_field(field)
-	var lights := TrafficLightController.new(field)
 	# aggressive_ratio=1 и red_light_run_chance=1 — детерминированно проезжает,
 	# перекрёсток пуст (единственная машина в пуле), значит проезд гарантирован.
 	var cat := _single_type_catalog(1.0, 1.0)
-	var mgr := _new_manager(cat, 1, 7, field, g, lights,
-		CityGraphGrid.signalized_nodes(field))
+	var mgr := _new_manager(cat, 1, 7, g, CityGraphGrid.signalized_nodes(field))
 	mgr.place_all_near(0.0, 0.0)
-	_place_approaching_red_z(mgr, g, field, lights)
+	_place_approaching_red_z(mgr, g, field)
 	assert_int(mgr.aggressive[0])\
 		.override_failure_message("машина должна быть агрессивной для этого сценария")\
 		.is_equal(1)
@@ -283,9 +284,7 @@ func test_aggressive_car_runs_clear_red_light() -> void:
 func test_cars_stay_within_map_bounds_over_time() -> void:
 	var field := _default_field()
 	var g := CityGraphGrid.from_field(field)
-	var lights := TrafficLightController.new(field)
-	var mgr := _new_manager(Db.traffic, Db.balance.traffic_count, 11, field, g, lights,
-		CityGraphGrid.signalized_nodes(field))
+	var mgr := _new_manager(Db.traffic, Db.balance.traffic_count, 11, g, CityGraphGrid.signalized_nodes(field))
 	mgr.place_all_near(0.0, 0.0)
 
 	for _step in 900:
@@ -308,10 +307,8 @@ func test_cars_stay_within_map_bounds_over_time() -> void:
 func test_update_fits_frame_budget_at_triple_density() -> void:
 	var field := _default_field()
 	var g := CityGraphGrid.from_field(field)
-	var lights := TrafficLightController.new(field)
 	var triple := Db.balance.traffic_count * 3
-	var mgr := _new_manager(Db.traffic, triple, 9, field, g, lights,
-		CityGraphGrid.signalized_nodes(field))
+	var mgr := _new_manager(Db.traffic, triple, 9, g, CityGraphGrid.signalized_nodes(field))
 	mgr.place_all_near(0.0, 0.0)
 
 	var best := INF
@@ -342,8 +339,7 @@ func test_update_fits_frame_budget_at_triple_density() -> void:
 func test_cars_cross_degree_five_node() -> void:
 	var field := _default_field()
 	var g := _star5()
-	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 3, 31, field, g,
-		TrafficLightController.new(field))
+	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 3, 31, g)
 	for c in 3:
 		mgr.place_on_edge(c, c * 2, 100.0, -1.0)
 		mgr.speed[c] = 8.0
@@ -385,8 +381,7 @@ func test_cars_cross_degree_five_node() -> void:
 func test_uturn_at_dead_end_stays_on_edge() -> void:
 	var field := _default_field()
 	var g := _star5()
-	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 13, field, g,
-		TrafficLightController.new(field))
+	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 13, g)
 	# Едем от центра к тупику: ребро 0 идёт центр -> луч, значит dir = +1.
 	mgr.place_on_edge(0, 0, 100.0, 1.0)
 	mgr.speed[0] = 8.0
@@ -414,8 +409,7 @@ func test_uturn_at_dead_end_stays_on_edge() -> void:
 func test_oncoming_cars_do_not_block_each_other() -> void:
 	var field := _default_field()
 	var g := CityGraphGrid.from_field(field)
-	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 2, 23, field, g,
-		TrafficLightController.new(field), CityGraphGrid.signalized_nodes(field))
+	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 2, 23, g, CityGraphGrid.signalized_nodes(field))
 	# Перекрёсток (0, 0) — обе координаты чётные, значит нерегулируемый.
 	var south := mgr.graph.query_nearest_edge(Vector3(0.0, 0.0, -20.0), 20.0)
 	var north := mgr.graph.query_nearest_edge(Vector3(0.0, 0.0, 20.0), 20.0)
@@ -502,8 +496,7 @@ func test_ring_arcs_run_clockwise_for_right_hand_traffic() -> void:
 func test_car_drives_around_ring() -> void:
 	var field := _default_field()
 	var g := _ring()
-	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 5, field, g,
-		TrafficLightController.new(field))
+	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 5, g)
 	var ring_edge := _arc_near(mgr, RING_RADIUS, 0.0)
 	mgr.place_on_edge(0, ring_edge, 1.0, 1.0)
 	mgr.speed[0] = 7.0
@@ -539,8 +532,7 @@ func test_car_drives_around_ring() -> void:
 func test_car_entering_ring_yields_to_car_on_arc() -> void:
 	var field := _default_field()
 	var g := _ring()
-	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 2, 17, field, g,
-		TrafficLightController.new(field))
+	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 2, 17, g)
 	# Гейт улицы, идущей на восток, лежит в (RING_RADIUS, 0).
 	var arc := _arc_near(mgr, RING_RADIUS, 0.0)
 	mgr.place_on_edge(0, arc, mgr.graph.edge_length(arc) * 0.4, 1.0)
@@ -580,8 +572,7 @@ func test_car_entering_ring_yields_to_car_on_arc() -> void:
 func test_ring_stays_live_under_load() -> void:
 	var field := _default_field()
 	var g := _ring()
-	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 8, 41, field, g,
-		TrafficLightController.new(field))
+	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 8, 41, g)
 	var arcs := PackedInt32Array()
 	var streets := PackedInt32Array()
 	for e in mgr.graph.edge_count():
@@ -649,8 +640,7 @@ func test_ring_stays_live_under_load() -> void:
 func test_deadlock_watchdog_respawns_stuck_car() -> void:
 	var field := _default_field()
 	var g := CityGraphGrid.from_field(field)
-	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 21, field, g,
-		TrafficLightController.new(field), CityGraphGrid.signalized_nodes(field))
+	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 21, g, CityGraphGrid.signalized_nodes(field))
 	# Ребро у центра карты: подъезд к узлу (0, 0) с юга.
 	var e := g.query_nearest_edge(Vector3(0.0, 0.0, -20.0), 20.0)
 	mgr.place_on_edge(0, e, g.edge_length(e) - 3.0, 1.0)
@@ -677,9 +667,7 @@ func test_deadlock_watchdog_respawns_stuck_car() -> void:
 func test_lamp_accessors_derive_from_kinematics() -> void:
 	var field := _default_field()
 	var g := CityGraphGrid.from_field(field)
-	var lights := TrafficLightController.new(field)
-	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 3, field, g, lights,
-		CityGraphGrid.signalized_nodes(field))
+	var mgr := _new_manager(_single_type_catalog(0.0, 0.0), 1, 3, g, CityGraphGrid.signalized_nodes(field))
 	mgr.place_all_near(0.0, 0.0)
 
 	mgr.accel_val[0] = -2.0

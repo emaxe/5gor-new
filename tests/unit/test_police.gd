@@ -40,7 +40,9 @@ func _mgr_with_cop(cop_x: float, cop_z: float) -> TrafficManager:
 	cat.items = [t]
 	cat.index()
 	var mgr := TrafficManager.new()
-	mgr.setup(cat, _field, CityGraphGrid.from_field(_field), _lights, SeededRng.new(1), 1)
+	var g := CityGraphGrid.from_field(_field)
+	mgr.setup(cat, g, NodeSignalController.build(g,
+		CityGraphGrid.signalized_nodes(_field)), SeededRng.new(1), 1)
 	mgr.type_ref[0] = t
 	mgr.render_x[0] = cop_x
 	mgr.render_z[0] = cop_z
