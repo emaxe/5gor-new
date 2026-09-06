@@ -23,9 +23,11 @@ var signals: NodeSignalController
 var signal_plan: NodeSignalPlan
 var bridges: BridgeGeometry
 var plan: CityPlan
-## Осевой контроллер сеточной эпохи. Живой светофор — `signals`; этот остался
-## единственным потребителем `PoliceManager` (проверка проезда на красный) и
-## умрёт вместе с её переводом на узловую адресацию — отдельная задача.
+## Осевой контроллер сеточной эпохи. Живой светофор — `signals`; в самой игре
+## потребителей у этого не осталось вовсе с этапа 9 (полиция перешла на
+## `signals`, пешеходы — раньше). Держится только ради полигонов
+## `tests/scenes/*`, которые всё ещё передают его в `PedLayer.setup()`;
+## умрёт вместе с их переводом на `signals` — отдельная задача.
 var lights: TrafficLightController
 
 var _multimesh_nodes: Array[MultiMeshInstance3D] = []

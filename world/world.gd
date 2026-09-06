@@ -178,7 +178,8 @@ func _spawn_orders() -> void:
 
 func _spawn_police() -> void:
 	police = PoliceManager.new()
-	police.setup(traffic.manager, city.field, city.lights, Db.balance.wanted, city.plan)
+	police.setup(traffic.manager, city.field, city.roads, city.signals,
+		Db.balance.wanted, city.plan)
 	if pedestrians != null and not pedestrians.manager.player_hit_ped.is_connected(_on_player_hit_ped):
 		pedestrians.manager.player_hit_ped.connect(_on_player_hit_ped)
 
@@ -342,9 +343,6 @@ func _process(delta: float) -> void:
 
 	t0 = Time.get_ticks_usec()
 	city.signals.advance(delta)
-	# Осевой контроллер ведёт свои часы только ради полиции (единственный его
-	# оставшийся потребитель, см. CityBuilder.lights).
-	city.lights.advance(delta)
 	# Линзы перекрашиваются не каждый кадр: это запись в сотни инстансов.
 	# Раньше хватало «смены фазы одного перекрёстка» — у осевой модели сдвиги
 	# фаз были кратны шагу сетки, и все перекрёстки переключались синхронно.
@@ -361,6 +359,9 @@ func _process(delta: float) -> void:
 
 	var p_x: float = player.global_position.x if in_car else player_ped.global_position.x
 	var p_z: float = player.global_position.z if in_car else player_ped.global_position.z
+	# Высота игрока: только по ней проверки полиции отличают деку путепровода
+	# от улицы под ней (`CityField.on_road(..., y_hint)`).
+	var p_y: float = player.global_position.y if in_car else player_ped.global_position.y
 	var p_h: float = player.motion.heading if in_car else player_ped.logic.heading
 	var p_sp: float = player.motion.speed if in_car else player_ped.logic.speed
 	var p_vx: float = player.motion.velocity.x if in_car else player_ped.velocity.x
@@ -392,7 +393,7 @@ func _process(delta: float) -> void:
 		gps.update(delta, Vector2(p_x, p_z), in_car, has_order, drop_pos, fuel_ratio)
 
 	if police != null:
-		police.update(delta, p_x, p_z, in_car, p_sp, p_h)
+		police.update(delta, p_x, p_y, p_z, in_car, p_sp, p_h)
 
 	if style != null and in_car and player != null and player.is_active:
 		_update_style(delta)
