@@ -204,3 +204,56 @@ func test_bounds_clamping() -> void:
 	var c3: Vector2 = PlayerPedLogic.clamp_bounds(120.0, -350.0) # вне коридора Машука
 	assert_float(c3.x).is_equal(120.0)
 	assert_float(c3.y).is_equal(-308.0)
+
+
+# --- Проекция вектора движения на камеру --------------------------------------
+
+func test_compute_move_vector_forward_and_back() -> void:
+	# При cam_yaw = 0 камера смотрит в +Z.
+	var fwd := PlayerPedLogic.compute_move_vector(1.0, 0.0, 0.0)
+	assert_float(fwd.x).is_equal_approx(0.0, 0.001)
+	assert_float(fwd.z).is_equal_approx(1.0, 0.001)
+
+	var back := PlayerPedLogic.compute_move_vector(-1.0, 0.0, 0.0)
+	assert_float(back.x).is_equal_approx(0.0, 0.001)
+	assert_float(back.z).is_equal_approx(-1.0, 0.001)
+
+
+func test_compute_move_vector_left_and_right() -> void:
+	# При cam_yaw = 0 камера сзади (смотрит в +Z). Экранное вправо — это -X (Heading.lateral(0)).
+	var right := PlayerPedLogic.compute_move_vector(0.0, 1.0, 0.0)
+	assert_float(right.x).is_equal_approx(-1.0, 0.001)
+	assert_float(right.z).is_equal_approx(0.0, 0.001)
+
+	# Экранное влево — это +X.
+	var left := PlayerPedLogic.compute_move_vector(0.0, -1.0, 0.0)
+	assert_float(left.x).is_equal_approx(1.0, 0.001)
+	assert_float(left.z).is_equal_approx(0.0, 0.001)
+
+
+func test_compute_move_vector_rotated_camera() -> void:
+	# При cam_yaw = PI/2 (камера смотрит на восток / +X):
+	# Вперёд — это +X, экранное вправо — это +Z.
+	var fwd_90 := PlayerPedLogic.compute_move_vector(1.0, 0.0, PI * 0.5)
+	assert_float(fwd_90.x).is_equal_approx(1.0, 0.001)
+	assert_float(fwd_90.z).is_equal_approx(0.0, 0.001)
+
+	var right_90 := PlayerPedLogic.compute_move_vector(0.0, 1.0, PI * 0.5)
+	assert_float(right_90.x).is_equal_approx(0.0, 0.001)
+	assert_float(right_90.z).is_equal_approx(1.0, 0.001)
+
+	# При cam_yaw = PI (камера смотрит на север / -Z):
+	# Вперёд — это -Z, экранное вправо — это +X.
+	var fwd_180 := PlayerPedLogic.compute_move_vector(1.0, 0.0, PI)
+	assert_float(fwd_180.x).is_equal_approx(0.0, 0.001)
+	assert_float(fwd_180.z).is_equal_approx(-1.0, 0.001)
+
+	var right_180 := PlayerPedLogic.compute_move_vector(0.0, 1.0, PI)
+	assert_float(right_180.x).is_equal_approx(1.0, 0.001)
+	assert_float(right_180.z).is_equal_approx(0.0, 0.001)
+
+
+func test_compute_move_vector_diagonal_clamping() -> void:
+	var diag := PlayerPedLogic.compute_move_vector(1.0, 1.0, 0.0)
+	assert_float(diag.length()).is_less_equal(1.0001)
+	assert_float(diag.length()).is_greater(0.999)

@@ -754,6 +754,116 @@ func _embankment(b: MeshBuilder, e: int) -> void:
 	var h := _graph.edge_width(e) * 0.5
 	for i in range(1, pts.size()):
 		_embankment_section(b, pts[i - 1], pts[i], h)
+	_embankment_cap(b, pts, h, false)
+	_embankment_cap(b, pts, h, true)
+
+
+func _embankment_cap(b: MeshBuilder, pts: PackedVector3Array, h: float,
+		is_end: bool) -> void:
+	if pts.size() < 2:
+		return
+	var idx := pts.size() - 1 if is_end else 0
+	var next_idx := pts.size() - 2 if is_end else 1
+	var p := pts[idx]
+	var seg_dir := (p - pts[next_idx]) if is_end else (pts[next_idx] - p)
+	seg_dir.y = 0.0
+	if seg_dir.length_squared() < 1e-6:
+		return
+	var dir := seg_dir.normalized()
+	var n := dir.cross(Vector3.UP)
+	var e_neg := p - n * h
+	var e_pos := p + n * h
+	var rise_neg := e_neg.y - _field.height_at(e_neg.x, e_neg.z)
+	var rise_pos := e_pos.y - _field.height_at(e_pos.x, e_pos.z)
+	if rise_neg < EMBANKMENT_MIN_RISE and rise_pos < EMBANKMENT_MIN_RISE:
+		return
+
+	var run_neg := maxf(rise_neg, 0.0) * EMBANKMENT_RUN
+	var run_pos := maxf(rise_pos, 0.0) * EMBANKMENT_RUN
+	var lift := Vector3(0.0, CityMesher.Y_ROAD, 0.0)
+	var top_neg := e_neg + (lift if rise_neg >= EMBANKMENT_MIN_RISE else Vector3.ZERO)
+	var top_pos := e_pos + (lift if rise_pos >= EMBANKMENT_MIN_RISE else Vector3.ZERO)
+	var g_neg := Vector3(top_neg.x, _field.height_at(top_neg.x, top_neg.z), top_neg.z)
+	var g_pos := Vector3(top_pos.x, _field.height_at(top_pos.x, top_pos.z), top_pos.z)
+
+	# 1. Центральный прямоугольник под полотном
+	var deg_n := top_neg.distance_squared_to(g_neg) < 1e-4
+	var deg_p := top_pos.distance_squared_to(g_pos) < 1e-4
+	if deg_n and deg_p:
+		pass
+	elif deg_n:
+		if is_end:
+			b.tri(top_neg, top_pos, g_pos, COLOR_EMBANKMENT)
+		else:
+			b.tri(top_neg, g_pos, top_pos, COLOR_EMBANKMENT)
+	elif deg_p:
+		if is_end:
+			b.tri(g_neg, top_neg, top_pos, COLOR_EMBANKMENT)
+		else:
+			b.tri(g_neg, top_pos, top_neg, COLOR_EMBANKMENT)
+	else:
+		if is_end:
+			b.quad(g_neg, top_neg, top_pos, g_pos, COLOR_EMBANKMENT)
+		else:
+			b.quad(g_pos, top_pos, top_neg, g_neg, COLOR_EMBANKMENT)
+
+	# 2. Полосы откоса по бокам
+	var prev_pos := top_pos
+	var prev_neg := top_neg
+	for band in EMBANKMENT_BANDS:
+		var t := float(band + 1) / float(EMBANKMENT_BANDS)
+		var col := COLOR_EMBANKMENT.lerp(CityMesher.COLOR_GRASS,
+			float(band) / float(EMBANKMENT_BANDS))
+
+		# Правая сторона (+n)
+		var cur_pos := _slope_point(e_pos, n, run_pos * t, rise_pos, t)
+		var g_prev_p := Vector3(prev_pos.x, _field.height_at(prev_pos.x, prev_pos.z), prev_pos.z)
+		var g_cur_p := Vector3(cur_pos.x, _field.height_at(cur_pos.x, cur_pos.z), cur_pos.z)
+		var deg_prev_p := prev_pos.distance_squared_to(g_prev_p) < 1e-4
+		var deg_cur_p := cur_pos.distance_squared_to(g_cur_p) < 1e-4
+		if deg_prev_p and deg_cur_p:
+			pass
+		elif deg_prev_p:
+			if is_end:
+				b.tri(prev_pos, cur_pos, g_cur_p, col)
+			else:
+				b.tri(prev_pos, g_cur_p, cur_pos, col)
+		elif deg_cur_p:
+			if is_end:
+				b.tri(g_prev_p, prev_pos, cur_pos, col)
+			else:
+				b.tri(g_prev_p, cur_pos, prev_pos, col)
+		else:
+			if is_end:
+				b.quad(g_prev_p, prev_pos, cur_pos, g_cur_p, col)
+			else:
+				b.quad(g_cur_p, cur_pos, prev_pos, g_prev_p, col)
+		prev_pos = cur_pos
+
+		# Левая сторона (-n)
+		var cur_neg := _slope_point(e_neg, -n, run_neg * t, rise_neg, t)
+		var g_prev_n := Vector3(prev_neg.x, _field.height_at(prev_neg.x, prev_neg.z), prev_neg.z)
+		var g_cur_n := Vector3(cur_neg.x, _field.height_at(cur_neg.x, cur_neg.z), cur_neg.z)
+		var deg_prev_n := prev_neg.distance_squared_to(g_prev_n) < 1e-4
+		var deg_cur_n := cur_neg.distance_squared_to(g_cur_n) < 1e-4
+		if deg_prev_n and deg_cur_n:
+			pass
+		elif deg_prev_n:
+			if is_end:
+				b.tri(g_cur_n, cur_neg, prev_neg, col)
+			else:
+				b.tri(g_cur_n, prev_neg, cur_neg, col)
+		elif deg_cur_n:
+			if is_end:
+				b.tri(cur_neg, prev_neg, g_prev_n, col)
+			else:
+				b.tri(cur_neg, g_prev_n, prev_neg, col)
+		else:
+			if is_end:
+				b.quad(g_cur_n, cur_neg, prev_neg, g_prev_n, col)
+			else:
+				b.quad(g_prev_n, prev_neg, cur_neg, g_cur_n, col)
+		prev_neg = cur_neg
 
 
 func _embankment_section(b: MeshBuilder, p0: Vector3, p1: Vector3,
@@ -774,22 +884,37 @@ func _embankment_section(b: MeshBuilder, p0: Vector3, p1: Vector3,
 		var run1 := maxf(rise1, 0.0) * EMBANKMENT_RUN
 		# Бровка совпадает с кромкой ленты полотна, а она лежит на Y_ROAD.
 		var lift := Vector3(0.0, CityMesher.Y_ROAD, 0.0)
-		var prev0 := e0 + lift
-		var prev1 := e1 + lift
+		var prev0 := e0 + (lift if rise0 >= EMBANKMENT_MIN_RISE else Vector3.ZERO)
+		var prev1 := e1 + (lift if rise1 >= EMBANKMENT_MIN_RISE else Vector3.ZERO)
 		for band in EMBANKMENT_BANDS:
+
 			var t := float(band + 1) / float(EMBANKMENT_BANDS)
 			var cur0 := _slope_point(e0, n * s, run0 * t, rise0, t)
 			var cur1 := _slope_point(e1, n * s, run1 * t, rise1, t)
 			var col := COLOR_EMBANKMENT.lerp(CityMesher.COLOR_GRASS,
 				float(band) / float(EMBANKMENT_BANDS))
-			# Полоса откоса лежит между двумя линиями вдоль рампы; наружная
-			# сторона зависит от знака s, отсюда два порядка обхода.
-			if s > 0.0:
-				b.quad(prev0, cur0, cur1, prev1, col)
+			var deg0 := cur0.distance_squared_to(prev0) < 1e-4
+			var deg1 := cur1.distance_squared_to(prev1) < 1e-4
+			if deg0 and deg1:
+				pass
+			elif deg0:
+				if s > 0.0:
+					b.tri(prev0, cur1, prev1, col)
+				else:
+					b.tri(prev0, prev1, cur1, col)
+			elif deg1:
+				if s > 0.0:
+					b.tri(prev0, cur0, cur1, col)
+				else:
+					b.tri(cur0, prev0, cur1, col)
 			else:
-				b.quad(cur0, prev0, prev1, cur1, col)
+				if s > 0.0:
+					b.quad(prev0, cur0, cur1, prev1, col)
+				else:
+					b.quad(cur0, prev0, prev1, cur1, col)
 			prev0 = cur0
 			prev1 = cur1
+
 
 
 ## Точка откоса на доле `t` от бровки к подошве. Высота идёт по smoothstep от

@@ -103,6 +103,9 @@ func _collect_plots(landmark_node: Dictionary[StringName, int]) -> void:
 	for id in CityBlocks.sorted_ids(landmark_node):
 		var p := graph.node_position(landmark_node[id])
 		_plots.append(Vector3(p.x, p.z, LANDMARK_PLOT))
+		var off: Vector2 = LandmarkLayer.SITE_OFFSETS.get(id, Vector2.ZERO)
+		if not off.is_zero_approx():
+			_plots.append(Vector3(p.x + off.x, p.z + off.y, LANDMARK_PLOT))
 
 
 ## Коридор вдоль рампы и пролёта — цепочка кругов (центр xy, радиус z),

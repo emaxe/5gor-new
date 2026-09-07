@@ -469,6 +469,52 @@ func test_embankment_bridges_the_gap_from_road_to_ground() -> void:
 		% [floating, worst]).is_equal(0)
 
 
+func test_embankment_normals_point_outward_and_up() -> void:
+	var total_embankment_tris := 0
+	var inverted_tris := 0
+	for i in range(0, _index.size(), 3):
+		if not _is_embankment(_colors[_index[i]]):
+			continue
+		total_embankment_tris += 1
+		var n0 := _normals[_index[i]]
+		var n1 := _normals[_index[i + 1]]
+		var n2 := _normals[_index[i + 2]]
+		var fn := (n0 + n1 + n2) / 3.0
+		# Боковой откос насыпи смотрит вверх-наружу (fn.y > 0),
+		# а торцевая заглушка вертикальна (fn.y == 0).
+		# Вывернутая наизнанку грань смотрела бы вниз (fn.y < -0.01).
+		if fn.y < -0.01:
+			inverted_tris += 1
+	assert_int(total_embankment_tris).is_greater(0)
+	assert_int(inverted_tris)\
+		.override_failure_message("%d из %d граней откоса смотрят вниз (вывернуты наизнанку)" % [inverted_tris, total_embankment_tris])\
+		.is_equal(0)
+
+
+func test_embankment_has_end_caps_at_elevated_ends() -> void:
+	# Торцевые заглушки насыпи должны иметь вертикальную плоскость (fn.y близко к 0)
+	# и закрывать сквозную пустоту под полотном на стыке с мостом.
+	var cap_tris := 0
+	for i in range(0, _index.size(), 3):
+		if not _is_embankment(_colors[_index[i]]):
+			continue
+		var n0 := _normals[_index[i]]
+		var n1 := _normals[_index[i + 1]]
+		var n2 := _normals[_index[i + 2]]
+		var fn := (n0 + n1 + n2) / 3.0
+		if absf(fn.y) < 0.05:
+			cap_tris += 1
+	assert_int(cap_tris)\
+		.override_failure_message("у насыпи нет вертикальных торцевых заглушек")\
+		.is_greater(0)
+
+
+
+
+
+
+
+
 # --- Разметка ---------------------------------------------------------------
 
 func test_markings_come_from_the_crossing_source_not_from_a_grid() -> void:

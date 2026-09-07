@@ -135,6 +135,43 @@ func test_cylinder_side_normals_are_horizontal() -> void:
 	assert_int(horizontal).is_greater(0)
 
 
+func test_cylinder_normals_point_outward() -> void:
+	var b := MeshBuilder.new()
+	b.cylinder(Vector3.ZERO, 1.0, 1.0, 2.0, Color.WHITE, 8)
+	var mesh := b.commit()
+	var arrays := mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	for i in verts.size():
+		var v_horizontal := Vector3(verts[i].x, 0.0, verts[i].z).normalized()
+		if v_horizontal.length() > 0.5 and absf(normals[i].y) < 0.1:
+			assert_float(normals[i].dot(v_horizontal))\
+				.override_failure_message("нормаль цилиндра в %s смотрит внутрь: %s" % [verts[i], normals[i]])\
+				.is_greater(0.0)
+
+
+func test_cone_normals_point_outward() -> void:
+	var b := MeshBuilder.new()
+	b.cone(Vector3.ZERO, 1.0, 2.0, Color.WHITE, 8)
+	var mesh := b.commit()
+	var arrays := mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	for i in verts.size():
+		var v := verts[i]
+		if v.y > -0.99: # боковые грани (не нижняя крышка)
+			var v_horiz := Vector3(v.x, 0.0, v.z).normalized()
+			if v_horiz.length() > 0.3:
+				assert_float(normals[i].dot(v_horiz))\
+					.override_failure_message("боковая нормаль конуса в %s смотрит внутрь: %s" % [v, normals[i]])\
+					.is_greater(0.0)
+				assert_float(normals[i].y)\
+					.override_failure_message("боковая нормаль конуса в %s смотрит вниз: %s" % [v, normals[i]])\
+					.is_greater(0.0)
+
+
+
+
 func test_ribbon_follows_points() -> void:
 	var b := MeshBuilder.new()
 	var pts := PackedVector3Array([
@@ -222,6 +259,52 @@ func test_prism_normals_point_outward() -> void:
 	for i in verts.size():
 		# Нормали смотрят наружу от центра призмы (с небольшим допуском)
 		assert_float(normals[i].dot(verts[i])).is_greater_equal(-EPS)
+
+
+func test_sphere_normals_point_outward() -> void:
+	var b := MeshBuilder.new()
+	b.sphere(Vector3.ZERO, 1.0, Color.WHITE, 5, 8)
+	var mesh := b.commit()
+	assert_object(mesh).is_not_null()
+	var arrays := mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	assert_int(verts.size()).is_equal(normals.size())
+	for i in verts.size():
+		assert_float(normals[i].dot(verts[i].normalized()))\
+			.override_failure_message("нормаль сферы в %s смотрит внутрь: %s" % [verts[i], normals[i]])\
+			.is_greater(0.0)
+
+
+func test_tree_meshes_normals() -> void:
+	for mesh_name in ["deciduous_tree", "pine_tree"]:
+		var mesh: ArrayMesh
+		if mesh_name == "deciduous_tree":
+			mesh = PropMeshes.deciduous_tree()
+		else:
+			mesh = PropMeshes.pine_tree()
+		var arrays := mesh.surface_get_arrays(0)
+		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+		var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+		var zero_normals := 0
+		var nan_normals := 0
+		for i in normals.size():
+			var n := normals[i]
+			if n.is_zero_approx():
+				zero_normals += 1
+			if is_nan(n.x) or is_nan(n.y) or is_nan(n.z):
+				nan_normals += 1
+		print("%s: verts=%d, indices=%d, zero_normals=%d, nan_normals=%d"
+			% [mesh_name, verts.size(), indices.size(), zero_normals, nan_normals])
+		assert_int(zero_normals)\
+			.override_failure_message("%s имеет нулевые нормали (%d шт)" % [mesh_name, zero_normals])\
+			.is_equal(0)
+		assert_int(nan_normals)\
+			.override_failure_message("%s имеет NaN нормали (%d шт)" % [mesh_name, nan_normals])\
+			.is_equal(0)
+
+
 
 
 # --- Модельный трансформ ----------------------------------------------------

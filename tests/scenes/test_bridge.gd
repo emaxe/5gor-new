@@ -87,6 +87,30 @@ func _embankment(b: MeshBuilder, pts: PackedVector3Array, width: float) -> void:
 			else:
 				b.quad(c0, a0, a, c, COLOR_EMBANKMENT)
 
+	# Заглушка торца насыпи со стороны моста
+	if pts.size() >= 2:
+		for is_end in [false, true]:
+			var idx := pts.size() - 1 if is_end else 0
+			var next_idx := pts.size() - 2 if is_end else 1
+			var p := pts[idx]
+			var seg_dir := (p - pts[next_idx]) if is_end else (pts[next_idx] - p)
+			seg_dir.y = 0.0
+			if seg_dir.length_squared() < 1e-6:
+				continue
+			var rise := p.y - field.height_at(p.x, p.z)
+			if rise <= 0.5:
+				continue
+			var off := seg_dir.normalized().cross(Vector3.UP) * width * 0.5
+			var r := p + off
+			var l := p - off
+			var r0 := Vector3(r.x, field.height_at(r.x, r.z), r.z)
+			var l0 := Vector3(l.x, field.height_at(l.x, l.z), l.z)
+			if is_end:
+				b.quad(l0, l, r, r0, COLOR_EMBANKMENT)
+			else:
+				b.quad(r0, r, l, l0, COLOR_EMBANKMENT)
+
+
 
 ## Две машины для масштаба: одна под декой на улице внизу, вторая на деке.
 func _cars(b: MeshBuilder) -> void:

@@ -278,6 +278,25 @@ func test_piers_reach_from_the_ground_to_the_deck() -> void:
 				PyatigorskTopology.OVERPASS_DECK_Y - BridgeGeometry.DECK_THICKNESS, EPS)
 
 
+func test_abutments_support_span_ends() -> void:
+	assert_int(_bridge.abutment_count())\
+		.override_failure_message("у пролёта нет устоев")\
+		.is_equal(2)
+	for i in _bridge.abutment_count():
+		var c := _bridge.abutment_center[i]
+		var size := _bridge.abutment_size[i]
+		var bot := c.y - size.y * 0.5
+		var top := c.y + size.y * 0.5
+		var ground := _field.height_at(c.x, c.z)
+		var deck_bot := PyatigorskTopology.OVERPASS_DECK_Y - BridgeGeometry.DECK_THICKNESS
+		assert_float(bot)\
+			.override_failure_message("подошва устоя %d на %.2f м, земля на %.2f м" % [i, bot, ground])\
+			.is_equal_approx(ground, EPS)
+		assert_float(top)\
+			.override_failure_message("верх устоя %d на %.2f м, низ плиты на %.2f м" % [i, top, deck_bot])\
+			.is_equal_approx(deck_bot, EPS)
+
+
 func test_bridge_mesh_has_deck_piers_and_rails() -> void:
 	var b := MeshBuilder.new()
 	_bridge.build_mesh(b)

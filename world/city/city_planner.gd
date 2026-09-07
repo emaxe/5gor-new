@@ -362,14 +362,17 @@ func _plan_trees(landmark_node: Dictionary[StringName, int]) -> void:
 		# Участок самой достопримечательности остаётся свободным: её сцена
 		# строит там свою геометрию (скамьи Цветника, ряды рынка).
 		var plot := Vector2(INF, INF)
+		var site_plot := Vector2(INF, INF)
 		if not special.is_empty() and landmark_node.has(special):
 			var lp := roads.node_position(landmark_node[special])
 			plot = Vector2(lp.x, lp.z)
+			var off: Vector2 = LandmarkLayer.SITE_OFFSETS.get(special, Vector2.ZERO)
+			site_plot = plot + off
 		for k in n:
 			var p := _point_in_block(b)
 			if is_inf(p.x):
 				continue
-			if p.distance_to(plot) < LANDMARK_PLOT:
+			if p.distance_to(plot) < LANDMARK_PLOT or p.distance_to(site_plot) < LANDMARK_PLOT:
 				continue
 			_try_add_tree(p.x, p.y, _rng.chance(0.75), not special.is_empty())
 

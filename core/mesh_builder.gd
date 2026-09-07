@@ -194,7 +194,12 @@ func cylinder(center: Vector3, radius_top: float, radius_bottom: float,
 		var t := center + basis_rot * Vector3(ca * radius_top, hh, sa * radius_top)
 		var b := center + basis_rot * Vector3(ca * radius_bottom, -hh, sa * radius_bottom)
 		if i > 0:
-			quad(prev_b, b, t, prev_t, color)
+			if radius_top <= 0.0001:
+				tri(prev_b, t, b, color)
+			elif radius_bottom <= 0.0001:
+				tri(prev_b, prev_t, t, color)
+			else:
+				quad(prev_b, prev_t, t, b, color)
 			if capped:
 				if radius_top > 0.0001:
 					tri(center + basis_rot * Vector3(0.0, hh, 0.0), prev_t, t, color)
@@ -202,6 +207,7 @@ func cylinder(center: Vector3, radius_top: float, radius_bottom: float,
 					tri(center + basis_rot * Vector3(0.0, -hh, 0.0), b, prev_b, color)
 		prev_t = t
 		prev_b = b
+
 
 
 func cone(center: Vector3, radius: float, height: float, color: Color,

@@ -63,6 +63,10 @@ var deck_yaw := PackedFloat32Array()
 var pier_base := PackedVector3Array()
 var pier_height := PackedFloat32Array()
 var pier_yaw := PackedFloat32Array()
+## Устои моста на стыке пролёта с насыпью: центр, габарит (ширина, высота, глубина) и рыскание.
+var abutment_center := PackedVector3Array()
+var abutment_size := PackedVector3Array()
+var abutment_yaw := PackedFloat32Array()
 ## Отброшенные позиции опор — те, что пришлись на полотно внизу. Само число
 ## проверяется тестом: ноль пропусков означал бы, что мост стоит не над
 ## улицей и разводить по высоте нечего.
@@ -83,6 +87,7 @@ func _init(graph: CityGraph, field: CityField) -> void:
 		_span_width.append(graph.edge_width(e))
 		_collect_deck(pts, graph.edge_width(e))
 		_collect_piers(graph, field, pts)
+		_collect_abutments(field, pts, graph.edge_width(e))
 
 
 func deck_count() -> int:
@@ -93,7 +98,11 @@ func pier_count() -> int:
 	return pier_height.size()
 
 
-## Меш пролёта: плита, полотно, перила, опоры с ригелями.
+func abutment_count() -> int:
+	return abutment_center.size()
+
+
+## Меш пролёта: плита, полотно, перила, опоры с ригелями, устои.
 func build_mesh(b: MeshBuilder) -> void:
 	for i in deck_count():
 		var rot := Basis.from_euler(Vector3(0.0, deck_yaw[i], 0.0))
@@ -109,6 +118,9 @@ func build_mesh(b: MeshBuilder) -> void:
 			Vector3(PIER_RADIUS * 4.0, PIER_CAP_HEIGHT,
 				PIER_RADIUS * 2.0 + PIER_CAP_OVERHANG),
 			COLOR_CONCRETE, cap_rot)
+	for i in abutment_count():
+		var rot := Basis.from_euler(Vector3(0.0, abutment_yaw[i], 0.0))
+		b.box(abutment_center[i], abutment_size[i], COLOR_CONCRETE, rot)
 	_deck_wear(b)
 
 
@@ -221,3 +233,29 @@ func _segment_at(lengths: PackedFloat32Array, s: float) -> int:
 		if s <= lengths[k]:
 			return k - 1
 	return lengths.size() - 2
+
+
+## Устои моста на стыке пролёта с насыпью: бетонная подпорная стенка под
+## концами деки от уровня земли до низа плиты.
+func _collect_abutments(field: CityField, pts: PackedVector3Array, width: float) -> void:
+	if pts.size() < 2:
+		return
+	var ends := [0, pts.size() - 1]
+	for idx: int in ends:
+		var p := pts[idx]
+		var dir := (pts[1] - pts[0]) if idx == 0 else (pts[pts.size() - 1] - pts[pts.size() - 2])
+		dir.y = 0.0
+		if dir.length_squared() < 1e-6:
+			continue
+		var ground := field.height_at(p.x, p.z)
+		var deck_bottom := p.y - DECK_THICKNESS
+		var h := deck_bottom - ground
+		if h <= 0.5:
+			continue
+		var center := Vector3(p.x, ground + h * 0.5, p.z)
+		var size := Vector3(width + 0.6, h, 1.2)
+		var yaw := atan2(dir.x, dir.z)
+		abutment_center.append(center)
+		abutment_size.append(size)
+		abutment_yaw.append(yaw)
+

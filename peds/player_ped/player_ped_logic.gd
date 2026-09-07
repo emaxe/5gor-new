@@ -141,10 +141,11 @@ func advance_timers(delta: float) -> void:
 
 
 ## Проецирует ввод осей (forward, right) относительно курсового угла камеры.
+## Экранное «вправо» = -X при взгляде в +Z (камера за спиной), совпадает с Heading.lateral().
 static func compute_move_vector(input_forward: float, input_right: float,
 		cam_yaw: float) -> Vector3:
-	var fwd_vec := Vector3(sin(cam_yaw), 0.0, cos(cam_yaw))
-	var right_vec := Vector3(cos(cam_yaw), 0.0, -sin(cam_yaw))
+	var fwd_vec := Heading.forward(cam_yaw)
+	var right_vec := Heading.lateral(cam_yaw)
 	var move := right_vec * input_right + fwd_vec * input_forward
 	var len := move.length()
 	if len > 1.0:

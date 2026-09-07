@@ -1,195 +1,278 @@
 extends Node3D
-## Ж/д вокзал: здание с часовой башней, крытый перрон, три пути и стоящий
-## состав (тепловоз + 2 вагона). Порт _station()/_stationVehicle()
-## (citygen.js:1734-2021), упрощённый до low-poly силуэта.
+## Железнодорожный вокзал Пятигорска — исторический вокзал с башней с часами.
 ##
-## Оригинал рисует часы/вывески/полосатый козырёк канвас-текстурами и ставит
-## под навесом десятки шпал вдоль 90 м путей — здесь они заменены плоскими
-## цветными формами и прорежены: силуэт и узнаваемость сохранены, счёт
-## примитивов на порядок меньше.
+## Включает:
+## - Монументальный фасад вокзала с арочными окнами, рустовкой и карнизами;
+## - Часовую башню с 4 круглыми циферблатами, аркадой звонницы и шпилем;
+## - Пассажирский перрон с навесом на металлических кронштейнах;
+## - Два железнодорожных пути с гравийной насыпью, шпалами и рельсами;
+## - Стоящий пассажирский состав (зелёный локомотив и вагоны РЖД/исторические).
 
-const C_WALL := Color("#c8b898")
-const C_TRIM := Color("#e8dcc4")
-const C_BASE := Color("#9a8c70")
-const C_ROOF := Color("#6a4a2a")
-const C_DOOR := Color("#4a3423")
-const C_GLASS := Color("#2a3442")
-const C_MET := Color("#6a6a66")
-const C_PAVE := Color("#b0b0a8")
-const C_EDGE := Color("#e8c840")
-const C_BALLAST := Color("#3a3733")
-const C_RAIL := Color("#a8a8b0")
-const C_TOWER := Color("#d8c8a8")
-const C_BELFRY := Color("#1e2228")
-const C_SPIRE_POLE := Color("#7a6a4a")
-const C_SPIRE_BALL := Color("#d8b83a")
-const C_CLOCK_FACE := Color("#f4f1e6")
-const C_CLOCK_HAND := Color("#1a1a18")
-const C_SIGNAL_LENS := Color("#3a1414")
+const PALETTE_MAT := preload("res://fx/materials/mat_palette.tres")
 
-## TRAIN_PAL (citygen.js:19-28).
-const P_LOCO := Color("#2e7a46")
-const P_CAR := Color("#1b5230")
-const P_BAND := Color("#e6d9a8")
-const P_UNDER := Color("#26282c")
-const P_DARK := Color("#17181b")
-const P_WHEEL := Color("#141416")
-const P_ROOF := Color("#40464e")
-const P_GLASS := Color("#223040")
+# Палитра здания вокзала (исторический песчано-охристый стиль)
+const WALL_STONE := Color("#c8b898")
+const WALL_TRIM := Color("#ece4d2")
+const BASE_STONE := Color("#9a8c72")
+const ROOF_COPPER := Color("#557a68")
+const ROOF_TILE := Color("#6c4a30")
+const DOOR_DARK := Color("#423223")
+const GLASS_WINDOW := Color("#283440")
+const CLOCK_FACE := Color("#faf7ee")
+const CLOCK_HAND := Color("#1a1a18")
+const GOLD_SPIRE := Color("#d8aa38")
+
+# Платформа и пути
+const PAVE_PLAT := Color("#aba69a")
+const TACTILE_EDGE := Color("#e8be28")
+const BALLAST := Color("#3e3a35")
+const TIES_WOOD := Color("#483a2c")
+const RAILS_STEEL := Color("#9fa0a6")
+const CANOPY_METAL := Color("#3c5e48")
+
+# Поезд
+const TRAIN_GREEN := Color("#205e35")
+const TRAIN_ROOF := Color("#42474e")
+const TRAIN_STRIPE := Color("#ded39e")
+const TRAIN_DARK := Color("#1a1c1e")
+const TRAIN_LAMP := Color("#fff4cc")
 
 
 func _ready() -> void:
 	var b := MeshBuilder.new()
-	_building(b)
-	_platform_and_tracks(b)
-	_train(b, -22.0, 24.0, &"loco")
-	_train(b, -3.0, 24.0, &"car")
-	_train(b, 16.0, 24.0, &"car")
+
+	_build_station_building(b)
+	_build_clock_tower(b)
+	_build_platform_and_canopy(b)
+	_build_tracks_and_train(b)
+
 	var mi := MeshInstance3D.new()
 	mi.mesh = b.commit()
-	mi.material_override = preload("res://fx/materials/mat_palette.tres")
+	mi.material_override = PALETTE_MAT
 	add_child(mi)
-	_collision()
+
+	_build_collision()
 
 
-# --- Здание с часовой башней -------------------------------------------------
+# --- Здание вокзала ---------------------------------------------------------
 
-func _building(b: MeshBuilder) -> void:
-	# Цоколь, стены, карниз, аттик (citygen.js:1849-1853).
-	b.box(Vector3(0.0, 0.75, 0.0), Vector3(56.6, 1.6, 18.6), C_BASE)
-	b.box(Vector3(0.0, 7.15, 0.0), Vector3(56.0, 14.0, 18.0), C_WALL)
-	b.box(Vector3(0.0, 13.75, 0.0), Vector3(58.0, 0.8, 20.0), C_TRIM)
-	b.box(Vector3(0.0, 14.75, 0.0), Vector3(56.8, 1.2, 18.8), C_WALL)
+func _build_station_building(b: MeshBuilder) -> void:
+	# Фасад обращён на север (-Z) к Привокзальной площади
+	var bz := 0.0
 
-	# Часовая башня: ствол, пилястры по углам, пояс звонницы, шпиль.
-	b.box(Vector3(0.0, 13.15, 0.0), Vector3(9.0, 26.0, 9.0), C_TOWER)
-	for sx: float in [-4.2, 4.2]:
-		for sz: float in [-4.2, 4.2]:
-			b.box(Vector3(sx, 13.15, sz), Vector3(1.2, 26.0, 1.2), C_TRIM)
-	b.box(Vector3(0.0, 25.8, 0.0), Vector3(10.8, 0.65, 10.8), C_TRIM)
+	# Цоколь здания (высота 1.2 м, ширина 46 м, глубина 14 м)
+	b.box(Vector3(0.0, 0.6, bz), Vector3(46.8, 1.2, 14.8), BASE_STONE)
+
+	# Центральный двухэтажный корпус (ширина 18 м, высота 8 м)
+	b.box(Vector3(0.0, 5.2, bz), Vector3(18.0, 8.0, 14.0), WALL_STONE)
+	b.box(Vector3(0.0, 9.4, bz), Vector3(18.6, 0.6, 14.6), WALL_TRIM)
+
+	# Скатная вальмовая крыша центрального корпуса
+	b.box(Vector3(0.0, 10.4, bz), Vector3(17.6, 1.6, 13.6), ROOF_TILE)
+
+	# Боковые крылья (ширина 14 м, высота 6.5 м каждое)
 	for s: float in [-1.0, 1.0]:
-		b.box(Vector3(0.0, 23.4, s * 4.55), Vector3(2.4, 3.4, 0.3), C_BELFRY)
-		b.box(Vector3(s * 4.55, 23.4, 0.0), Vector3(0.3, 3.4, 2.4), C_BELFRY)
-	b.cylinder(Vector3(0.0, 33.5, 0.0), 0.12, 0.12, 2.8, C_SPIRE_POLE, 6)
-	b.sphere(Vector3(0.0, 35.2, 0.0), 0.5, C_SPIRE_BALL, 3, 6)
-	b.cone(Vector3(0.0, 29.15, 0.0), 6.5, 6.0, C_ROOF, 4, Basis(Vector3.UP, PI * 0.25))
+		var wx: float = s * 15.0
+		b.box(Vector3(wx, 4.45, bz), Vector3(13.6, 6.5, 12.8), WALL_STONE)
+		b.box(Vector3(wx, 7.9, bz), Vector3(14.0, 0.5, 13.2), WALL_TRIM)
+		b.box(Vector3(wx, 8.8, bz), Vector3(13.4, 1.4, 12.4), ROOF_TILE)
 
-	# Часы на двух видимых гранях башни (было 4 — циферблат в текстуре,
-	# здесь диск + две стрелки).
-	_clock(b, Vector3(0.0, 19.0, 4.85), Basis(Vector3.RIGHT, PI * 0.5))
-	_clock(b, Vector3(4.85, 19.0, 0.0), Basis(Vector3.FORWARD, PI * 0.5))
+	# Главный входной портал с козырьком на северном фасаде (-Z)
+	b.box(Vector3(0.0, 3.2, bz - 7.1), Vector3(4.8, 5.0, 0.3), WALL_TRIM)
+	b.box(Vector3(0.0, 2.6, bz - 7.15), Vector3(3.4, 4.0, 0.15), DOOR_DARK)
+	b.box(Vector3(0.0, 5.8, bz - 7.6), Vector3(6.0, 0.3, 2.0), CANOPY_METAL)
+	b.box(Vector3(0.0, 7.2, bz - 7.05), Vector3(8.0, 0.9, 0.15), BASE_STONE)
 
-	# Окна: прорежены вдвое относительно оригинала (8 -> 3 на длинную грань).
-	for dx: float in [-18.0, 0.0, 18.0]:
-		for wz: float in [9.0, -9.0]:
-			b.box(Vector3(dx, 5.0, wz), Vector3(2.4, 4.0, 0.1), C_GLASS)
-			b.box(Vector3(dx, 10.4, wz), Vector3(2.0, 2.4, 0.1), C_GLASS)
-	for wx: float in [-28.0, 28.0]:
-		for dz: float in [-4.6, 4.6]:
-			b.box(Vector3(wx, 5.0, dz), Vector3(0.1, 4.0, 2.4), C_GLASS)
+	# Арочные окна центрального корпуса (1 и 2 этажи)
+	for fx: float in [-5.8, -2.4, 2.4, 5.8]:
+		# 1-й этаж
+		b.box(Vector3(fx, 3.0, bz - 7.05), Vector3(1.6, 2.8, 0.1), GLASS_WINDOW)
+		b.box(Vector3(fx, 4.6, bz - 7.05), Vector3(1.8, 0.35, 0.15), WALL_TRIM)
+		# 2-й этаж
+		b.box(Vector3(fx, 6.8, bz - 7.05), Vector3(1.4, 2.4, 0.1), GLASS_WINDOW)
+		b.box(Vector3(fx, 8.2, bz - 7.05), Vector3(1.6, 0.35, 0.15), WALL_TRIM)
 
-	# Входной портал со стороны перрона.
-	b.box(Vector3(0.0, 3.65, 9.0), Vector3(11.0, 7.3, 0.6), C_TRIM)
-	for dx: float in [-1.05, 1.05]:
-		b.box(Vector3(dx, 2.35, 9.25), Vector3(1.9, 4.4, 0.5), C_DOOR)
-	b.box(Vector3(0.0, 5.5, 9.25), Vector3(6.4, 1.4, 0.5), C_GLASS)
-	for dx: float in [-4.7, 4.7]:
-		b.cylinder(Vector3(dx, 3.45, 9.4), 0.45, 0.5, 6.9, C_TRIM, 8)
-
-
-func _clock(b: MeshBuilder, pos: Vector3, face_basis: Basis) -> void:
-	b.cylinder(pos, 2.6, 2.6, 0.3, C_CLOCK_FACE, 10, face_basis)
-	b.box(pos + Vector3(0.0, 0.9, 0.05), Vector3(0.14, 1.6, 0.1), C_CLOCK_HAND)
-	b.box(pos + Vector3(0.7, 0.2, 0.05), Vector3(1.4, 0.14, 0.1), C_CLOCK_HAND)
-
-
-# --- Перрон, навес, пути ------------------------------------------------------
-
-func _platform_and_tracks(b: MeshBuilder) -> void:
-	const PLAT_Z := 19.0
-	const PLAT_TOP := 1.0
-	b.box(Vector3(0.0, 0.475, PLAT_Z), Vector3(46.0, 1.05, 7.0), C_PAVE)
-	b.box(Vector3(0.0, PLAT_TOP + 0.01, PLAT_Z), Vector3(45.0, 0.05, 6.6), Color("#bdb9ad"))
-	b.box(Vector3(0.0, PLAT_TOP - 0.04, 22.1), Vector3(46.0, 0.16, 0.9), Color("#a8a49c"))
-	b.box(Vector3(0.0, PLAT_TOP + 0.04, 22.1), Vector3(46.0, 0.06, 0.45), C_EDGE)
-
-	# Навес: 4 колонны (было 6) + кровля с фризом.
-	for k in 4:
-		var x := -16.0 + k * 10.6
-		b.cylinder(Vector3(x, PLAT_TOP + 2.15, PLAT_Z), 0.2, 0.26, 4.3, C_MET, 6)
-	b.box(Vector3(0.0, 5.475, PLAT_Z), Vector3(40.0, 0.35, 7.2), C_MET)
-	for sz: float in [-3.6, 3.6]:
-		b.box(Vector3(0.0, 5.2, PLAT_Z + sz), Vector3(40.0, 0.5, 0.2), C_TRIM)
-
-	# Три пути: балласт + рельсовые нити (шпалы опущены — прочитываются
-	# и без них, а их в оригинале ~35 на путь).
-	for tz: float in [24.0, 28.5, 33.0]:
-		b.box(Vector3(0.0, 0.10, tz), Vector3(90.0, 0.30, 3.0), C_BALLAST)
-		for off: float in [-0.6, 0.6]:
-			b.box(Vector3(0.0, 0.40, tz + off), Vector3(90.0, 0.10, 0.12), C_RAIL)
-
-	# Выходной светофор у первого пути.
-	b.cylinder(Vector3(24.5, 2.5, 23.0), 0.16, 0.2, 5.0, C_MET, 6)
-	b.box(Vector3(24.5, 5.6, 23.0), Vector3(0.55, 1.6, 0.45), C_BELFRY)
-	b.box(Vector3(24.5, 5.15, 22.78), Vector3(0.34, 0.34, 0.12), C_SIGNAL_LENS)
-
-
-# --- Состав: тепловоз / вагон -------------------------------------------------
-
-## Один экипаж состава. cx — центр по X, tz — ось пути, kind: 'loco'|'car'.
-## Сильно упрощено относительно _stationVehicle() (там ~30 боксов на экипаж
-## с жалюзи, поручнями и тамбурными переходами) — сохранены только формы,
-## задающие силуэт: рама на тележках, кузов, полоса ливреи, крыша, окна/маска.
-func _train(b: MeshBuilder, cx: float, tz: float, kind: StringName) -> void:
-	const LEN := 14.0
-	const Y0 := 0.45
-	var half := LEN * 0.5
-
+	# Окна боковых крыльев
 	for s: float in [-1.0, 1.0]:
-		var bogie := s * (half - 2.5)
-		b.box(Vector3(cx + bogie, Y0 + 0.9, tz), Vector3(4.9, 0.6, 2.15), P_UNDER)
-		for wz: float in [-0.6, 0.6]:
-			b.cylinder(Vector3(cx + bogie, Y0 + 0.5, tz + wz), 0.5, 0.5, 0.22, P_WHEEL, 8,
-				Basis(Vector3.RIGHT, PI * 0.5))
-	b.box(Vector3(cx, Y0 + 1.32, tz), Vector3(LEN - 0.4, 0.45, 2.6), P_UNDER)
+		for wx_rel: float in [-4.0, 0.0, 4.0]:
+			var wx: float = s * 15.0 + wx_rel
+			b.box(Vector3(wx, 3.5, bz - 6.45), Vector3(1.6, 3.2, 0.1), GLASS_WINDOW)
+			b.box(Vector3(wx, 5.3, bz - 6.45), Vector3(1.8, 0.35, 0.15), WALL_TRIM)
+
+
+# --- Часовая башня вокзала --------------------------------------------------
+
+func _build_clock_tower(b: MeshBuilder) -> void:
+	# Башня возвышается над центральным входом (по оси X=0, сдвинута к фасаду)
+	var tz := -4.2
+	var ty := 9.7
+
+	# Ствол башни (квадратный)
+	b.box(Vector3(0.0, ty + 2.5, tz), Vector3(4.8, 5.0, 4.8), WALL_STONE)
+	b.box(Vector3(0.0, ty + 5.2, tz), Vector3(5.2, 0.4, 5.2), WALL_TRIM)
+
+	# Ярус с часами
+	b.box(Vector3(0.0, ty + 7.4, tz), Vector3(4.4, 4.0, 4.4), WALL_STONE)
+	b.box(Vector3(0.0, ty + 9.6, tz), Vector3(4.8, 0.4, 4.8), WALL_TRIM)
+
+	# 4 круглых циферблата часов
+	# Северный (главный, к площади)
+	_add_clock_face(b, Vector3(0.0, ty + 7.4, tz - 2.25), Vector3.FORWARD)
+	# Южный (к перрону)
+	_add_clock_face(b, Vector3(0.0, ty + 7.4, tz + 2.25), Vector3.BACK)
+	# Западный и восточный
+	_add_clock_face(b, Vector3(-2.25, ty + 7.4, tz), Vector3.LEFT)
+	_add_clock_face(b, Vector3(2.25, ty + 7.4, tz), Vector3.RIGHT)
+
+	# Арочная звонница-бельведер над часами
+	for sx: float in [-1.6, 1.6]:
+		for sz: float in [-1.6, 1.6]:
+			b.box(Vector3(sx, ty + 11.2, tz + sz), Vector3(0.6, 2.8, 0.6), WALL_TRIM)
+	b.box(Vector3(0.0, ty + 12.8, tz), Vector3(4.6, 0.4, 4.6), WALL_TRIM)
+
+	# Медный пирамидальный шатёр со шпилем
+	b.cone(Vector3(0.0, ty + 15.2, tz), 2.8, 4.6, ROOF_COPPER, 4,
+		Basis(Vector3.UP, PI * 0.25))
+	# Золотой шпиль и флюгер
+	b.cylinder(Vector3(0.0, ty + 18.2, tz), 0.08, 0.18, 2.4, GOLD_SPIRE, 6)
+	b.sphere(Vector3(0.0, ty + 19.6, tz), 0.32, GOLD_SPIRE, 4, 6)
+
+
+func _add_clock_face(b: MeshBuilder, pos: Vector3, normal: Vector3) -> void:
+	var basis := Basis.IDENTITY
+	if normal == Vector3.FORWARD:
+		basis = Basis(Vector3.RIGHT, PI * 0.5)
+	elif normal == Vector3.BACK:
+		basis = Basis(Vector3.RIGHT, -PI * 0.5)
+	elif normal == Vector3.LEFT:
+		basis = Basis(Vector3.FORWARD, -PI * 0.5)
+	elif normal == Vector3.RIGHT:
+		basis = Basis(Vector3.FORWARD, PI * 0.5)
+
+	# Ободок и белый диск циферблата
+	b.cylinder(pos, 1.3, 1.3, 0.15, WALL_TRIM, 16, basis)
+	b.cylinder(pos + normal * 0.08, 1.15, 1.15, 0.08, CLOCK_FACE, 16, basis)
+	# Стрелки часов (на 12:15)
+	b.box(pos + normal * 0.14 + Vector3(0.0, 0.3, 0.0), Vector3(0.1, 0.65, 0.02), CLOCK_HAND)
+	b.box(pos + normal * 0.14 + Vector3(0.3, 0.0, 0.0), Vector3(0.65, 0.1, 0.02), CLOCK_HAND)
+
+
+# --- Перрон и навес ---------------------------------------------------------
+
+func _build_platform_and_canopy(b: MeshBuilder) -> void:
+	# Перрон позади вокзала (+Z)
+	var pz := 11.5
+	var pw := 52.0
+	var pd := 7.0
+
+	# Платформа перрона
+	b.box(Vector3(0.0, 0.45, pz), Vector3(pw, 0.9, pd), PAVE_PLAT)
+	# Жёлтая тактильная полоса безопасности по краю (+Z)
+	b.box(Vector3(0.0, 0.92, pz + pd * 0.5 - 0.3), Vector3(pw, 0.05, 0.45), TACTILE_EDGE)
+
+	# Навес перрона на металлических опорах
+	for x_off in range(-20, 25, 10):
+		var col_x := float(x_off)
+		b.cylinder(Vector3(col_x, 2.5, pz - 1.0), 0.14, 0.18, 3.8, CANOPY_METAL, 6)
+		# Y-образный кронштейн навеса
+		b.box(Vector3(col_x, 4.4, pz), Vector3(0.2, 0.3, 5.0), CANOPY_METAL)
+
+	# Кровля навеса перрона
+	b.box(Vector3(0.0, 4.6, pz), Vector3(pw, 0.15, 5.6), CANOPY_METAL)
+
+
+# --- Пути и пассажирский состав ---------------------------------------------
+
+func _build_tracks_and_train(b: MeshBuilder) -> void:
+	# Первый путь рядом с перроном
+	var t1_z := 17.5
+	var tw := 56.0
+
+	# Балластная призма (щебень)
+	b.box(Vector3(0.0, 0.18, t1_z), Vector3(tw, 0.36, 4.2), BALLAST)
+
+	# Шпалы (поперечные брусья)
+	for x_off in range(-26, 27, 2):
+		b.box(Vector3(float(x_off), 0.38, t1_z), Vector3(0.25, 0.14, 2.7), TIES_WOOD)
+
+	# Стальные рельсы (две нити, колея 1520 мм)
 	for s: float in [-1.0, 1.0]:
-		b.box(Vector3(cx + s * (half + 0.2), Y0 + 1.15, tz), Vector3(0.5, 0.42, 0.5), P_DARK)
+		var rz := t1_z + s * 0.76
+		b.box(Vector3(0.0, 0.48, rz), Vector3(tw, 0.14, 0.08), RAILS_STEEL)
 
-	if kind == &"loco":
-		b.box(Vector3(cx, Y0 + 2.85, tz), Vector3(LEN - 0.5, 2.7, 2.9), P_LOCO)
-		b.box(Vector3(cx, Y0 + 1.74, tz), Vector3(LEN - 0.4, 0.32, 2.96), P_BAND)
-		b.box(Vector3(cx, Y0 + 4.41, tz), Vector3(LEN - 1.1, 0.42, 2.72), P_ROOF)
-		for s: float in [-1.0, 1.0]:
-			b.box(Vector3(cx + s * (half - 0.18), Y0 + 3.45, tz), Vector3(0.16, 0.95, 2.05), P_GLASS)
-			b.box(Vector3(cx + s * (half - 0.32), Y0 + 3.42, tz), Vector3(0.14, 1.5, 2.62), P_DARK)
-		b.box(Vector3(cx - (half - 0.18), Y0 + 2.1, tz), Vector3(0.2, 0.3, 0.34), Color("#fff4cc"))
-	else:
-		b.box(Vector3(cx, Y0 + 2.72, tz), Vector3(LEN - 0.4, 2.45, 2.9), P_CAR)
-		b.box(Vector3(cx, Y0 + 1.7, tz), Vector3(LEN - 0.3, 0.26, 2.96), P_BAND)
-		b.box(Vector3(cx, Y0 + 4.08, tz), Vector3(LEN - 1.0, 0.3, 2.8), P_ROOF)
-		for k in 4:
-			var wx := cx - 3.4 + k * 1.9
-			for sz: float in [-1.0, 1.0]:
-				b.box(Vector3(wx, Y0 + 3.15, tz + sz * 1.47), Vector3(1.0, 0.95, 0.1), P_GLASS)
-		for s: float in [-1.0, 1.0]:
-			b.box(Vector3(cx + s * (half - 1.4), Y0 + 2.52, tz), Vector3(0.95, 2.05, 0.1), P_DARK)
+	# Тупиковый упор в конце пути
+	b.box(Vector3(-27.0, 0.8, t1_z), Vector3(0.8, 1.2, 2.2), BASE_STONE)
+	b.box(Vector3(-26.5, 0.9, t1_z), Vector3(0.4, 0.5, 2.4), ROOF_COPPER)
+
+	# Пассажирский поезд у перрона: Локомотив + 2 вагона
+	# Локомотив (электровоз)
+	_build_locomotive(b, Vector3(-12.0, 0.5, t1_z))
+	# Пассажирские вагоны
+	_build_passenger_car(b, Vector3(5.0, 0.5, t1_z))
+	_build_passenger_car(b, Vector3(21.0, 0.5, t1_z))
 
 
-func _collision() -> void:
-	_body(Vector3(0.0, 7.7, 0.0), Vector3(56.0, 15.4, 18.0))
-	_body(Vector3(0.0, 13.0, 0.0), Vector3(9.0, 26.0, 9.0))
-	_body(Vector3(0.0, 1.5, 19.0), Vector3(46.0, 3.0, 7.0))
-	_body(Vector3(-3.0, 2.0, 24.0), Vector3(46.0, 4.0, 3.2))
+func _build_locomotive(b: MeshBuilder, pos: Vector3) -> void:
+	var ly := pos.y
+	# Тележки с колёсами
+	for bx: float in [-5.0, 5.0]:
+		b.box(pos + Vector3(bx, 0.4, 0.0), Vector3(3.2, 0.6, 2.2), TRAIN_DARK)
+
+	# Кузов локомотива
+	b.box(pos + Vector3(0.0, 2.0, 0.0), Vector3(14.0, 2.6, 2.8), TRAIN_GREEN)
+	# Фирменная полоса
+	b.box(pos + Vector3(0.0, 1.6, 0.0), Vector3(14.2, 0.3, 2.85), TRAIN_STRIPE)
+	# Крыша локомотива со скосами
+	b.box(pos + Vector3(0.0, 3.4, 0.0), Vector3(13.6, 0.4, 2.6), TRAIN_ROOF)
+
+	# Кабины машиниста и лобовые стёкла
+	for s: float in [-1.0, 1.0]:
+		var fx := s * 6.6
+		b.box(pos + Vector3(fx, 2.2, 0.0), Vector3(0.8, 1.4, 2.6), TRAIN_DARK)
+		b.box(pos + Vector3(fx + s * 0.42, 2.3, 0.0), Vector3(0.05, 1.0, 2.2), GLASS_WINDOW)
+		# Буферные фонари и прожектор
+		b.sphere(pos + Vector3(fx + s * 0.45, 1.4, -0.9), 0.18, TRAIN_LAMP, 4, 6)
+		b.sphere(pos + Vector3(fx + s * 0.45, 1.4, 0.9), 0.18, TRAIN_LAMP, 4, 6)
+		b.sphere(pos + Vector3(fx + s * 0.45, 3.3, 0.0), 0.22, TRAIN_LAMP, 4, 6)
+
+	# Пантографы (токоприёмники на крыше)
+	for px: float in [-3.5, 3.5]:
+		b.box(pos + Vector3(px, 3.9, 0.0), Vector3(1.6, 0.6, 1.8), TRAIN_DARK)
 
 
-func _body(pos: Vector3, size: Vector3) -> void:
+func _build_passenger_car(b: MeshBuilder, pos: Vector3) -> void:
+	# Кузов пассажирского вагона
+	b.box(pos + Vector3(0.0, 0.35, 0.0), Vector3(13.0, 0.5, 2.2), TRAIN_DARK)
+	b.box(pos + Vector3(0.0, 1.9, 0.0), Vector3(14.0, 2.5, 2.8), TRAIN_GREEN)
+	b.box(pos + Vector3(0.0, 1.5, 0.0), Vector3(14.1, 0.25, 2.85), TRAIN_STRIPE)
+	b.box(pos + Vector3(0.0, 3.3, 0.0), Vector3(13.8, 0.4, 2.6), TRAIN_ROOF)
+
+	# Окна купе вдоль вагона
+	for ox in range(-5, 6, 2):
+		b.box(pos + Vector3(float(ox), 2.1, 1.42), Vector3(1.1, 0.9, 0.05), GLASS_WINDOW)
+		b.box(pos + Vector3(float(ox), 2.1, -1.42), Vector3(1.1, 0.9, 0.05), GLASS_WINDOW)
+
+
+# --- Коллизия ---------------------------------------------------------------
+
+func _build_collision() -> void:
 	var body := StaticBody3D.new()
-	body.position = pos
 	body.collision_layer = 1
 	body.collision_mask = 0
-	var cs := CollisionShape3D.new()
-	var shape := BoxShape3D.new()
-	shape.size = size
-	cs.shape = shape
-	body.add_child(cs)
 	add_child(body)
+
+	# Коллизия здания вокзала (центральный объём)
+	var cs_main := CollisionShape3D.new()
+	var box_main := BoxShape3D.new()
+	box_main.size = Vector3(47.0, 10.0, 15.0)
+	cs_main.shape = box_main
+	cs_main.position = Vector3(0.0, 5.0, 0.0)
+	body.add_child(cs_main)
+
+	# Коллизия перрона и стоящего поезда
+	var cs_train := CollisionShape3D.new()
+	var box_train := BoxShape3D.new()
+	box_train.size = Vector3(56.0, 4.5, 12.0)
+	cs_train.shape = box_train
+	cs_train.position = Vector3(0.0, 2.25, 14.5)
+	body.add_child(cs_train)

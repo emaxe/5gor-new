@@ -337,7 +337,7 @@ func _process(delta: float) -> void:
 		Game.track_max("max_speed_kmh", player.speed_kmh())
 	elif not in_car and player_ped != null:
 		var tf := player_ped.get_global_transform_interpolated() if player_ped.is_inside_tree() else player_ped.global_transform
-		camera.target_heading = Heading.from_vector(-tf.basis.z)
+		camera.target_heading = Heading.from_vector(tf.basis.z)
 		camera.target_ground = tf.origin.y
 
 
@@ -638,6 +638,7 @@ func exit_car() -> bool:
 
 	camera.target = player_ped
 	camera.set_mode(ChaseCamera.Mode.PED)
+	camera.target_heading = player.motion.heading
 	camera.snap_to_target()
 
 	Bus.vehicle_mode_changed.emit(false)
@@ -663,6 +664,7 @@ func enter_car() -> bool:
 
 	camera.target = player
 	camera.set_mode(ChaseCamera.Mode.CAR)
+	camera.target_heading = player.motion.heading
 	camera.snap_to_target()
 
 	Bus.vehicle_mode_changed.emit(true)

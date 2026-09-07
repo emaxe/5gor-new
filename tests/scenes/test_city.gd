@@ -20,6 +20,9 @@ const VIEWS: Array[Dictionary] = [
 	{"pos": Vector3(82.0, 120.0, 184.0), "look": Vector3(82.0, 0.0, 183.0)},
 	{"pos": Vector3(96.0, 26.0, 34.0), "look": Vector3(96.0, 2.0, -8.0)},
 	{"pos": Vector3(-40.0, 60.0, -80.0), "look": Vector3(-70.0, 0.0, -160.0)},
+	{"pos": Vector3(-20.0, 20.0, 15.0), "look": Vector3(-55.0, 4.0, -22.0)},
+	{"pos": Vector3(-72.0, 12.0, -138.0), "look": Vector3(-73.0, 3.0, -160.0)},
+	{"pos": Vector3(-54.0, 28.0, 80.0), "look": Vector3(-54.0, 4.0, 47.0)},
 ]
 
 var builder: CityBuilder
@@ -31,6 +34,10 @@ func _ready() -> void:
 	add_child(builder)
 	var stats := builder.build(Db.balance, Db.districts, Db.balance.world_seed)
 	builder.refresh_signal_lenses()
+	var landmarks := LandmarkLayer.new()
+	landmarks.name = "Landmarks"
+	add_child(landmarks)
+	landmarks.build(builder.field, Db.districts.landmarks)
 	_place_camera()
 	_report(stats)
 

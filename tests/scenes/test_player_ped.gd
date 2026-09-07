@@ -109,7 +109,7 @@ func _process(delta: float) -> void:
 		camera.target_ground = tf.origin.y
 	elif not in_car and player_ped != null:
 		var tf := player_ped.get_global_transform_interpolated() if player_ped.is_inside_tree() else player_ped.global_transform
-		camera.target_heading = Heading.from_vector(-tf.basis.z)
+		camera.target_heading = Heading.from_vector(tf.basis.z)
 		camera.target_ground = tf.origin.y
 
 
@@ -168,6 +168,7 @@ func _exit_car() -> void:
 	in_car = false
 	camera.target = player_ped
 	camera.set_mode(ChaseCamera.Mode.PED)
+	camera.target_heading = player_car.motion.heading
 	camera.snap_to_target()
 
 
@@ -180,6 +181,7 @@ func _enter_car() -> void:
 	player_car.is_active = true
 	camera.target = player_car
 	camera.set_mode(ChaseCamera.Mode.CAR)
+	camera.target_heading = player_car.motion.heading
 	camera.snap_to_target()
 
 

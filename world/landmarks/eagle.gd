@@ -33,11 +33,24 @@ func _ready() -> void:
 	_build_collision()
 
 
-## Каменный постамент — три сужающихся ступени.
+## Каменный постамент — скальное основание Горячей горы с памятной доской.
 func _build_pedestal(b: MeshBuilder) -> void:
 	b.cylinder(Vector3(0.0, 0.5, 0.0), 2.6, 3.2, 1.0, STONE, 8)
 	b.cylinder(Vector3(0.0, 1.6, 0.0), 2.0, 2.5, 1.2, STONE, 8)
 	b.cylinder(Vector3(0.0, 2.6, 0.0), 1.4, 1.8, 0.8, STONE, 8)
+
+	# Скальные выступы у подножия
+	for i in 6:
+		var a := float(i) * TAU / 6.0
+		var r := 2.7
+		b.box(Vector3(cos(a) * r, 0.35, sin(a) * r), Vector3(1.1, 0.7, 1.1), STONE,
+			Basis(Vector3.UP, a).rotated(Vector3.RIGHT, 0.2))
+
+	# Бронзовая памятная доска на южной стороне постамента
+	b.box(Vector3(0.0, 1.5, 2.25), Vector3(1.2, 0.7, 0.08), GOLD,
+		Basis(Vector3.RIGHT, -0.25))
+	b.box(Vector3(0.0, 1.5, 2.22), Vector3(1.3, 0.8, 0.06), DARK,
+		Basis(Vector3.RIGHT, -0.25))
 
 
 ## Змея под когтями орла — уложенное на плоском верху постамента кольцо
@@ -84,6 +97,14 @@ func _build_bird(b: MeshBuilder) -> void:
 		b.box(Vector3(s * 3.25, 5.15, -0.6), Vector3(1.3, 0.20, 0.6), EAGLE, tip_basis)
 
 	b.box(Vector3(0.0, 3.3, -0.8), Vector3(0.6, 0.16, 0.9), EAGLE, Basis(Vector3.RIGHT, 0.3))
+
+	# Мощные когти орла, терзающие змею
+	for s: float in [-1.0, 1.0]:
+		var leg_pos := Vector3(s * 0.45, 3.25, 0.25)
+		b.cylinder(leg_pos, 0.12, 0.16, 0.4, EAGLE, 5)
+		for t: float in [-0.15, 0.0, 0.15]:
+			b.cone(leg_pos + Vector3(t, -0.15, 0.15), 0.04, 0.18, GOLD, 4,
+				Basis(Vector3.RIGHT, 0.8))
 
 
 func _build_collision() -> void:
