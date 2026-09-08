@@ -462,7 +462,8 @@ func _window_with_frame(b: MeshBuilder, pos: Vector3, size: Vector2,
 
 
 ## Меш рельефа Машука. Сетка строится по той же height_at(), что использует
-## физика, поэтому визуал и коллизия совпадают пиксель-в-пиксель.
+## физика, с локальным занижением под полку серпантина (citygen.js:753),
+## чтобы дискретная сетка 4×4 м не пробивала полотно дороги на поворотах.
 func build_terrain() -> ArrayMesh:
 	var b := MeshBuilder.new()
 	var x0 := -CityField.TERRAIN_X_LIMIT
@@ -477,19 +478,35 @@ func build_terrain() -> ArrayMesh:
 		for iz in nz:
 			var za := z0 + iz * TERRAIN_STEP
 			var zb := za + TERRAIN_STEP
-			var ya := field.height_at(xa, za)
-			var yb := field.height_at(xb, za)
-			var yc := field.height_at(xb, zb)
-			var yd := field.height_at(xa, zb)
-			# Полотно серпантина темнее травы — оно и есть дорога.
+			var ya := _terrain_vertex_y(xa, za)
+			var yb := _terrain_vertex_y(xb, za)
+			var yc := _terrain_vertex_y(xb, zb)
+			var yd := _terrain_vertex_y(xa, zb)
 			var mid := (ya + yb + yc + yd) * 0.25
-			var on_serp := field.dist_to_serp((xa + xb) * 0.5, (za + zb) * 0.5) \
-				< CityField.SERP_HALF_WIDTH
-			var col := COLOR_ROAD if on_serp else _slope_color(ya, yc, mid)
+			var col := _slope_color(ya, yc, mid)
 			b.quad(
 				Vector3(xa, ya, za), Vector3(xa, yd, zb),
 				Vector3(xb, yc, zb), Vector3(xb, yb, za), col)
 	return b.commit()
+
+
+## Высота вершины сетки рельефа: опускается под полку серпантина
+## (порт citygen.js:753), чтобы интерполяция полигонов 4×4 м не пробивала
+## полотно дороги на крутых виражах. Зазор закрывает вертикальная юбка дороги.
+func _terrain_vertex_y(x: float, z: float) -> float:
+	var y := field.height_at(x, z)
+	if field.roads != null:
+		var probe := Vector3(x, y, z)
+		var e := field.roads.query_nearest_edge(probe)
+		if e >= 0 and field.roads.edge_level(e) == 0:
+			var half := field.roads.edge_width(e) * 0.5
+			if field.roads.hit_dist < half + 1.5 * TERRAIN_STEP:
+				y = minf(y, field.roads.hit_point.y - 0.12)
+				return y
+	var q := field.serp_near(x, z)
+	if q.x >= 0.0 and q.x < CityField.SERP_HALF_WIDTH + 1.5 * TERRAIN_STEP:
+		y = minf(y, q.y - 0.12)
+	return y
 
 
 ## Склон окрашивается от луговой травы через сухую траву к камню — иначе

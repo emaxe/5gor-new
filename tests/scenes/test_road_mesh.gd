@@ -27,6 +27,7 @@ func _ready() -> void:
 	field = CityField.new(Db.balance)
 	topo = PyatigorskTopology.new()
 	graph = topo.build(field)
+	field.attach_roads(graph)
 
 	var started := Time.get_ticks_usec()
 	roads = RoadMesh.new(graph, field)

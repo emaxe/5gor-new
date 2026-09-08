@@ -381,6 +381,24 @@ func build_mesh(b: MeshBuilder) -> void:
 		_corner_mesh(b, n)
 
 
+## Глубина вертикальной юбки (дропа) полотна в грунт по внешним кромкам, м (порт citygen.js:794).
+const MOUNTAIN_ROAD_DROP := 0.5
+
+
+func _is_mountain_edge(e: int) -> bool:
+	if _graph.edge_level(e) != 0:
+		return false
+	if _graph.edge_kind(e) == CityGraph.EdgeKind.SERPENTINE:
+		return true
+	if _graph.edge_name(e) == "Верхняя Машукская дорога":
+		return true
+	var poly := _road_poly[e]
+	for p in poly:
+		if p.z <= CityField.TERRAIN_Z_MAX + 10.0 and absf(p.x) <= CityField.TERRAIN_X_LIMIT:
+			return true
+	return false
+
+
 func _edge_mesh(b: MeshBuilder, e: int) -> void:
 	# Полотно деки и её тело строит BridgeGeometry: задваивать нельзя.
 	if _graph.edge_kind(e) == CityGraph.EdgeKind.BRIDGE:
@@ -389,7 +407,10 @@ func _edge_mesh(b: MeshBuilder, e: int) -> void:
 	if road.size() < 2:
 		return
 	var width := _graph.edge_width(e)
-	b.ribbon(road, width, CityMesher.COLOR_ROAD, CityMesher.Y_ROAD)
+	if _is_mountain_edge(e):
+		_mountain_ribbon(b, road, width, CityMesher.COLOR_ROAD, CityMesher.Y_ROAD)
+	else:
+		b.ribbon(road, width, CityMesher.COLOR_ROAD, CityMesher.Y_ROAD)
 	if _graph.edge_kind(e) == CityGraph.EdgeKind.RAMP:
 		_embankment(b, e)
 	var h := width * 0.5
@@ -402,6 +423,75 @@ func _edge_mesh(b: MeshBuilder, e: int) -> void:
 		b.ribbon(_offset(walk_pts, s * (h + CURB_WIDTH * 0.5)), CURB_WIDTH,
 			CityMesher.COLOR_CURB, CityMesher.Y_CURB_TOP)
 		_curb_face(b, walk_pts, s * h, s)
+
+
+## Лента горной дороги с выверенной по рельефу высотой каждого края и
+## вертикальными юбками (дропами) в грунт, исключающими зависание и пробивание.
+func _mountain_ribbon(b: MeshBuilder, points: PackedVector3Array, width: float,
+		color: Color, y_offset: float = CityMesher.Y_ROAD) -> void:
+	if points.size() < 2:
+		return
+	var half := width * 0.5
+	var prev_l := Vector3.ZERO
+	var prev_c := Vector3.ZERO
+	var prev_r := Vector3.ZERO
+	var prev_l_drop := Vector3.ZERO
+	var prev_r_drop := Vector3.ZERO
+
+	for i in points.size():
+		var p := points[i]
+		var dir: Vector3
+		if i == 0:
+			dir = points[1] - points[0]
+		elif i == points.size() - 1:
+			dir = points[i] - points[i - 1]
+		else:
+			dir = points[i + 1] - points[i - 1]
+		dir.y = 0.0
+		if dir.length_squared() < 1e-8:
+			dir = Vector3.FORWARD
+		var side := dir.normalized().cross(Vector3.UP) * half
+
+		var lx := p.x - side.x
+		var lz := p.z - side.z
+		var rx := p.x + side.x
+		var rz := p.z + side.z
+		var cx := p.x
+		var cz := p.z
+
+		# Высота каждого края полотна согласуется с рельефом Машука.
+		var ly := _field.height_at(lx, lz) + y_offset
+		var cy := _field.height_at(cx, cz) + y_offset
+		var ry := _field.height_at(rx, rz) + y_offset
+
+		if p.y > 0.0:
+			cy = maxf(cy, p.y + y_offset)
+			var q := _field.serp_near(cx, cz)
+			if q.x >= 0.0 and q.x <= CityField.SERP_ROAD_HALF:
+				ly = maxf(ly, q.y + y_offset)
+				ry = maxf(ry, q.y + y_offset)
+
+		var l := Vector3(lx, ly, lz)
+		var c := Vector3(cx, cy, cz)
+		var r := Vector3(rx, ry, rz)
+		var l_drop := Vector3(lx, ly - MOUNTAIN_ROAD_DROP, lz)
+		var r_drop := Vector3(rx, ry - MOUNTAIN_ROAD_DROP, rz)
+
+		if i > 0:
+			# Две половины полотна (левая и правая) с нормалями вверх (CCW).
+			b.quad(prev_l, prev_c, c, l, color)
+			b.quad(prev_c, prev_r, r, c, color)
+
+			# Вертикальные юбки (дропы) по кромкам в грунт (порт citygen.js:804-815).
+			# Цвет бордюра/цоколя, чтобы не спорить с горизонтальной площадью асфальта.
+			b.quad(prev_l, prev_l_drop, l_drop, l, CityMesher.COLOR_CURB)
+			b.quad(r, r_drop, prev_r_drop, prev_r, CityMesher.COLOR_CURB)
+
+		prev_l = l
+		prev_c = c
+		prev_r = r
+		prev_l_drop = l_drop
+		prev_r_drop = r_drop
 
 
 ## Обрезанная полилиния тротуара одной стороны ребра: `positive` — сторона
@@ -419,6 +509,8 @@ func side_has_sidewalk(edge: int, positive: bool) -> bool:
 	var k := _graph.edge_kind(edge)
 	if k != CityGraph.EdgeKind.STREET and k != CityGraph.EdgeKind.AVENUE:
 		return false
+	if _graph.edge_name(edge) == "Верхняя Машукская дорога":
+		return false
 	return side_has_walk_room(edge, positive)
 
 
@@ -427,6 +519,8 @@ func side_has_sidewalk(edge: int, positive: bool) -> bool:
 ## чём: по деке моста пешеход ходит, хотя тротуара мешер на ней не рисует, а
 ## вот по огрызку в два метра поперёк перекрёстка не ходит никто.
 func side_has_walk_room(edge: int, positive: bool) -> bool:
+	if _graph.edge_name(edge) == "Верхняя Машукская дорога":
+		return false
 	var poly := walk_polyline(edge, positive)
 	return poly.size() >= 2 and _arc(poly) >= MIN_WALK_RIBBON
 
@@ -487,8 +581,11 @@ func _curb_face(b: MeshBuilder, pts: PackedVector3Array, lateral: float,
 func _junction_mesh(b: MeshBuilder, n: int) -> void:
 	if _graph.node_degree(n) < 2:
 		return
-	_fan(b, _graph.node_position(n) + Vector3(0.0, CityMesher.Y_ROAD, 0.0),
-		junction_polygon(n), CityMesher.COLOR_ROAD)
+	var center := _graph.node_position(n) + Vector3(0.0, CityMesher.Y_ROAD, 0.0)
+	if center.z <= CityField.TERRAIN_Z_MAX + 10.0 and absf(center.x) <= CityField.TERRAIN_X_LIMIT \
+			and _graph.node_level(n) == 0:
+		center.y = _field.height_at(center.x, center.z) + CityMesher.Y_ROAD
+	_fan(b, center, junction_polygon(n), CityMesher.COLOR_ROAD)
 
 
 ## Контур полигона узла по возрастанию угла подхода. Публичный: по нему тест
@@ -511,19 +608,34 @@ func junction_polygon(n: int) -> PackedVector3Array:
 	if deg < 2:
 		return out
 	var center := _graph.node_position(n)
+	var is_terrain := center.z <= CityField.TERRAIN_Z_MAX + 10.0 \
+		and absf(center.x) <= CityField.TERRAIN_X_LIMIT \
+		and _graph.node_level(n) == 0
 	var lift := Vector3(0.0, CityMesher.Y_ROAD, 0.0)
 	for k in deg:
 		var h := _graph.edge_width(_graph.approach_edge(n, k)) * 0.5
 		var near := _approach_normal(n, k) * h
 		var p := cut_point(n, k)
 		var far := cut_normal(n, k) * h
-		out.append(center - near + lift)
-		out.append(p - far + lift)
-		out.append(p + far + lift)
-		out.append(center + near + lift)
+		var v1 := center - near + lift
+		var v2 := p - far + lift
+		var v3 := p + far + lift
+		var v4 := center + near + lift
+		if is_terrain:
+			v1.y = _field.height_at(v1.x, v1.z) + CityMesher.Y_ROAD
+			v2.y = _field.height_at(v2.x, v2.z) + CityMesher.Y_ROAD
+			v3.y = _field.height_at(v3.x, v3.z) + CityMesher.Y_ROAD
+			v4.y = _field.height_at(v4.x, v4.z) + CityMesher.Y_ROAD
+		out.append(v1)
+		out.append(v2)
+		out.append(v3)
+		out.append(v4)
 		var next := (k + 1) % deg
 		if _pair_corner(n, k, next).x > 0.0:
-			out.append(_corner_point(n, k, next, 0.0, 0.0) + lift)
+			var vc := _corner_point(n, k, next, 0.0, 0.0) + lift
+			if is_terrain:
+				vc.y = _field.height_at(vc.x, vc.z) + CityMesher.Y_ROAD
+			out.append(vc)
 	return out
 
 

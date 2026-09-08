@@ -382,17 +382,25 @@ func _serp_near(x: float, z: float) -> Vector2:
 				best_d_sq = d_sq
 				best_y = _serp_y[i] + (_serp_y[i + 1] - _serp_y[i]) * t
 	var best_d := sqrt(best_d_sq)
-	# Плоская площадка на вершине.
+	# Плоская площадка на вершине: вступает в силу вне коридора полотна дороги,
+	# чтобы подъём серпантина к отметке 58 м не перекрывался плато досрочно.
+	# При d_hill_sq >= 1156 (34 м) dt >= 14 = SERP_INFLUENCE и отсекается.
 	var dhx := x - HILL.x
 	var dhz := z - HILL.z
-	var hill_dist := sqrt(dhx * dhx + dhz * dhz)
-	var dt: float = maxf(0.0, hill_dist - SUMMIT_FLAT_R)
-	if dt < best_d:
-		best_d = dt
-		best_y = HILL.top
+	var d_hill_sq := dhx * dhx + dhz * dhz
+	if d_hill_sq < 1156.0 and best_d > SERP_ROAD_HALF:
+		var dt: float = maxf(0.0, sqrt(d_hill_sq) - SUMMIT_FLAT_R)
+		if dt < best_d:
+			best_d = dt
+			best_y = HILL.top
 	if best_d >= SERP_INFLUENCE:
 		return Vector2(-1.0, 0.0)
 	return Vector2(best_d, best_y)
+
+
+## Ближайшая точка оси серпантина: Vector2(расстояние, высота) или x < 0 вне зоны влияния.
+func serp_near(x: float, z: float) -> Vector2:
+	return _serp_near(x, z)
 
 
 ## Точки оси серпантина — нужны генератору полотна, отбойников и ИИ.
