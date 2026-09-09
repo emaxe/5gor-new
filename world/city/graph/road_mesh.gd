@@ -373,30 +373,13 @@ static func _fit_pair(a: float, b: float, total: float) -> Vector2:
 func build_mesh(b: MeshBuilder) -> void:
 	for e in _graph.edge_count():
 		_edge_mesh(b, e)
+		_mountain_furniture(b, e)
 	for n in _graph.node_count():
 		if _graph.node_kind(n) == CityGraph.NodeKind.ROUNDABOUT:
 			_ring_mesh(b, n)
 		else:
 			_junction_mesh(b, n)
 		_corner_mesh(b, n)
-
-
-## Глубина вертикальной юбки (дропа) полотна в грунт по внешним кромкам, м (порт citygen.js:794).
-const MOUNTAIN_ROAD_DROP := 0.5
-
-
-func _is_mountain_edge(e: int) -> bool:
-	if _graph.edge_level(e) != 0:
-		return false
-	if _graph.edge_kind(e) == CityGraph.EdgeKind.SERPENTINE:
-		return true
-	if _graph.edge_name(e) == "Верхняя Машукская дорога":
-		return true
-	var poly := _road_poly[e]
-	for p in poly:
-		if p.z <= CityField.TERRAIN_Z_MAX + 10.0 and absf(p.x) <= CityField.TERRAIN_X_LIMIT:
-			return true
-	return false
 
 
 func _edge_mesh(b: MeshBuilder, e: int) -> void:
@@ -407,10 +390,12 @@ func _edge_mesh(b: MeshBuilder, e: int) -> void:
 	if road.size() < 2:
 		return
 	var width := _graph.edge_width(e)
-	if _is_mountain_edge(e):
-		_mountain_ribbon(b, road, width, CityMesher.COLOR_ROAD, CityMesher.Y_ROAD)
-	else:
-		b.ribbon(road, width, CityMesher.COLOR_ROAD, CityMesher.Y_ROAD)
+	# Плоская лента: на горе полотно лежит на полке `CityField.height_at()`
+	# вырезает под шириной дороги (`BENCH_SHOULDER`/`BENCH_SLOPE`), поэтому
+	# отдельный билдер с посамплированной по краям высотой и вертикальными
+	# юбками (был здесь до этапа доработки геометрии горы) больше не нужен —
+	# высота полилинии ребра уже и есть высота полки.
+	b.ribbon(road, width, CityMesher.COLOR_ROAD, CityMesher.Y_ROAD)
 	if _graph.edge_kind(e) == CityGraph.EdgeKind.RAMP:
 		_embankment(b, e)
 	var h := width * 0.5
@@ -425,73 +410,106 @@ func _edge_mesh(b: MeshBuilder, e: int) -> void:
 		_curb_face(b, walk_pts, s * h, s)
 
 
-## Лента горной дороги с выверенной по рельефу высотой каждого края и
-## вертикальными юбками (дропами) в грунт, исключающими зависание и пробивание.
-func _mountain_ribbon(b: MeshBuilder, points: PackedVector3Array, width: float,
-		color: Color, y_offset: float = CityMesher.Y_ROAD) -> void:
-	if points.size() < 2:
+# --- Обвязка горной дороги ---------------------------------------------------
+## Подпорная стенка с нагорной стороны (полка врезана в склон — выемка) и
+## отбойник с обрывной (полка отсыпана над склоном — насыпь). Сторона не
+## жёстко «левая/правая»: серпантин петляет и меняет сторону обрыва на
+## каждой шпильке, поэтому обе стороны каждого ребра проверяются одинаково,
+## а какую строить, решает сравнение рельефа с уже врезанной полкой
+## (`CityField.base_height` минус высота полотна в той же точке).
+
+## Порог выемки, с которого ставится стенка, м: меньше — рельеф просто
+## переходит в откос сам, отдельная геометрия не нужна.
+const WALL_MIN_CUT := 0.4
+## Стенка выше не растёт — дальше склон держит откос рельефа, а не она.
+const WALL_MAX_HEIGHT := 2.0
+const COLOR_WALL := Color("#8d8578")
+
+## Порог насыпи, с которого ставится отбойник, м.
+const RAIL_MIN_FILL := 0.6
+const RAIL_HEIGHT := 0.7
+## Отступ отбойника от кромки полотна, м — не сидит прямо на бровке асфальта.
+const RAIL_OFFSET := 0.6
+## Шаг столбиков отбойника, м.
+const RAIL_POST_STEP := 6.0
+const COLOR_RAIL := Color("#c2c6ca")
+
+
+func _mountain_furniture(b: MeshBuilder, e: int) -> void:
+	if _graph.edge_level(e) != 0:
 		return
-	var half := width * 0.5
-	var prev_l := Vector3.ZERO
-	var prev_c := Vector3.ZERO
-	var prev_r := Vector3.ZERO
-	var prev_l_drop := Vector3.ZERO
-	var prev_r_drop := Vector3.ZERO
+	var kind := _graph.edge_kind(e)
+	if kind == CityGraph.EdgeKind.BRIDGE or kind == CityGraph.EdgeKind.RAMP:
+		return
+	var road := _road_poly[e]
+	if road.size() < 2:
+		return
+	var touches := false
+	for p in road:
+		if p.z <= CityField.TERRAIN_Z_MAX + 10.0 and absf(p.x) <= CityField.TERRAIN_X_LIMIT:
+			touches = true
+			break
+	if not touches:
+		return
+	var half := _graph.edge_width(e) * 0.5
+	for side: float in [-1.0, 1.0]:
+		var edge_pts := _offset(road, side * half)
+		var wall_run := PackedVector3Array()
+		var rail_run := PackedVector3Array()
+		for p in edge_pts:
+			var cut := _field.base_height(p.x, p.z) - p.y
+			if cut >= WALL_MIN_CUT:
+				wall_run.append(p)
+			else:
+				_flush_wall(b, wall_run)
+				wall_run = PackedVector3Array()
+			if cut <= -RAIL_MIN_FILL:
+				rail_run.append(p)
+			else:
+				_flush_rail(b, rail_run, side)
+				rail_run = PackedVector3Array()
+		_flush_wall(b, wall_run)
+		_flush_rail(b, rail_run, side)
 
-	for i in points.size():
-		var p := points[i]
-		var dir: Vector3
-		if i == 0:
-			dir = points[1] - points[0]
-		elif i == points.size() - 1:
-			dir = points[i] - points[i - 1]
+
+## Подпорная стенка вдоль кромки полотна: низ на уровне асфальта, верх — на
+## высоту выемки (не выше WALL_MAX_HEIGHT). Строится прямо по кромке — стенка
+## подпирает грунт непосредственно у края дороги, а не в стороне от неё.
+func _flush_wall(b: MeshBuilder, pts: PackedVector3Array) -> void:
+	if pts.size() < 2:
+		return
+	var lo := Vector3(0.0, CityMesher.Y_ROAD, 0.0)
+	for i in range(1, pts.size()):
+		var p0 := pts[i - 1]
+		var p1 := pts[i]
+		var h0 := minf(_field.base_height(p0.x, p0.z) - p0.y, WALL_MAX_HEIGHT)
+		var h1 := minf(_field.base_height(p1.x, p1.z) - p1.y, WALL_MAX_HEIGHT)
+		b.quad(p0 + lo, p0 + lo + Vector3(0.0, h0, 0.0),
+			p1 + lo + Vector3(0.0, h1, 0.0), p1 + lo, COLOR_WALL)
+
+
+## Отбойник вдоль обрывной кромки: невысокий парапет с отступом от асфальта
+## плюс столбики. Высота постоянна — насыпь держит откос рельефа, отбойник
+## только страхует от съезда, а не подпирает грунт.
+func _flush_rail(b: MeshBuilder, pts: PackedVector3Array, side: float) -> void:
+	if pts.size() < 2:
+		return
+	var rail := _offset(pts, side * RAIL_OFFSET)
+	var lo := Vector3(0.0, CityMesher.Y_ROAD, 0.0)
+	var hi := Vector3(0.0, CityMesher.Y_ROAD + RAIL_HEIGHT, 0.0)
+	var acc := 0.0
+	for i in range(1, rail.size()):
+		var p0 := rail[i - 1]
+		var p1 := rail[i]
+		if side > 0.0:
+			b.quad(p0 + lo, p0 + hi, p1 + hi, p1 + lo, COLOR_RAIL)
 		else:
-			dir = points[i + 1] - points[i - 1]
-		dir.y = 0.0
-		if dir.length_squared() < 1e-8:
-			dir = Vector3.FORWARD
-		var side := dir.normalized().cross(Vector3.UP) * half
-
-		var lx := p.x - side.x
-		var lz := p.z - side.z
-		var rx := p.x + side.x
-		var rz := p.z + side.z
-		var cx := p.x
-		var cz := p.z
-
-		# Высота каждого края полотна согласуется с рельефом Машука.
-		var ly := _field.height_at(lx, lz) + y_offset
-		var cy := _field.height_at(cx, cz) + y_offset
-		var ry := _field.height_at(rx, rz) + y_offset
-
-		if p.y > 0.0:
-			cy = maxf(cy, p.y + y_offset)
-			var q := _field.serp_near(cx, cz)
-			if q.x >= 0.0 and q.x <= CityField.SERP_ROAD_HALF:
-				ly = maxf(ly, q.y + y_offset)
-				ry = maxf(ry, q.y + y_offset)
-
-		var l := Vector3(lx, ly, lz)
-		var c := Vector3(cx, cy, cz)
-		var r := Vector3(rx, ry, rz)
-		var l_drop := Vector3(lx, ly - MOUNTAIN_ROAD_DROP, lz)
-		var r_drop := Vector3(rx, ry - MOUNTAIN_ROAD_DROP, rz)
-
-		if i > 0:
-			# Две половины полотна (левая и правая) с нормалями вверх (CCW).
-			b.quad(prev_l, prev_c, c, l, color)
-			b.quad(prev_c, prev_r, r, c, color)
-
-			# Вертикальные юбки (дропы) по кромкам в грунт (порт citygen.js:804-815).
-			# Цвет бордюра/цоколя, чтобы не спорить с горизонтальной площадью асфальта.
-			b.quad(prev_l, prev_l_drop, l_drop, l, CityMesher.COLOR_CURB)
-			b.quad(r, r_drop, prev_r_drop, prev_r, CityMesher.COLOR_CURB)
-
-		prev_l = l
-		prev_c = c
-		prev_r = r
-		prev_l_drop = l_drop
-		prev_r_drop = r_drop
+			b.quad(p1 + lo, p1 + hi, p0 + hi, p0 + lo, COLOR_RAIL)
+		acc += p0.distance_to(p1)
+		if acc >= RAIL_POST_STEP:
+			acc = 0.0
+			b.box(p1 + Vector3(0.0, CityMesher.Y_ROAD + RAIL_HEIGHT * 0.5, 0.0),
+				Vector3(0.08, RAIL_HEIGHT, 0.08), COLOR_RAIL)
 
 
 ## Обрезанная полилиния тротуара одной стороны ребра: `positive` — сторона

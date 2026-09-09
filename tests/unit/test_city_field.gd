@@ -35,18 +35,36 @@ func test_serpentine_axis_matches_original() -> void:
 
 
 func test_height_matches_reference_samples() -> void:
+	# Внутри полки и откоса горных трасс height_at теперь ОСОЗНАННО
+	# расходится с оригиналом: у citygen.js нет обочины и полки под Верхней
+	# Машукской дорогой, а у порта — есть (см. is_on_mountain_bench). Сверка
+	# остаётся содержательной только вне этих коридоров.
 	var worst := 0.0
 	var worst_at := Vector2.ZERO
-	for s: Array in (_ref["samples"] as Array):
-		var got := _field.height_at(float(s[0]), float(s[1]))
+	var checked := 0
+	var samples: Array = _ref["samples"]
+	for s: Array in samples:
+		var x := float(s[0])
+		var z := float(s[1])
+		if _field.is_on_mountain_bench(x, z):
+			continue
+		checked += 1
+		var got := _field.height_at(x, z)
 		var diff := absf(got - float(s[2]))
 		if diff > worst:
 			worst = diff
-			worst_at = Vector2(float(s[0]), float(s[1]))
+			worst_at = Vector2(x, z)
 	assert_float(worst)\
 		.override_failure_message(
 			"максимальное расхождение с оригиналом %.4f м в точке %s" % [worst, worst_at])\
 		.is_less(EPS)
+	# Сужение не должно тихо съесть сверку целиком: коридоры горных трасс
+	# (серпантин + Верхняя Машукская) занимают меньшинство точек эталона.
+	assert_int(checked)\
+		.override_failure_message(
+			"сверке осталось %d точек из %d — коридоры горных трасс перекрыли эталон"
+			% [checked, samples.size()])\
+		.is_greater(int(samples.size() * 0.8))
 
 
 func test_city_area_is_flat() -> void:

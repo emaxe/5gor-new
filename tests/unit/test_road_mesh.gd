@@ -108,11 +108,16 @@ func test_curved_edge_keeps_its_elevation_profile() -> void:
 	assert_float(rise).override_failure_message(
 		"серпантин набирает всего %.1f м — профиль потерян" % rise)\
 		.is_greater(20.0)
+	# Допуск сузился с 0.6 после отказа от _mountain_ribbon (посамплированные
+	# по краям высоты, вертикальные юбки): плоская лента ribbon() кладёт все
+	# точки сечения на единую высоту точки полилинии, а не на three
+	# независимых height_at() — centroid соседних станций отличается от
+	# точки не больше половины шага серпантина по уклону.
 	for p in pts:
 		var got := _road_height_at(Vector2(p.x, p.z))
 		assert_float(got).override_failure_message(
 			"в (%.1f, %.1f) полотно на высоте %.2f, а полилиния — %.2f"
-			% [p.x, p.z, got, p.y]).is_equal_approx(p.y + CityMesher.Y_ROAD, 0.6)
+			% [p.x, p.z, got, p.y]).is_equal_approx(p.y + CityMesher.Y_ROAD, 0.3)
 
 
 func test_sidewalks_and_curbs_run_along_both_sides() -> void:
@@ -256,6 +261,12 @@ func test_flat_faces_point_up() -> void:
 	# ориентирует каждую грань сам, по знаку площади в плане; поставленная
 	# «наизнанку» грань с фронтальным cull_back исчезает молча, без ошибок в
 	# консоли. Щёчка бордюра вертикальна и в проверку не попадает.
+	#
+	# Столбики отбойника (`RoadMesh._flush_rail`) — обычный `MeshBuilder.box()`,
+	# у него, как у любого бокса, есть нижняя грань, и она по построению
+	# смотрит вниз: это не «вывернутый веер», а невидимая (совпадает с
+	# полотном) грань цоколя. Проверять её направление нормали нечем — box()
+	# уже покрыт своим тестом в test_mesh_builder.gd.
 	var normals: PackedVector3Array = _normals
 	assert_int(normals.size()).override_failure_message(
 		"в меше нет нормалей — SurfaceTool их не сгенерировал").is_greater(0)
@@ -270,6 +281,8 @@ func test_flat_faces_point_up() -> void:
 			continue  # наклонная грань откоса или вертикальная щёчка бордюра
 		if absf(_plan_area(i)) < RoadMesh.MIN_FACE_AREA:
 			continue  # вырожденный квад ленты: площади нет, нормали тоже
+		if _is_color(_colors[_index[i]], RoadMesh.COLOR_RAIL):
+			continue  # цоколь столбика отбойника — см. комментарий выше
 		flat += 1
 		for k in 3:
 			var ny := normals[_index[i + k]].y

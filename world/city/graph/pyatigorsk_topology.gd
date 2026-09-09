@@ -65,9 +65,9 @@ const W_MAIN := 16.0
 const W_STREET := 12.0
 ## Переулок, подъездной и периферийный проезд.
 const W_LANE := 8.0
-## Серпантин: 2 * CityField.SERP_HALF_WIDTH (3.6 м полуширина) — ровно та
-## ширина полки, которую вырезает в рельефе CityField.height_at (порт citygen.js:794).
-const W_SERPENTINE := 7.2
+## Ширина серпантина читается из `CityField.mountain_route_width()` —
+## полка в рельефе шире полотна на обочину, а не ровно с ним совпадает, и
+## у ширины один владелец. Здесь не дублируется даже как константа.
 
 ## Отметка деки путепровода у вокзала над улицей Крайнего, м — высота
 ## ПРОЕЗЖЕЙ ЧАСТИ пролёта, а не просвет под ним: просвет меньше на толщину
@@ -267,20 +267,29 @@ func _place_sanatorii() -> void:
 
 
 ## Гора: подъезд к канатной дороге, верхняя траверсная дорога и серпантин.
-## Узлы серпантина ставятся в вершины его собственной полилинии, чтобы
-## `CityGraph._snap_endpoints()` не сдвигал полотно с оси.
+## Координаты — опорные точки соответствующих трасс `CityField`
+## (`mountain_route_points`), а не литералы: у формы и подъёма горных дорог
+## один владелец, топология их только читает — тот же приём, каким уже был
+## заведён серпантин. Узлы серпантина по-прежнему ставятся в вершины его
+## полилинии, чтобы `CityGraph._snap_endpoints()` не сдвигал полотно с оси.
 func _place_mountain() -> void:
-	_node(&"mash_1", 18.0, -246.0, &"mashuk")
+	var road := _field.mountain_route_points(CityField.ROUTE_MASHUK_ROAD)
+	_node_at(&"mash_1", road[0], &"mashuk")
 	# Лендмарк «Канатная дорога» (20,-288) — узел на конце подъезда.
-	_node(&"lm_cable", 20.0, -288.0, &"mashuk")
+	_node_at(&"lm_cable", road[road.size() - 1], &"mashuk")
+
+	var approach := _field.mountain_route_points(CityField.ROUTE_SERP_APPROACH)
+	_node_at(&"mash_e", approach[0], &"mashuk")
+
 	# Верхняя Машукская дорога: траверс по западному склону. Профиль высоты
-	# снимается с рельефа, максимальный уклон 17% — предел для дороги при
-	# нынешней крутизне конуса Машука (CityField.HILL). Это и есть участок с
-	# заметным профилем высоты ВНЕ серпантина, требуемый этапом 3.
-	_node(&"mash_w1", -52.0, -298.0, &"mashuk")
-	_node(&"mash_w2", -86.0, -330.0, &"mashuk")
-	_node(&"mash_w3", -104.0, -380.0, &"mashuk")
-	_node(&"mash_e", 124.0, -232.0, &"mashuk")
+	# снимается с рельефа — единственная негорная трасса с заметным подъёмом
+	# (13 м на 172 м пути), требуемая этапом 3.
+	var upper := _field.mountain_route_points(CityField.ROUTE_UPPER_MASHUK)
+	_node_at(&"mash_w1",
+		upper[_field.mountain_route_anchor(CityField.ROUTE_UPPER_MASHUK, 1)], &"mashuk")
+	_node_at(&"mash_w2",
+		upper[_field.mountain_route_anchor(CityField.ROUTE_UPPER_MASHUK, 2)], &"mashuk")
+	_node_at(&"mash_w3", upper[upper.size() - 1], &"mashuk")
 
 	var serp := _field.serpentine_points()
 	_node_at(&"serp_bot", serp[0], &"mashuk")
@@ -391,21 +400,47 @@ func _foothill_streets() -> void:
 		CityGraph.EdgeKind.STREET, PackedVector2Array([Vector2(94.0, -184.0)]))
 
 
-## Дороги горы. Серпантин заведён обычным ребром с готовой полилинией
-## `CityField.serpentine_points()` — своей математики подъёма здесь нет и
-## быть не должно, у неё один владелец (`CityField._build_serpentine`).
+## Дороги горы. Внутри коридора рельефа (kal_n3->mash_1, foot_e2->mash_e —
+## ещё вне него) каждое ребро заведено готовой полилинией одной из
+## `CityField.mountain_route_points()` — своей математики подъёма и своей
+## ширины здесь нет и быть не должно, у полки один владелец (`CityField`).
 func _mountain_streets() -> void:
-	_chain("дорога на Машук", [&"kal_n3", &"mash_1", &"lm_cable"], W_STREET)
-	_chain("подъезд к серпантину", [&"foot_e2", &"mash_e", &"serp_bot"], W_STREET)
+	_link("дорога на Машук", &"kal_n3", &"mash_1", W_STREET)
+	_route_edge("дорога на Машук", &"mash_1", &"lm_cable",
+		CityField.ROUTE_MASHUK_ROAD, 0, -1)
+
+	_link("подъезд к серпантину", &"foot_e2", &"mash_e", W_STREET)
+	_route_edge("подъезд к серпантину", &"mash_e", &"serp_bot",
+		CityField.ROUTE_SERP_APPROACH, 0, -1)
+
 	# Траверс по западному склону: единственная улица с настоящим профилем
-	# высоты вне серпантина (0 -> 13 м на 170 м пути).
-	_chain("Верхняя Машукская дорога",
-		[&"lm_cable", &"mash_w1", &"mash_w2", &"mash_w3"], W_LANE)
+	# высоты вне серпантина (0 -> 13 м на 172 м пути). Три ребра одной
+	# трассы — каждое своя часть общей полилинии (см. _place_mountain).
+	_route_edge("Верхняя Машукская дорога", &"lm_cable", &"mash_w1",
+		CityField.ROUTE_UPPER_MASHUK, 0, 1)
+	_route_edge("Верхняя Машукская дорога", &"mash_w1", &"mash_w2",
+		CityField.ROUTE_UPPER_MASHUK, 1, 2)
+	_route_edge("Верхняя Машукская дорога", &"mash_w2", &"mash_w3",
+		CityField.ROUTE_UPPER_MASHUK, 2, 3)
 
 	var serp := _field.serpentine_points()
 	var mid := _gazebo_index(serp)
 	_serpentine_link(&"serp_bot", &"lm_gazebo", serp.slice(0, mid + 1))
 	_serpentine_link(&"lm_gazebo", &"lm_tower", serp.slice(mid))
+
+
+## Ребро горной трассы: план, профиль высоты и ширина берутся целиком из
+## `CityField.mountain_route_points`/`mountain_route_width` — здесь не
+## пересчитываются, у полки один владелец. `anchor_from`/`anchor_to` — номера
+## опорных точек плана трассы (`-1` — последняя).
+func _route_edge(street: String, a: StringName, b: StringName, route: int,
+		anchor_from: int, anchor_to: int) -> void:
+	var pts := _field.mountain_route_points(route)
+	var i0 := _field.mountain_route_anchor(route, anchor_from)
+	var i1 := pts.size() - 1 if anchor_to < 0 \
+		else _field.mountain_route_anchor(route, anchor_to)
+	graph.add_edge(_id[a], _id[b], pts.slice(i0, i1 + 1),
+		_field.mountain_route_width(route), CityGraph.EdgeKind.STREET, 0, street)
 
 
 func _sanatorii_streets() -> void:
@@ -573,7 +608,8 @@ func _link(street: String, a: StringName, b: StringName, width: float,
 ## нельзя — это та же ось, по которой врезана полка в рельефе.
 func _serpentine_link(a: StringName, b: StringName,
 		points: PackedVector3Array) -> void:
-	graph.add_edge(_id[a], _id[b], points, W_SERPENTINE,
+	graph.add_edge(_id[a], _id[b], points,
+		_field.mountain_route_width(CityField.ROUTE_SERPENTINE),
 		CityGraph.EdgeKind.SERPENTINE, 0, "серпантин на Машук")
 
 
